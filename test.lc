@@ -1,0 +1,10 @@
+%"c";
+
+pkg test;
+
+ext void printf(str fmt, var str args);
+
+def int main()
+{
+    return 0;
+}

@@ -1,0 +1,18 @@
+{
+  "langrev": "1",
+  "warnings": [ "no-unused" ],
+  "dependency-search-paths": [ "lib" ],
+  "dependencies": [],
+  "authors": [ "Kiana Bennett" ],
+  "version": "0.1.0",
+  "sources": [ "src/**", "lib/**" ],
+  "test-sources": [ "test/**" ],
+  "output": "build",
+  "targets": {
+    "lucy": {
+      "type": "executable"
+    }
+  },
+  "cpu": "generic",
+  "opt": "O0"
+}
