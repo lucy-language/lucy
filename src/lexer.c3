@@ -78,25 +78,25 @@ fn TokenList Lexer.tokenize(&self)
             self.consume();
         }
 
-        if (self.current == ';') { tokens.push({ TokenType.SEMICOLON, ";", { self.column, self.column + 1, 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '.') { tokens.push({ TokenType.PERIOD,    ".", { self.column, self.column + 1, 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == ',') { tokens.push({ TokenType.COMMA,     ",", { self.column, self.column + 1, 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '(') { tokens.push({ TokenType.LPAREN,    "(", { self.column, self.column + 1, 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == ')') { tokens.push({ TokenType.RPAREN,    ")", { self.column, self.column + 1, 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '{') { tokens.push({ TokenType.LBRACE,    "{", { self.column, self.column + 1, 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '}') { tokens.push({ TokenType.RBRACE,    "}", { self.column, self.column + 1, 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '[') { tokens.push({ TokenType.LBRACKET,  "[", { self.column, self.column + 1, 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == ']') { tokens.push({ TokenType.RBRACKET,  "]", { self.column, self.column + 1, 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '%') { tokens.push({ TokenType.PERCENT,   "%", { self.column, self.column + 1, 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == ';') { tokens.push({ TokenType.SEMICOLON, ";", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '.') { tokens.push({ TokenType.PERIOD,    ".", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == ',') { tokens.push({ TokenType.COMMA,     ",", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '(') { tokens.push({ TokenType.LPAREN,    "(", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == ')') { tokens.push({ TokenType.RPAREN,    ")", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '{') { tokens.push({ TokenType.LBRACE,    "{", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '}') { tokens.push({ TokenType.RBRACE,    "}", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '[') { tokens.push({ TokenType.LBRACKET,  "[", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == ']') { tokens.push({ TokenType.RBRACKET,  "]", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '%') { tokens.push({ TokenType.PERCENT,   "%", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
 
-        if (self.current == '+') { tokens.push({ TokenType.PLUS,   "+", { self.column, self.column + 1, 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '-') { tokens.push({ TokenType.MINUS,  "-", { self.column, self.column + 1, 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '*') { tokens.push({ TokenType.STAR,   "*", { self.column, self.column + 1, 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '/') { tokens.push({ TokenType.SLASH,  "/", { self.column, self.column + 1, 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '+') { tokens.push({ TokenType.PLUS,   "+", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '-') { tokens.push({ TokenType.MINUS,  "-", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '*') { tokens.push({ TokenType.STAR,   "*", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '/') { tokens.push({ TokenType.SLASH,  "/", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
 
         if (self.current == '#')
         {
-            while (!self.current.in({ '\n', '\r' }))
+            while (self.current != '\0' && !self.current.in({ '\n', '\r' }))
             {
                 self.consume();
             }
@@ -107,7 +107,7 @@ fn TokenList Lexer.tokenize(&self)
         if (self.current == '$' || self.current.is_alpha()) tokens.push(self.identifier());
     }
 
-    tokens.push({ TokenType.EOF, "EOF", { self.column, self.column, 0 }, self.line, self.get_context_lines() });
+    tokens.push({ TokenType.EOF, "EOF", { self.column, self.column }, self.line, self.get_context_lines() });
 
     return tokens;
 }
@@ -129,7 +129,7 @@ fn Token Lexer.string(&self)
     self.column++;
     self.consume();
 
-    return { TokenType.STRING, result.str_view(), { start, self.column, self.column - start }, self.line, self.get_context_lines() };
+    return { TokenType.STRING, result.str_view(), { start, self.column }, self.line, self.get_context_lines() };
 }
 
 fn Token Lexer.number(&self)
@@ -152,7 +152,7 @@ fn Token Lexer.number(&self)
             self.consume();
         }
 
-        return { TokenType.INTEGER, result.str_view(), { start, self.column, self.column - start }, self.line, self.get_context_lines() };
+        return { TokenType.INTEGER, result.str_view(), { start, self.column }, self.line, self.get_context_lines() };
     }
 
     while (self.current.is_digit())
@@ -204,15 +204,15 @@ fn Token Lexer.number(&self)
     {
         self.column++;
         self.consume();
-        return { TokenType.FLOAT, result.str_view(), { start, self.column, self.column - start }, self.line, self.get_context_lines() };
+        return { TokenType.FLOAT, result.str_view(), { start, self.column }, self.line, self.get_context_lines() };
     }
 
     if (!has_decimal_or_exponent)
     {
-        return { TokenType.INTEGER, result.str_view(), { start, self.column, self.column - start }, self.line, self.get_context_lines() };
+        return { TokenType.INTEGER, result.str_view(), { start, self.column }, self.line, self.get_context_lines() };
     }
 
-    return { TokenType.DOUBLE, result.str_view(), { start, self.column, self.column - start }, self.line, self.get_context_lines() };
+    return { TokenType.DOUBLE, result.str_view(), { start, self.column }, self.line, self.get_context_lines() };
 }
 
 fn Token Lexer.identifier(&self)
@@ -231,18 +231,18 @@ fn Token Lexer.identifier(&self)
 
     if (str.in({ "true", "false" }))
     {
-        return { TokenType.BOOLEAN, str, { start, self.column, self.column - start }, self.line, self.get_context_lines() };
+        return { TokenType.BOOLEAN, str, { start, self.column }, self.line, self.get_context_lines() };
     }
 
-    if (str == "pkg") return { TokenType.KW_PKG, str, { start, self.column, self.column - start }, self.line, self.get_context_lines() };
-    if (str == "def") return { TokenType.KW_DEF, str, { start, self.column, self.column - start }, self.line, self.get_context_lines() };
-    if (str == "use") return { TokenType.KW_USE, str, { start, self.column, self.column - start }, self.line, self.get_context_lines() };
-    if (str == "ext") return { TokenType.KW_EXT, str, { start, self.column, self.column - start }, self.line, self.get_context_lines() };
-    if (str == "var") return { TokenType.KW_VAR, str, { start, self.column, self.column - start }, self.line, self.get_context_lines() };
-    if (str == "return") return { TokenType.KW_RETURN, str, { start, self.column, self.column - start }, self.line, self.get_context_lines() };
+    if (str == "pkg") return { TokenType.KW_PKG, str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "def") return { TokenType.KW_DEF, str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "use") return { TokenType.KW_USE, str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "ext") return { TokenType.KW_EXT, str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "var") return { TokenType.KW_VAR, str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "return") return { TokenType.KW_RETURN, str, { start, self.column }, self.line, self.get_context_lines() };
 
 
-    return { TokenType.IDENTIFIER, str, { start, self.column, self.column - start }, self.line, self.get_context_lines() };
+    return { TokenType.IDENTIFIER, str, { start, self.column }, self.line, self.get_context_lines() };
 }
 
 fn List{String} Lexer.get_context_lines(&self)

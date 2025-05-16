@@ -4,7 +4,12 @@ pkg test;
 
 ext void printf(str fmt, var str args);
 
-def int main()
+def int main(str[] args)
 {
     return 0;
+}
+
+def void greet(str name, bool test)
+{
+#     printf("Hello, %s!\n", name);
 }

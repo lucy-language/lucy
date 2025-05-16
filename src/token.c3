@@ -7,7 +7,6 @@ struct Range
 {
     int start;
     int end;
-    int length;
 }
 
 struct Token

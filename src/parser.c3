@@ -1,14 +1,7 @@
 module lucy::parser;
 
-import std::collections::list;
-import std::core::string;
-import std::core::mem;
-import std::io::path;
-
-import lucy::errors;
-import lucy::token;
-import lucy::lexer;
-import lucy::node;
+import std;
+import lucy;
 
 struct Parser
 {
@@ -23,13 +16,14 @@ fn Parser new(Lexer lexer, String path)
     TokenList tokens = lexer.tokenize();
     int pos = 0;
     Path file_path = path.to_absolute_path(mem)!!;
+    defer file_path.free();
 
     return
     {
         .tokens    = tokens,
         .pos       = pos,
         .current   = tokens[pos],
-        .file_path = file_path.str_view()
+        .file_path = file_path.str_view().copy(mem)
     };
 }
 
@@ -60,65 +54,47 @@ fn ASTNode Parser.parse(&self)
 
     String module_name = self.pkg();
 
-    while (self.current.type == TokenType.KW_USE)
+    while (self.current.type == KW_USE)
     {
         children.push(self.use());
     }
 
-    while (self.current.type != TokenType.EOF)
+    while (self.current.type != EOF)
     {
         switch (self.current.type)
         {
-            case TokenType.KW_DEF: children.push(self.def());
-            case TokenType.KW_EXT: children.push(self.ext());
+            case KW_DEF: children.push(self.def());
+            case KW_EXT: children.push(self.ext());
             default: break;
         }
     }
 
-    self.try_consume(TokenType.EOF);
+    self.try_consume(EOF);
 
-    return
-    {
-        NodeType.FILE,
-        {
-            .file_node =
-            {
-                module_name,
-                children
-            }
-        },
-        {},
-        0,
-        {}
-    };
+    return { .node_type = NodeType.FILE, .node.file_node = { module_name, children } };
 }
 
 fn ASTNodeList Parser.linker_options(&self)
 {
     ASTNodeList linker_options;
 
-    while (self.current.type == TokenType.PERCENT)
+    while (self.current.type == PERCENT)
     {
+        int line = self.current.line;
+        int start = self.current.range.start;
+        List{String} context_lines = self.current.context_lines;
         self.consume();
 
         DString value;
+        defer value.free();
         value.append_chars(self.current.value);
 
-        self.try_consume(TokenType.STRING);
-        self.try_consume(TokenType.SEMICOLON);
+        self.try_consume(STRING);
+        int end = self.current.range.end;
+        self.try_consume(SEMICOLON);
 
-        linker_options.push({
-            NodeType.LINK,
-            {
-                .linker_option_node =
-                {
-                    value.str_view()
-                }
-            },
-            {},
-            0,
-            {}
-        });
+        linker_options.push({ NodeType.LINK, { .linker_option_node = { value.copy_str(mem) } }, { start, end }, line,
+                                                                                                    context_lines });
     }
 
     return linker_options;
@@ -126,54 +102,47 @@ fn ASTNodeList Parser.linker_options(&self)
 
 fn String Parser.pkg(&self)
 {
-    self.try_consume(TokenType.KW_PKG);
+    self.try_consume(KW_PKG);
 
     String module_name = self.path();
 
-    self.try_consume(TokenType.SEMICOLON);
+    self.try_consume(SEMICOLON);
 
     return module_name;
 }
 
 fn ASTNode Parser.use(&self)
 {
-    self.try_consume(TokenType.KW_USE);
+    int line = self.current.line;
+    int start = self.current.range.start;
+    List{String} context_lines = self.current.context_lines;
+    self.try_consume(KW_USE);
 
     String path = self.path();
 
-    self.try_consume(TokenType.SEMICOLON);
+    int end = self.current.range.end;
+    self.try_consume(SEMICOLON);
 
-    return
-    {
-        NodeType.USE,
-        {
-            .use_node =
-            {
-                path
-            }
-        },
-        {},
-        0,
-        {}
-    };
+    return { NodeType.USE, { .use_node = { path } }, { start, end }, line, context_lines };
 }
 
 fn String Parser.path(&self)
 {
     DString path;
+    defer path.free();
 
     path.append_chars(self.current.value);
-    self.try_consume(TokenType.IDENTIFIER);
+    self.try_consume(IDENTIFIER);
 
-    while (self.current.type == TokenType.PERIOD)
+    while (self.current.type == PERIOD)
     {
         path.append_char('.');
         self.consume();
         path.append_chars(self.current.value);
-        self.try_consume(TokenType.IDENTIFIER);
+        self.try_consume(IDENTIFIER);
     }
 
-    return path.str_view();
+    return path.copy_str(mem);
 }
 
 fn ASTNode Parser.def(&self)
@@ -181,20 +150,21 @@ fn ASTNode Parser.def(&self)
     self.consume();
 
     String type = self.current.value;
-    self.try_consume(TokenType.IDENTIFIER);
+    self.try_consume(IDENTIFIER);
 
     String name = self.def_name();
     ASTNodeList parameters = self.def_parameters();
 
     ASTNodeList children;
 
-    self.try_consume(TokenType.LBRACE);
+    self.try_consume(LBRACE);
 
-    if (self.current.type == TokenType.KW_RETURN)
+    // TODO: add actual children
+    if (self.current.type == KW_RETURN)
     {
-        self.try_consume(TokenType.KW_RETURN);
+        self.try_consume(KW_RETURN);
         ASTNode value = self.expr();
-        self.try_consume(TokenType.SEMICOLON);
+        self.try_consume(SEMICOLON);
 
         ASTNodeList value_list;
         value_list.push(value);
@@ -214,155 +184,107 @@ fn ASTNode Parser.def(&self)
         });
     }
 
-    self.try_consume(TokenType.RBRACE);
+    self.try_consume(RBRACE);
 
-    return
-    {
-        NodeType.DEF,
-        {
-            .def_node =
-            {
-                type,
-                name,
-                parameters,
-                children
-            }
-        },
-        {},
-        0,
-        {}
-    };
+    return { .node_type = NodeType.DEF, .node.def_node = { type, name, parameters, children } };
 }
 
 fn String Parser.def_name(&self)
 {
     DString name;
+    defer name.free();
 
     name.append_chars(self.current.value);
-    self.try_consume(TokenType.IDENTIFIER);
+    self.try_consume(IDENTIFIER);
 
-    if (self.current.type == TokenType.PERIOD)
+    if (self.current.type == PERIOD)
     {
         name.append_char('.');
         self.consume();
         name.append_chars(self.current.value);
-        self.try_consume(TokenType.IDENTIFIER);
+        self.try_consume(IDENTIFIER);
     }
 
-    return name.str_view();
+    return name.copy_str(mem);
 }
 
 fn ASTNodeList Parser.def_parameters(&self)
 {
     ASTNodeList parameters;
 
-    self.try_consume(TokenType.LPAREN);
+    self.try_consume(LPAREN);
 
-    if (self.current.type != TokenType.RPAREN)
+    if (self.current.type != RPAREN)
     {
-        List{String} context_lines = self.current.context_lines;
         int line = self.current.line;
-        int range_start = self.current.range.start;
+        int start = self.current.range.start;
+        List{String} context_lines = self.current.context_lines;
         bool vararg;
         DString type;
+        defer type.free();
 
-        if (self.current.type == TokenType.KW_VAR)
+        if (self.current.type == KW_VAR)
         {
             self.consume();
             vararg = true;
         }
 
         type.append_chars(self.current.value);
-        self.try_consume(TokenType.IDENTIFIER);
+        self.try_consume(IDENTIFIER);
 
-        if (self.current.type == TokenType.LBRACKET)
+        if (self.current.type == LBRACKET)
         {
             self.consume();
-            self.try_consume(TokenType.RBRACKET);
+            self.try_consume(RBRACKET);
 
             type.append_chars("[]");
         }
 
-        int range_end = self.current.range.end;
+        int end = self.current.range.end;
         String name = self.current.value;
-        self.try_consume(TokenType.IDENTIFIER);
+        self.try_consume(IDENTIFIER);
 
-        parameters.push(
-            {
-                NodeType.PARAMETER,
-                {
-                    .parameter_node =
-                    {
-                        vararg,
-                        type.str_view(),
-                        name
-                    }
-                },
-                {
-                    range_start,
-                    range_end,
-                    range_end - range_start
-                },
-                line,
-                context_lines
-            }
-        );
+        parameters.push({ NodeType.PARAMETER, { .parameter_node = { vararg, type.copy_str(mem), name } },
+                                                                  { start, end }, line, context_lines });
 
-        while (self.current.type == TokenType.COMMA)
+        while (self.current.type == COMMA)
         {
             self.consume();
 
-            List{String} other_context_lines = self.current.context_lines;
             int other_line = self.current.line;
-            int other_range_start = self.current.range.start;
+            int other_start = self.current.range.start;
+            List{String} other_context_lines = self.current.context_lines;
             bool other_vararg;
             DString other_type;
+            defer other_type.free();
 
-            if (self.current.type == TokenType.KW_VAR)
+            if (self.current.type == KW_VAR)
             {
                 self.consume();
                 other_vararg = true;
             }
 
             other_type.append_chars(self.current.value);
-            self.try_consume(TokenType.IDENTIFIER);
+            self.try_consume(IDENTIFIER);
 
-            if (self.current.type == TokenType.LBRACKET)
+            if (self.current.type == LBRACKET)
             {
                 self.consume();
-                self.try_consume(TokenType.RBRACKET);
+                self.try_consume(RBRACKET);
 
                 other_type.append_chars("[]");
             }
 
-            int other_range_end = self.current.range.end;
+            int other_end = self.current.range.end;
             String other_name = self.current.value;
-            self.try_consume(TokenType.IDENTIFIER);
+            self.try_consume(IDENTIFIER);
 
-            parameters.push(
-                {
-                    NodeType.PARAMETER,
-                    {
-                        .parameter_node =
-                        {
-                            other_vararg,
-                            other_type.str_view(),
-                            other_name
-                        }
-                    },
-                    {
-                        other_range_start,
-                        other_range_end,
-                        other_range_end - other_range_start
-                    },
-                    other_line,
-                    other_context_lines
-                }
-            );
+            parameters.push({ NodeType.PARAMETER, { .parameter_node = { other_vararg, other_type.copy_str(mem),
+                                other_name } }, { other_start, other_end }, other_line, other_context_lines });
         }
     }
 
-    self.try_consume(TokenType.RPAREN);
+    self.try_consume(RPAREN);
 
     return parameters;
 }
@@ -375,12 +297,9 @@ fn ASTNode Parser.expr(&self)
 
     int line = node.line;
     List{String} context_lines = node.context_lines;
-    Range range =
-    {
-        .start = node.range.start
-    };
+    int start = node.range.start;
 
-    while (self.current.type == TokenType.PLUS || self.current.type == TokenType.MINUS)
+    while (self.current.type == PLUS || self.current.type == MINUS)
     {
         String operator = self.current.value;
         self.consume();
@@ -389,23 +308,8 @@ fn ASTNode Parser.expr(&self)
         ASTNodeList right;
         right.push(term);
 
-        range.end = term.range.end;
-        range.length = range.end - range.start;
-        node =
-        {
-            NodeType.BIN,
-            {
-                .bin_node =
-                {
-                    operator,
-                    left,
-                    right
-                }
-            },
-            range,
-            line,
-            context_lines
-        };
+        int end = term.range.end;
+        node = { NodeType.BIN, { .bin_node = { operator, left, right } }, { start, end }, line, context_lines };
     }
 
     return node;
@@ -419,12 +323,9 @@ fn ASTNode Parser.term(&self)
 
     int line = node.line;
     List{String} context_lines = node.context_lines;
-    Range range =
-    {
-        .start = node.range.start
-    };
+    int start = node.range.start;
 
-    while (self.current.type == TokenType.STAR || self.current.type == TokenType.SLASH)
+    while (self.current.type == STAR || self.current.type == SLASH)
     {
         String operator = self.current.value;
         self.consume();
@@ -433,23 +334,8 @@ fn ASTNode Parser.term(&self)
         ASTNodeList right;
         right.push(factor);
 
-        range.end = factor.range.end;
-        range.length = range.end - range.start;
-        node =
-        {
-            NodeType.BIN,
-            {
-                .bin_node =
-                {
-                    operator,
-                    left,
-                    right
-                }
-            },
-            range,
-            line,
-            context_lines
-        };
+        int end = factor.range.end;
+        node = { NodeType.BIN, { .bin_node = { operator, left, right } }, { start, end }, line, context_lines};
     }
 
     return node;
@@ -461,85 +347,30 @@ fn ASTNode Parser.factor(&self)
 
     switch (self.current.type)
     {
-        case TokenType.INTEGER:
-            node =
-            {
-                NodeType.INT,
-                {
-                    .int_node =
-                    {
-                        self.current.value
-                    }
-                },
-                self.current.range,
-                self.current.line,
-                self.current.context_lines
-            };
+        case INTEGER:
+            node = { NodeType.INT, { .int_node = { self.current.value } }, self.current.range, self.current.line,
+                                                                                    self.current.context_lines };
             self.consume();
-        case TokenType.DOUBLE:
-            node =
-            {
-                NodeType.DOUBLE,
-                {
-                    .double_node =
-                    {
-                        self.current.value
-                    }
-                },
-                self.current.range,
-                self.current.line,
-                self.current.context_lines
-            };
+        case DOUBLE:
+            node = { NodeType.DOUBLE, { .double_node = { self.current.value } }, self.current.range, self.current.line,
+                                                                                          self.current.context_lines };
             self.consume();
-        case TokenType.FLOAT:
-            node =
-            {
-                NodeType.FLOAT,
-                {
-                    .float_node =
-                    {
-                        self.current.value
-                    }
-                },
-                self.current.range,
-                self.current.line,
-                self.current.context_lines
-            };
+        case FLOAT:
+            node = { NodeType.FLOAT, { .float_node = { self.current.value } }, self.current.range, self.current.line,
+                                                                                        self.current.context_lines };
             self.consume();
-        case TokenType.BOOLEAN:
-            node =
-            {
-                NodeType.BOOL,
-                {
-                    .bool_node =
-                    {
-                        self.current.value
-                    }
-                },
-                self.current.range,
-                self.current.line,
-                self.current.context_lines
-            };
+        case BOOLEAN:
+            node = { NodeType.BOOL, { .bool_node = { self.current.value } }, self.current.range, self.current.line,
+                                                                                      self.current.context_lines };
             self.consume();
-        case TokenType.STRING:
-            node =
-            {
-                NodeType.STR,
-                {
-                    .str_node =
-                    {
-                        self.current.value
-                    }
-                },
-                self.current.range,
-                self.current.line,
-                self.current.context_lines
-            };
+        case STRING:
+            node = { NodeType.STR, { .str_node = { self.current.value } }, self.current.range, self.current.line,
+                                                                                    self.current.context_lines };
             self.consume();
-        case TokenType.LPAREN:
+        case LPAREN:
             self.consume();
             node = self.expr();
-            self.try_consume(TokenType.RPAREN);
+            self.try_consume(RPAREN);
         default:
             errors::print(self.file_path, self.current, "expression expected");
     }
@@ -551,47 +382,33 @@ fn ASTNode Parser.ext(&self)
 {
     int line = self.current.line;
     List{String} context_lines = self.current.context_lines;
-    Range range =
-    {
-        .start = self.current.range.start
-    };
+    int start = self.current.range.start;
     self.consume();
 
     DString type;
+    defer type.free();
     type.append_chars(self.current.value);
-    self.try_consume(TokenType.IDENTIFIER);
+    self.try_consume(IDENTIFIER);
 
     DString name;
+    defer name.free();
     name.append_chars(self.current.value);
-    self.try_consume(TokenType.IDENTIFIER);
+    self.try_consume(IDENTIFIER);
 
     ASTNodeList parameters = self.def_parameters();
 
     DString alias_name;
-    if (self.current.type == TokenType.KW_AS)
+    defer alias_name.free();
+    if (self.current.type == KW_AS)
     {
         self.consume();
         alias_name.append_chars(self.current.value);
-        self.try_consume(TokenType.IDENTIFIER);
+        self.try_consume(IDENTIFIER);
     }
 
-    range.end = self.current.range.end;
-    self.try_consume(TokenType.SEMICOLON);
+    int end = self.current.range.end;
+    self.try_consume(SEMICOLON);
 
-    return
-    {
-        NodeType.EXT,
-        {
-            .ext_node =
-            {
-                type.str_view(),
-                name.str_view(),
-                parameters,
-                alias_name.str_view()
-            }
-        },
-        range,
-        line,
-        context_lines
-    };
+    return { NodeType.EXT, { .ext_node = { type.copy_str(mem), name.copy_str(mem), parameters,
+                          alias_name.copy_str(mem) } }, { start, end }, line, context_lines };
 }

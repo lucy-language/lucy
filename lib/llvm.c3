@@ -37,6 +37,8 @@ extern fn int create_execution_engine_for_module(LLVMExecutionEngineRef * ee, LL
 extern fn int run_function(LLVMExecutionEngineRef ee, LLVMValueRef f, usz num_args, LLVMGenericValueRef * args) @extern("LLVMRunFunction");
 extern fn int print_module_to_file(LLVMModuleRef m, char* filename, char** rrror_message) @extern("LLVMPrintModuleToFile");
 extern fn void dispose_message(char* message) @extern("LLVMDisposeMessage");
+extern fn LLVMValueRef get_param(LLVMValueRef fN, usz index) @extern("LLVMGetParam");
+extern fn void set_value_name(LLVMValueRef val, char* name) @extern("LLVMSetValueName");
 
 alias LLVMBool = CInt;
 alias LLVMContextRef = void * ;

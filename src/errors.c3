@@ -29,7 +29,7 @@ fn void print(String file_path, Token token, String message)
             io::print(" ");
         }
 
-        for (int i = 0; i < token.range.length; i++)
+        for (int i = 0; i < token.range.end - token.range.start; i++)
         {
             io::print("^");
         }
@@ -63,7 +63,7 @@ fn void print_node(String file_path, ASTNode node, String message)
             io::print(" ");
         }
 
-        for (int i = 0; i < node.range.length; i++)
+        for (int i = 0; i < node.range.end - node.range.start; i++)
         {
             io::print("^");
         }

@@ -1,13 +1,8 @@
 module lucy::compiler;
 
-import std::io;
-
-import lucy::parser;
-import lucy::node;
-
+import std;
+import lucy;
 import llvm;
-import lucy::errors;
-
 
 struct Compiler
 {
@@ -42,6 +37,14 @@ fn void Compiler.compile(&self)
     {
         self.compile_node(ast);
     }
+
+    char* error;
+    if (llvm::print_module_to_file(self.mod, string::tformat("%s.ll", self.module_name), &error))
+    {
+        io::eprintfn("Failed to write IR: %s", *error);
+        llvm::dispose_message(error);
+        return;
+    }
 }
 
 fn void Compiler.compile_node(&self, ASTNode ast)
@@ -68,8 +71,42 @@ fn void Compiler.compile_def(&self, DefNode node)
         case "int": type = llvm::int32_type();
     }
 
-    LLVMTypeRef fn_type = llvm::function_type(type, null, 0, 0);
+    List{LLVMTypeRef} param_list;
+    bool vararg;
+
+    // TODO: temp, make actually function for all types
+    foreach (parameter : node.parameters)
+    {
+        ParameterNode param = parameter.node.parameter_node;
+
+        if (param.vararg)
+        {
+            vararg = true;
+            break;
+        }
+
+        switch (param.type)
+        {
+            case "str": param_list.push(llvm::pointer_type(llvm::int8_type(), 0));
+            case "str[]": param_list.push(llvm::pointer_type(llvm::pointer_type(llvm::int8_type(), 0), 0));
+            case "int": param_list.push(llvm::int32_type());
+            default: errors::print_node(self.file_path, parameter, string::format(mem, "Invalid type `%s`", param.type));
+        }
+    }
+
+    LLVMTypeRef[] parameters = mem::new_array(LLVMTypeRef, param_list.len());
+
+    for (int i = 0; i < param_list.len(); i++)
+    {
+        parameters[i] = param_list.get(i);
+    }
+
+    LLVMTypeRef fn_type = llvm::function_type(type, parameters, parameters.len, vararg ? 1 : 0);
     LLVMValueRef fN = llvm::add_function(self.mod, node.name, fn_type);
+
+    for (int i = 0; i < parameters.len; i++) {
+        llvm::set_value_name(llvm::get_param(fN, i), node.parameters[i].node.parameter_node.name);
+    }
 
     LLVMBasicBlockRef entry_block = llvm::append_basic_block(fN, "entry");
     llvm::position_builder_at_end(self.builder, entry_block);
@@ -77,14 +114,6 @@ fn void Compiler.compile_def(&self, DefNode node)
     foreach (child : node.children)
     {
         self.compile_node(child);
-    }
-
-    char* error;
-    if (llvm::print_module_to_file(self.mod, string::tformat("%s.ll", self.module_name), &error))
-    {
-        io::eprintfn("Failed to write IR: %s", *error);
-        llvm::dispose_message(error);
-        return;
     }
 }
 
@@ -105,6 +134,7 @@ fn void Compiler.compile_return(&self, ReturnNode node)
     llvm::build_ret(self.builder, value_ref);
 }
 
+// TODO: handle actual types and names
 fn void Compiler.compile_ext(&self, ExtNode node)
 {
     LLVMTypeRef int_type = llvm::int32_type();
