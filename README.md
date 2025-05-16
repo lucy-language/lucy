@@ -61,6 +61,69 @@ clang <file_name>.ll -o output_file_name
 ./build/lucy --help
 ```
 
+### Example of the original version
+
+this is a code example of what is possible in the original version written in kotlin that will soon be possible here too.
+
+#### file raylib.lc
+```lc
+%"raylib";
+
+pkg raylib;
+
+global const LOG_NONE = 7;
+
+global ext void InitWindow(num width, num height, str title) as init_window; # alias is optional
+global ext void CloseWindow() as close_window;
+global ext bool WindowShouldClose() as window_should_close;
+global ext void ClearBackground(num color) as clear_background;
+global ext void BeginDrawing() as begin_drawing;
+global ext void EndDrawing() as end_drawing;
+global ext void SetTraceLogLevel(num level) as set_trace_log_level;
+```
+#### file main.lc
+```lc
+%"c";
+
+pkg main;
+
+import raylib as rl; # alias is optional
+
+ext void printf(str fmt, var str args);
+
+def void main()
+{
+    printf("Hello, World!\n");
+
+    rl.set_trace_log_level(rl.LOG_LONE);
+    rl.init_window(800, 500, "Example window");
+    
+    while (!rl.window_should_close())
+    {
+        rl.begin_drawing();
+        rl.crear_background(0xffccffff); # rgba
+        
+        rl.end_drawing();
+    }
+    
+    rl.close_window();
+}
+```
+
+the command to compile would simply be this
+```bash
+lucy compile main.lc
+```
+as it will automatically compile any used imports and link them with what they require so what it does internally is
+```bash
+clang main.ll raylib.ll -o main -lc -lraylib
+```
+
+you don't have to specify linked libraries like this, it's fully optional but recommended for readability and simplicity. you can remove the link options at the top of the file and run this instead
+```bash
+lucy compile main.lc -lc -lraylib
+```
+
 ## Contributing
 
 Contributions are welcome! Please submit pull requests or open issues for any bugs or feature requests.
