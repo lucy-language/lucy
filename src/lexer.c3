@@ -88,6 +88,9 @@ fn TokenList Lexer.tokenize(&self)
         if (self.current == '[') { tokens.push({ LBRACKET,  "[", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
         if (self.current == ']') { tokens.push({ RBRACKET,  "]", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
         if (self.current == '%') { tokens.push({ PERCENT,   "%", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '@') { tokens.push({ AT,        "@", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '=') { tokens.push({ EQUALS,    "=", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == ':') { tokens.push({ COLON,     ":", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
 
         if (self.current == '+') { tokens.push({ PLUS,   "+", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
         if (self.current == '-') { tokens.push({ MINUS,  "-", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
@@ -234,13 +237,14 @@ fn Token Lexer.identifier(&self)
         return { BOOLEAN, str, { start, self.column }, self.line, self.get_context_lines() };
     }
 
-    if (str == "pkg") return { KW_PKG, str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "def") return { KW_DEF, str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "use") return { KW_USE, str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "ext") return { KW_EXT, str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "var") return { KW_VAR, str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "pkg")    return { KW_PKG, str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "def")    return { KW_DEF, str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "use")    return { KW_USE, str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "ext")    return { KW_EXT, str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "var")    return { KW_VAR, str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "const")  return { KW_CONST, str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "return") return { KW_RETURN, str, { start, self.column }, self.line, self.get_context_lines() };
-
+    if (str == "global") return { KW_GLOBAL, str, { start, self.column }, self.line, self.get_context_lines() };
 
     return { IDENTIFIER, str, { start, self.column }, self.line, self.get_context_lines() };
 }

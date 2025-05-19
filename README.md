@@ -43,6 +43,11 @@ def void greet(str name)
 - clang
 - libLLVM (available from [releases.llvm.org](https://releases.llvm.org/download.html))
 
+## Running the project (no build)
+```bash
+make
+```
+
 ### Building the Compiler
 
 ```bash

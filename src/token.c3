@@ -34,7 +34,10 @@ enum TokenType : (String str)
     LBRACE    = "`{`",
     RBRACE    = "`}`",
     PERIOD    = "`.`",
+    EQUALS    = "`=`",
     COMMA     = "`,`",
+    COLON     = "`:`",
+    AT        = "`@`",
 
     SLASH = "`/`",
     MINUS = "`+`",
@@ -48,6 +51,8 @@ enum TokenType : (String str)
     FLOAT   = "float",
 
     KW_RETURN = "return",
+    KW_GLOBAL = "global",
+    KW_CONST  = "const",
     KW_PKG    = "pkg",
     KW_DEF    = "def",
     KW_USE    = "use",

@@ -1,15 +1,18 @@
-%"c";
+%"c" @linux_x86 @macos_x64;
 
 pkg test;
 
 ext void printf(str fmt, var str args);
 
+const double PI = 3.141592653589793238462643383279502884197;
+global const double E = 2.718281828459045235360287471352662497757;
+
 def int main(str[] args)
 {
-    return 0;
-}
+    var str name = "Alexa";
+    var int age  = 22;
 
-def void greet(str name, bool test)
-{
-#     printf("Hello, %s!\n", name);
+    name = "Kiana";
+
+    return 0;
 }

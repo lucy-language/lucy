@@ -26,10 +26,9 @@ extern fn LLVMValueRef build_ret_void(LLVMBuilderRef builder) @extern("LLVMBuild
 extern fn LLVMValueRef build_ret(LLVMBuilderRef builder, LLVMValueRef v) @extern("LLVMBuildRet");
 extern fn LLVMValueRef build_add(LLVMBuilderRef builder, LLVMValueRef lhs, LLVMValueRef rhs, char * name) @extern("LLVMBuildAdd");
 extern fn LLVMValueRef build_load(LLVMBuilderRef builder, LLVMValueRef ptr, char * name) @extern("LLVMBuildLoad");
-extern fn LLVMValueRef build_store(LLVMBuilderRef builder, LLVMValueRef val, LLVMValueRef ptr) @extern("LLVMBuildStore");
 extern fn LLVMValueRef const_int(LLVMTypeRef ty, ulong n, int sign_extend) @extern("LLVMConstInt");
 extern fn LLVMValueRef const_real(LLVMTypeRef ty, double n) @extern("LLVMConstReal");
-extern fn LLVMValueRef const_string(LLVMContextRef ctx, char * str, usz len, int dont_null_terminate) @extern("LLVMConstString");
+extern fn LLVMValueRef const_string(char* str, usz len, LLVMBool dont_null_terminate) @extern("LLVMConstString");
 extern fn LLVMValueRef const_struct(LLVMValueRef * constant_vals, usz count, int packed) @extern("LLVMConstStruct");
 extern fn int link_in_mcjit() @extern("LLVMLinkInMCJIT");
 extern fn int link_in_interpreter() @extern("LLVMLinkInInterpreter");
@@ -39,6 +38,14 @@ extern fn int print_module_to_file(LLVMModuleRef m, char* filename, char** rrror
 extern fn void dispose_message(char* message) @extern("LLVMDisposeMessage");
 extern fn LLVMValueRef get_param(LLVMValueRef fN, usz index) @extern("LLVMGetParam");
 extern fn void set_value_name(LLVMValueRef val, char* name) @extern("LLVMSetValueName");
+extern fn LLVMValueRef add_global(LLVMModuleRef mod, LLVMTypeRef type, char* name) @extern("LLVMAddGlobal");
+extern fn LLVMValueRef set_initializer(LLVMValueRef global_var, LLVMValueRef constant_val) @extern("LLVMSetInitializer");
+extern fn void set_linkage(LLVMValueRef global, LLVMLinkage linkage) @extern("LLVMSetLinkage");
+extern fn void set_global_constant(LLVMValueRef global, LLVMBool is_constant) @extern("LLVMSetGlobalConstant");
+extern fn void set_unnamed_addr(LLVMValueRef global, LLVMBool has_unnamed_addr) @extern("LLVMSetUnnamedAddr");
+extern fn LLVMTypeRef type_of(LLVMValueRef val) @extern("LLVMTypeOf");
+extern fn LLVMValueRef build_alloca(LLVMBuilderRef builder, LLVMTypeRef type, char* name) @extern("LLVMBuildAlloca");
+extern fn void build_store(LLVMBuilderRef builder, LLVMValueRef val, LLVMValueRef variable) @extern("LLVMBuildStore");
 
 alias LLVMBool = CInt;
 alias LLVMContextRef = void * ;
@@ -67,3 +74,23 @@ alias LLVMNamedMDNodeRef = void * ;
 alias LLVMValueMetadataEntry = void * ;
 alias LLVMInlineAsmDialect = CUInt;
 alias LLVMAttributeRef = void * ;
+
+enum LLVMLinkage
+{
+    EXTERNAL_LINKAGE,
+    AVAILABLE_EXTERNALLY_LINKAGE,
+    LINK_ONCE_ANY_LINKAGE,
+    LINK_ONCE_ODR_LINKAGE,
+    WEAK_ANY_LINKAGE,
+    WEAK_ODR_LINKAGE,
+    APPENDING_LINKAGE,
+    INTERNAL_LINKAGE,
+    PRIVATE_LINKAGE,
+    DLL_IMPORT_LINKAGE,
+    DLL_EXPORT_LINKAGE,
+    EXTERNAL_WEAK_LINKAGE,
+    GHOST_LINKAGE,
+    COMMON_LINKAGE,
+    LINKER_PRIVATE_LINKAGE,
+    LINKER_PRIVATE_WEAK_LINKAGE
+}

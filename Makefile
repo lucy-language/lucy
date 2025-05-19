@@ -1,4 +1,4 @@
-all: clean build run compile
+all: clean build run compile exec
 
 run: build
 	./build/lucy -f test.lc
@@ -13,3 +13,6 @@ clean:
 	rm -rf ./build
 	rm -f *.ll
 	rm -f program
+
+exec: compile
+	./program

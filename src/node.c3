@@ -8,19 +8,23 @@ alias ASTNodeList = List{ASTNode};
 
 enum NodeType
 {
-    FILE,
-    USE,
     PARAMETER,
-    DEF,
+    REASSIGN,
     RETURN,
+    DOUBLE,
+    GLOBAL,
+    FLOAT,
+    CONST,
+    FILE,
+    BOOL,
+    LINK,
+    USE,
+    DEF,
     INT,
     STR,
     BIN,
-    DOUBLE,
-    FLOAT,
-    BOOL,
     EXT,
-    LINK
+    VAR,
 }
 
 struct ASTNode
@@ -34,19 +38,23 @@ struct ASTNode
 
 union Node
 {
-    FileNode         file_node;
-    UseNode          use_node;
+    LinkerOptionNode linker_option_node;
     ParameterNode    parameter_node;
-    DefNode          def_node;
+    ReassignNode     reassign_node;
     ReturnNode       return_node;
+    DoubleNode       double_node;
+    GlobalNode       global_node;
+    FloatNode        float_node;
+    ConstNode        const_node;
+    FileNode         file_node;
+    BoolNode         bool_node;
+    UseNode          use_node;
+    DefNode          def_node;
     IntNode          int_node;
     StrNode          str_node;
     BinNode          bin_node;
-    DoubleNode       double_node;
-    FloatNode        float_node;
-    BoolNode         bool_node;
     ExtNode          ext_node;
-    LinkerOptionNode linker_option_node;
+    VarNode          var_node;
 }
 
 struct FileNode
@@ -123,4 +131,29 @@ struct ExtNode
 struct LinkerOptionNode
 {
     String value;
+}
+
+struct ConstNode
+{
+    String      type;
+    String      name;
+    ASTNodeList value;
+}
+
+struct GlobalNode
+{
+    ASTNodeList node;
+}
+
+struct VarNode
+{
+    String      type;
+    String      name;
+    ASTNodeList value;
+}
+
+struct ReassignNode
+{
+    String      name;
+    ASTNodeList value;
 }

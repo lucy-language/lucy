@@ -66,7 +66,9 @@ fn ASTNode Parser.parse(&self)
         {
             case KW_DEF: children.push(self.def());
             case KW_EXT: children.push(self.ext());
-            default: break;
+            case KW_CONST: children.push(self.const_stmt());
+            case KW_GLOBAL: children.push(self.global());
+            default: errors::print(self.file_path, self.current, string::tformat("statement expected, got %s", self.current.type.str));
         }
     }
 
@@ -91,6 +93,16 @@ fn ASTNodeList Parser.linker_options(&self)
         value.append_chars(self.current.value);
 
         self.try_consume(STRING);
+
+        List{String} platforms;
+
+        while (self.current.type == AT)
+        {
+            self.consume();
+            platforms.push(self.current.value);
+            self.try_consume(IDENTIFIER);
+        }
+
         int end = self.current.range.end;
         self.try_consume(SEMICOLON);
 
@@ -160,30 +172,41 @@ fn ASTNode Parser.def(&self)
 
     self.try_consume(LBRACE);
 
-    // TODO: add actual children
-    if (self.current.type == KW_RETURN)
+    while (self.current.type != RBRACE)
     {
-        self.try_consume(KW_RETURN);
-        ASTNode value = self.expr();
-        self.try_consume(SEMICOLON);
-
-        ASTNodeList value_list;
-        value_list.push(value);
-
-        children.push(
+        switch (self.current.type)
         {
-            RETURN,
-            {
-                .return_node =
-                {
-                    value_list
-                }
-            },
-            {},
-            0,
-            {}
-        });
+            case KW_VAR: children.push(self.var_stmt());
+            case IDENTIFIER: children.push(self.identifier());
+            case KW_RETURN: children.push(self.return_stmt());
+            default: errors::print(self.file_path, self.current, string::tformat("statement expected, got %s", self.current.type.str));
+        }
     }
+
+//    // TODO: add actual children
+//    if (self.current.type == KW_RETURN)
+//    {
+//        self.try_consume(KW_RETURN);
+//        ASTNode value = self.expr();
+//        self.try_consume(SEMICOLON);
+//
+//        ASTNodeList value_list;
+//        value_list.push(value);
+//
+//        children.push(
+//        {
+//            RETURN,
+//            {
+//                .return_node =
+//                {
+//                    value_list
+//                }
+//            },
+//            {},
+//            0,
+//            {}
+//        });
+//    }
 
     self.try_consume(RBRACE);
 
@@ -412,4 +435,125 @@ fn ASTNode Parser.ext(&self)
 
     return { EXT, { .ext_node = { type.copy_str(mem), name.copy_str(mem), parameters, alias_name.copy_str(mem) } },
                                                                              { start, end }, line, context_lines };
+}
+
+fn ASTNode Parser.const_stmt(&self)
+{
+    int line = self.current.line;
+    List{String} context_lines = self.current.context_lines;
+    int start = self.current.range.start;
+    self.consume();
+
+    DString type;
+    defer type.free();
+    type.append_chars(self.current.value);
+    self.try_consume(IDENTIFIER);
+
+    DString name;
+    defer name.free();
+    name.append_chars(self.current.value);
+    self.try_consume(IDENTIFIER);
+
+    self.try_consume(EQUALS);
+    ASTNodeList value;
+    value.push(self.expr());
+
+    int end = self.current.range.end;
+    self.try_consume(SEMICOLON);
+
+    return { CONST, { .const_node = { type.copy_str(mem), name.copy_str(mem), value } }, { start, end }, line,
+                                                                                              context_lines };
+}
+
+fn ASTNode Parser.global(&self)
+{
+    int line = self.current.line;
+    int start = self.current.range.start;
+    List{String} context_lines = self.current.context_lines;
+    self.consume();
+    ASTNodeList node;
+
+    switch (self.current.type)
+    {
+        case KW_DEF: node.push(self.def());
+        case KW_EXT: node.push(self.ext());
+        case KW_CONST: node.push(self.const_stmt());
+        default: errors::print(self.file_path, self.current, string::tformat("statement expected, got %s", self.current.type.str));
+    }
+
+    int end = node[0].range.end;
+
+    return { GLOBAL, { .global_node = { node } }, { start, end }, line, context_lines };
+}
+
+fn ASTNode Parser.var_stmt(&self)
+{
+    int line = self.current.line;
+    int start = self.current.range.start;
+    List{String} context_lines = self.current.context_lines;
+    self.consume();
+
+    DString type;
+    defer type.free();
+    type.append_chars(self.current.value);
+    self.try_consume(IDENTIFIER);
+
+    DString name;
+    defer name.free();
+    name.append_chars(self.current.value);
+    self.try_consume(IDENTIFIER);
+
+    ASTNodeList value;
+
+    if (self.current.type == EQUALS)
+    {
+        self.consume();
+        value.push(self.expr());
+    }
+
+    int end = self.current.range.end;
+    self.try_consume(SEMICOLON);
+
+    return { VAR, { .var_node = { type.copy_str(mem), name.copy_str(mem), value } }, { start, end }, line, context_lines };
+}
+
+fn ASTNode Parser.return_stmt(&self)
+{
+    int line = self.current.line;
+    int start = self.current.range.start;
+    List{String} context_lines = self.current.context_lines;
+    self.consume();
+
+    ASTNodeList value;
+    value.push(self.expr());
+
+    int end = self.current.range.end;
+    self.try_consume(SEMICOLON);
+
+    return { RETURN, { .return_node = { value } }, { start, end }, line, context_lines };
+}
+
+fn ASTNode Parser.identifier(&self)
+{
+    int line = self.current.line;
+    int start = self.current.range.start;
+    List{String} context_lines = self.current.context_lines;
+    DString id;
+    defer id.free();
+    id.append_chars(self.current.value);
+    self.consume();
+
+    if (self.current.type == EQUALS)
+    {
+        self.consume();
+        ASTNodeList value;
+        value.push(self.expr());
+
+        int end = self.current.range.end;
+        self.try_consume(SEMICOLON);
+
+        return { REASSIGN, { .reassign_node = { id.copy_str(mem), value } }, { start, end }, line, context_lines };
+    }
+
+    return {};
 }
