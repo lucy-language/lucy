@@ -15,9 +15,11 @@ enum NodeType
     GLOBAL,
     FLOAT,
     CONST,
+    IDENT,
     FILE,
     BOOL,
     LINK,
+    CALL,
     USE,
     DEF,
     INT,
@@ -46,8 +48,10 @@ union Node
     GlobalNode       global_node;
     FloatNode        float_node;
     ConstNode        const_node;
+    IdentNode        ident_node;
     FileNode         file_node;
     BoolNode         bool_node;
+    CallNode         call_node;
     UseNode          use_node;
     DefNode          def_node;
     IntNode          int_node;
@@ -77,15 +81,15 @@ struct ParameterNode
 
 struct DefNode
 {
-    String      type;
-    String      name;
-    ASTNodeList parameters;
-    ASTNodeList children;
+    List{String} types;
+    String       name;
+    ASTNodeList  parameters;
+    ASTNodeList  children;
 }
 
 struct ReturnNode
 {
-    ASTNodeList value;
+    ASTNodeList values;
 }
 
 struct IntNode
@@ -147,13 +151,24 @@ struct GlobalNode
 
 struct VarNode
 {
-    String      type;
-    String      name;
-    ASTNodeList value;
+    List{String} types;
+    List{String} names;
+    ASTNodeList  value;
 }
 
 struct ReassignNode
 {
     String      name;
     ASTNodeList value;
+}
+
+struct CallNode
+{
+    String      name;
+    ASTNodeList arguments;
+}
+
+struct IdentNode
+{
+    String name;
 }

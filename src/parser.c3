@@ -160,12 +160,42 @@ fn String Parser.path(&self)
 
 fn ASTNode Parser.def(&self)
 {
+    int line = self.current.line;
+    int start = self.current.range.start;
+    List{String} context_lines = self.current.context_lines;
     self.consume();
 
-    String type = self.current.value;
-    self.try_consume(IDENTIFIER);
+    List{String} types;
+    if (self.current.type == LBRACE)
+    {
+        self.consume();
+
+        types.push(self.current.value);
+        self.try_consume(IDENTIFIER);
+
+        self.try_consume(COMMA);
+
+        types.push(self.current.value);
+        self.try_consume(IDENTIFIER);
+
+        while (self.current.type == COMMA)
+        {
+            self.consume();
+
+            types.push(self.current.value);
+            self.try_consume(IDENTIFIER);
+        }
+
+        self.try_consume(RBRACE);
+    } else
+    {
+        types.push(self.current.value);
+        self.try_consume(IDENTIFIER);
+    }
 
     String name = self.def_name();
+    int end = self.tokens[(usz)self.pos - 1].range.end;
+
     ASTNodeList parameters = self.def_parameters();
 
     ASTNodeList children;
@@ -183,34 +213,9 @@ fn ASTNode Parser.def(&self)
         }
     }
 
-//    // TODO: add actual children
-//    if (self.current.type == KW_RETURN)
-//    {
-//        self.try_consume(KW_RETURN);
-//        ASTNode value = self.expr();
-//        self.try_consume(SEMICOLON);
-//
-//        ASTNodeList value_list;
-//        value_list.push(value);
-//
-//        children.push(
-//        {
-//            RETURN,
-//            {
-//                .return_node =
-//                {
-//                    value_list
-//                }
-//            },
-//            {},
-//            0,
-//            {}
-//        });
-//    }
-
     self.try_consume(RBRACE);
 
-    return { .node_type = DEF, .node.def_node = { type, name, parameters, children } };
+    return { DEF, { .def_node = { types, name, parameters, children } }, { start, end }, line, context_lines };
 }
 
 fn String Parser.def_name(&self)
@@ -394,7 +399,10 @@ fn ASTNode Parser.factor(&self)
         case LPAREN:
             self.consume();
             node = self.expr();
+            node.range.start -= 1;
             self.try_consume(RPAREN);
+        case IDENTIFIER:
+            node = self.identifier();
         default:
             errors::print(self.file_path, self.current, "expression expected");
     }
@@ -409,32 +417,26 @@ fn ASTNode Parser.ext(&self)
     int start = self.current.range.start;
     self.consume();
 
-    DString type;
-    defer type.free();
-    type.append_chars(self.current.value);
+    String type = self.current.value;
     self.try_consume(IDENTIFIER);
 
-    DString name;
-    defer name.free();
-    name.append_chars(self.current.value);
+    String name = self.current.value;
     self.try_consume(IDENTIFIER);
 
     ASTNodeList parameters = self.def_parameters();
 
-    DString alias_name;
-    defer alias_name.free();
+    String alias_name;
     if (self.current.type == KW_AS)
     {
         self.consume();
-        alias_name.append_chars(self.current.value);
+        alias_name = self.current.value;
         self.try_consume(IDENTIFIER);
     }
 
     int end = self.current.range.end;
     self.try_consume(SEMICOLON);
 
-    return { EXT, { .ext_node = { type.copy_str(mem), name.copy_str(mem), parameters, alias_name.copy_str(mem) } },
-                                                                             { start, end }, line, context_lines };
+    return { EXT, { .ext_node = { type, name, parameters, alias_name } }, { start, end }, line, context_lines };
 }
 
 fn ASTNode Parser.const_stmt(&self)
@@ -444,14 +446,10 @@ fn ASTNode Parser.const_stmt(&self)
     int start = self.current.range.start;
     self.consume();
 
-    DString type;
-    defer type.free();
-    type.append_chars(self.current.value);
+    String type = self.current.value;
     self.try_consume(IDENTIFIER);
 
-    DString name;
-    defer name.free();
-    name.append_chars(self.current.value);
+    String name = self.current.value;
     self.try_consume(IDENTIFIER);
 
     self.try_consume(EQUALS);
@@ -461,8 +459,7 @@ fn ASTNode Parser.const_stmt(&self)
     int end = self.current.range.end;
     self.try_consume(SEMICOLON);
 
-    return { CONST, { .const_node = { type.copy_str(mem), name.copy_str(mem), value } }, { start, end }, line,
-                                                                                              context_lines };
+    return { CONST, { .const_node = { type, name, value } }, { start, end }, line, context_lines };
 }
 
 fn ASTNode Parser.global(&self)
@@ -493,15 +490,44 @@ fn ASTNode Parser.var_stmt(&self)
     List{String} context_lines = self.current.context_lines;
     self.consume();
 
-    DString type;
-    defer type.free();
-    type.append_chars(self.current.value);
+    List{String} types;
+    if (self.current.type == LBRACE)
+    {
+        self.consume();
+
+        types.push(self.current.value);
+        self.try_consume(IDENTIFIER);
+
+        self.try_consume(COMMA);
+
+        types.push(self.current.value);
+        self.try_consume(IDENTIFIER);
+
+        while (self.current.type == COMMA)
+        {
+            self.consume();
+
+            types.push(self.current.value);
+            self.try_consume(IDENTIFIER);
+        }
+
+        self.try_consume(RBRACE);
+    } else
+    {
+        types.push(self.current.value);
+        self.try_consume(IDENTIFIER);
+    }
+
+    List{String} names;
+    names.push(self.current.value);
     self.try_consume(IDENTIFIER);
 
-    DString name;
-    defer name.free();
-    name.append_chars(self.current.value);
-    self.try_consume(IDENTIFIER);
+    while (self.current.type == COMMA)
+    {
+        self.consume();
+        names.push(self.current.value);
+        self.try_consume(IDENTIFIER);
+    }
 
     ASTNodeList value;
 
@@ -514,7 +540,7 @@ fn ASTNode Parser.var_stmt(&self)
     int end = self.current.range.end;
     self.try_consume(SEMICOLON);
 
-    return { VAR, { .var_node = { type.copy_str(mem), name.copy_str(mem), value } }, { start, end }, line, context_lines };
+    return { VAR, { .var_node = { types, names, value } }, { start, end }, line, context_lines };
 }
 
 fn ASTNode Parser.return_stmt(&self)
@@ -524,13 +550,19 @@ fn ASTNode Parser.return_stmt(&self)
     List{String} context_lines = self.current.context_lines;
     self.consume();
 
-    ASTNodeList value;
-    value.push(self.expr());
+    ASTNodeList values;
+    values.push(self.expr());
+
+    while (self.current.type == COMMA)
+    {
+        self.consume();
+        values.push(self.expr());
+    }
 
     int end = self.current.range.end;
     self.try_consume(SEMICOLON);
 
-    return { RETURN, { .return_node = { value } }, { start, end }, line, context_lines };
+    return { RETURN, { .return_node = { values } }, { start, end }, line, context_lines };
 }
 
 fn ASTNode Parser.identifier(&self)
@@ -538,9 +570,7 @@ fn ASTNode Parser.identifier(&self)
     int line = self.current.line;
     int start = self.current.range.start;
     List{String} context_lines = self.current.context_lines;
-    DString id;
-    defer id.free();
-    id.append_chars(self.current.value);
+    String id = self.current.value;
     self.consume();
 
     if (self.current.type == EQUALS)
@@ -552,8 +582,32 @@ fn ASTNode Parser.identifier(&self)
         int end = self.current.range.end;
         self.try_consume(SEMICOLON);
 
-        return { REASSIGN, { .reassign_node = { id.copy_str(mem), value } }, { start, end }, line, context_lines };
+        return { REASSIGN, { .reassign_node = { id, value } }, { start, end }, line, context_lines };
     }
 
-    return {};
+    if (self.current.type == LPAREN)
+    {
+        self.consume();
+
+        ASTNodeList arguments;
+
+        if (self.current.type != RPAREN)
+        {
+            arguments.push(self.expr());
+        }
+
+        while (self.current.type == COMMA)
+        {
+            self.consume();
+            arguments.push(self.expr());
+        }
+
+        int end = self.current.range.end;
+        self.try_consume(RPAREN);
+
+        return { CALL, { .call_node = { id, arguments } }, { start, end }, line, context_lines };
+    }
+
+    int end = self.tokens[(usz)self.pos - 1].range.end;
+    return { IDENT, { .ident_node = { id } }, { start, end }, line, context_lines };
 }

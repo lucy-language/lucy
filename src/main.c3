@@ -5,6 +5,7 @@ import std::io::file;
 import std::io;
 import std::os;
 
+import lucy::semantic_analyser;
 import lucy::compiler;
 import lucy::parser;
 import lucy::lexer;
@@ -28,12 +29,15 @@ fn int main(String[] args)
     ArgParser arg_parser = { args, options };
     arg_parser.parse();
 
-    String path       = arg_parser.get_arg("file");
-    String content    = read_file(path);
-    Lexer  lexer      = lexer::new(content);
-    Parser parser     = parser::new(lexer, path);
-    Compiler compiler = compiler::new(parser);
+    String path    = arg_parser.get_arg("file");
+    String content = read_file(path);
+    Lexer  lexer   = lexer::new(content);
+    Parser parser  = parser::new(lexer, path);
 
+    SemanticAnalyser semantic_analyser = semantic_analyser::new(parser);
+    semantic_analyser.analyse();
+
+    Compiler compiler = compiler::new(parser);
     compiler.compile();
 
     return 0;

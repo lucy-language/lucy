@@ -68,68 +68,59 @@ fn void Compiler.compile_node(&self, ASTNode ast)
 
 fn void Compiler.compile_def(&self, DefNode node)
 {
-    LLVMTypeRef type;
-
-    switch (node.type)
-    {
-        case "void": type = llvm::void_type();
-        case "double": type = llvm::double_type();
-        case "float": type = llvm::float_type();
-        case "bool": type = llvm::int1_type();
-        case "int": type = llvm::int32_type();
-    }
-
-    List{LLVMTypeRef} param_list;
-    bool vararg;
-
-    // TODO: temp, make actually function for all types
-    foreach (parameter : node.parameters)
-    {
-        ParameterNode param = parameter.node.parameter_node;
-
-        if (param.vararg)
-        {
-            vararg = true;
-            break;
-        }
-
-        switch (param.type)
-        {
-            case "str": param_list.push(llvm::pointer_type(llvm::int8_type(), 0));
-            case "str[]": param_list.push(llvm::pointer_type(llvm::pointer_type(llvm::int8_type(), 0), 0));
-            case "int": param_list.push(llvm::int32_type());
-            default: errors::print_node(self.file_path, parameter, string::format(mem, "Invalid type `%s`", param.type));
-        }
-    }
-
-    LLVMTypeRef[] parameters = mem::new_array(LLVMTypeRef, param_list.len());
-
-    for (int i = 0; i < param_list.len(); i++)
-    {
-        parameters[i] = param_list.get(i);
-    }
-
-    LLVMTypeRef fn_type = llvm::function_type(type, parameters, parameters.len, vararg ? 1 : 0);
-    LLVMValueRef fN = llvm::add_function(self.mod, node.name, fn_type);
-
-    for (int i = 0; i < parameters.len; i++) {
-        llvm::set_value_name(llvm::get_param(fN, i), node.parameters[i].node.parameter_node.name);
-    }
-
-    LLVMBasicBlockRef entry_block = llvm::append_basic_block(fN, "entry");
-    llvm::position_builder_at_end(self.builder, entry_block);
-
-    foreach (child : node.children)
-    {
-        self.compile_node(child);
-    }
+//    LLVMTypeRef type = self.get_type(node.type);
+//
+//    List{LLVMTypeRef} param_list;
+//    bool vararg;
+//
+//    // TODO: temp, make actually function for all types
+//    foreach (parameter : node.parameters)
+//    {
+//        ParameterNode param = parameter.node.parameter_node;
+//
+//        if (param.vararg)
+//        {
+//            vararg = true;
+//            break;
+//        }
+//
+//        switch (param.type)
+//        {
+//            case "str": param_list.push(llvm::pointer_type(llvm::int8_type(), 0));
+//            case "str[]": param_list.push(llvm::pointer_type(llvm::pointer_type(llvm::int8_type(), 0), 0));
+//            case "int": param_list.push(llvm::int32_type());
+//            default: errors::print_node(self.file_path, parameter, string::format(mem, "Invalid type `%s`", param.type));
+//        }
+//    }
+//
+//    LLVMTypeRef[] parameters = mem::new_array(LLVMTypeRef, param_list.len());
+//
+//    for (int i = 0; i < param_list.len(); i++)
+//    {
+//        parameters[i] = param_list.get(i);
+//    }
+//
+//    LLVMTypeRef fn_type = llvm::function_type(type, parameters, parameters.len, vararg ? 1 : 0);
+//    LLVMValueRef fN = llvm::add_function(self.mod, node.name, fn_type);
+//
+//    for (int i = 0; i < parameters.len; i++) {
+//        llvm::set_value_name(llvm::get_param(fN, i), node.parameters[i].node.parameter_node.name);
+//    }
+//
+//    LLVMBasicBlockRef entry_block = llvm::append_basic_block(fN, "entry");
+//    llvm::position_builder_at_end(self.builder, entry_block);
+//
+//    foreach (child : node.children)
+//    {
+//        self.compile_node(child);
+//    }
 }
 
 fn void Compiler.compile_return(&self, ReturnNode node)
 {
     LLVMTypeRef type = llvm::int32_type(); // TODO: figure out type from expression
 
-    ASTNode value = node.value[0];
+    ASTNode value = node.values[0];
 
     // TODO: catch error early
     if (catch value.node.int_node.value.to_long())
@@ -202,6 +193,7 @@ fn LLVMTypeRef Compiler.get_type(&self, String type)
         case "double": return llvm::double_type();
         case "void": return llvm::void_type();
         case "str": return llvm::pointer_type(llvm::int8_type(), 0);
+        // TODO: add tuple functionality
         // TODO: add struct/custom type
     }
 
@@ -223,21 +215,21 @@ fn void Compiler.compile_global(&self, GlobalNode node)
 
 fn void Compiler.compile_var(&self, VarNode node)
 {
-    LLVMValueRef variable = llvm::build_alloca(self.builder, self.get_type(node.type), node.name);
+//    LLVMValueRef variable = llvm::build_alloca(self.builder, self.get_type(node.type), node.name);
 
-    LLVMValueRef value;
-    switch (node.type)
-        {
-            case "bool": value = llvm::const_int(llvm::int1_type(), node.value[0].node.bool_node.value == "true" ? 1 : 0, 0);
-    //        case "char": value = llvm::const_int(llvm::int8_type(), node.value[0].node.char_node.value, 1); // TODO: add char type
-            case "int": value = llvm::const_int(llvm::int32_type(), node.value[0].node.int_node.value.to_int(), 1)!!; // TODO: return llvm::int64_type() if on 64 bit system
-            case "float": value = llvm::const_real(llvm::float_type(), node.value[0].node.float_node.value.to_float())!!;
-            case "double": value = llvm::const_real(llvm::double_type(), node.value[0].node.double_node.value.to_double())!!;
-            case "str": value = llvm::const_string(node.value[0].node.str_node.value, node.value[0].node.str_node.value.len, 1);
-        }
+//    LLVMValueRef value;
+//    switch (node.type)
+//        {
+//            case "bool": value = llvm::const_int(llvm::int1_type(), node.value[0].node.bool_node.value == "true" ? 1 : 0, 0);
+//            case "char": value = llvm::const_int(llvm::int8_type(), node.value[0].node.char_node.value, 1); // TODO: add char type
+//            case "int": value = llvm::const_int(llvm::int32_type(), node.value[0].node.int_node.value.to_int(), 1)!!; // TODO: return llvm::int64_type() if on 64 bit system
+//            case "float": value = llvm::const_real(llvm::float_type(), node.value[0].node.float_node.value.to_float())!!;
+//            case "double": value = llvm::const_real(llvm::double_type(), node.value[0].node.double_node.value.to_double())!!;
+//            case "str": value = llvm::const_string(node.value[0].node.str_node.value, node.value[0].node.str_node.value.len, 1);
+//        }
 
-    self.variables.set(node.name, variable);
-    llvm::build_store(self.builder, value, variable);
+//    self.variables.set(node.name, variable);
+//    llvm::build_store(self.builder, value, variable);
 }
 
 fn void Compiler.compile_reassign(&self, ReassignNode node)

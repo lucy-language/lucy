@@ -71,5 +71,4 @@ fn void print_node(String file_path, ASTNode node, String message)
         io::printfn("Error in file (%s) %d:%d", file_path, node.line, node.range.start);
     }
     io::printn(color_util::COLOR_RESET);
-    os::exit(1); // TODO: remove
 }

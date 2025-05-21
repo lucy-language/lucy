@@ -237,6 +237,7 @@ fn Token Lexer.identifier(&self)
         return { BOOLEAN, str, { start, self.column }, self.line, self.get_context_lines() };
     }
 
+    if (str == "as")     return { KW_AS, str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "pkg")    return { KW_PKG, str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "def")    return { KW_DEF, str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "use")    return { KW_USE, str, { start, self.column }, self.line, self.get_context_lines() };
