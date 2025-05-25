@@ -14,7 +14,7 @@ struct Const
 struct Def
 {
     ASTNode       node;
-    List{String}  types;
+    StringList  types;
     String        name;
 }
 
@@ -34,26 +34,24 @@ struct Var
 struct SemanticAnalyser
 {
     String      file_path;
-    Parser      parser;
+    ASTNode     ast;
     List{Const} constants;
     List{Def}   functions;
     List{Var}   variables;
 }
 
-fn SemanticAnalyser new(Parser parser)
+fn SemanticAnalyser new(String file_path, ASTNode ast)
 {
     return {
-        .file_path = parser.file_path,
-        .parser    = parser
+        .file_path = file_path,
+        .ast       = ast
     };
 }
 
 // TODO: scopes
 fn void SemanticAnalyser.analyse(&self)
 {
-    ASTNode ast = self.parser.parse();
-
-    foreach (node : ast.node.file_node.children)
+    foreach (node : self.ast.node.file_node.children)
     {
         switch (node.node_type)
         {
@@ -72,7 +70,7 @@ fn void SemanticAnalyser.analyse(&self)
         }
     }
 
-    foreach (node : ast.node.file_node.children)
+    foreach (node : self.ast.node.file_node.children)
     {
         self.analyse_node(node);
     }
@@ -109,7 +107,7 @@ fn void SemanticAnalyser.add_const(&self, ASTNode node_in)
 fn void SemanticAnalyser.add_def(&self, ASTNode node_in)
 {
     DefNode node = node_in.node.def_node;
-    List{String} types = node.types;
+    StringList types = node.types;
     String name = node.name;
 
     Def def;
@@ -174,7 +172,7 @@ fn void SemanticAnalyser.add_ext(&self, ASTNode node_in)
         }
     } else
     {
-        List{String} types;
+        StringList types;
         types.push(type);
         self.functions.push({ node_in, types, alias_name != "" ? alias_name : name });
     }
@@ -193,7 +191,7 @@ fn void SemanticAnalyser.analyse_node(&self, ASTNode node)
         case IDENT: self.analyse_ident(node);
         case GLOBAL: self.analyse_global(node);
         case CALL: self.analyse_call(node);
-        default: io::eprintn("oh no! our table! it's broken!");
+        default: break;
     }
 }
 
@@ -202,6 +200,7 @@ fn void SemanticAnalyser.analyse_const(&self, ASTNode node_in)
     ConstNode node = node_in.node.const_node;
     String type = node.type;
     String name = node.name;
+    ASTNode value = node.value[0];
 
     for (int i = 0; i < name.len; i++)
     {
@@ -211,7 +210,12 @@ fn void SemanticAnalyser.analyse_const(&self, ASTNode node_in)
             os::exit(1);
         }
     }
-    // TODO
+
+    if (type != self.get_type(value))
+    {
+        errors::print_node(self.file_path, node.value[0], string::tformat("Expected type `%s`, got `%s`", type, self.get_type(value)));
+        os::exit(1);
+    }
 }
 
 fn void SemanticAnalyser.analyse_reassign(&self, ASTNode node_in)
@@ -258,7 +262,7 @@ fn void SemanticAnalyser.analyse_reassign(&self, ASTNode node_in)
 fn void SemanticAnalyser.analyse_def(&self, ASTNode node_in)
 {
     DefNode node = node_in.node.def_node;
-    List{String} types = node.types;
+    StringList types = node.types;
     String name = node.name;
 
     foreach (child : node.children)
@@ -291,9 +295,8 @@ fn String SemanticAnalyser.get_type(&self, ASTNode node)
 fn void SemanticAnalyser.analyse_var(&self, ASTNode node_in)
 {
     VarNode node = node_in.node.var_node;
-    List{String} types = node.types;
-    List{String} names = node.names;
-    ASTNode value = node.value[0];
+    StringList types = node.types;
+    StringList names = node.names;
 
     foreach (name : names)
     {
@@ -303,9 +306,6 @@ fn void SemanticAnalyser.analyse_var(&self, ASTNode node_in)
             os::exit(1);
         }
     }
-
-
-    self.analyse_node(value);
 
     if (types.len() != names.len())
     {
@@ -322,14 +322,20 @@ fn void SemanticAnalyser.analyse_var(&self, ASTNode node_in)
         }
     } else
     {
-        String name = names[0];
-        String type = types[0];
-        if (self.get_type(value) != type)
+        if (node.value.len() == 1)
         {
-            errors::print_node(self.file_path, node_in, string::tformat("Expected type `%s`, got `%s`", type, self.get_type(value)));
-            os::exit(1);
+            ASTNode value = node.value[0];
+            self.analyse_node(value);
+
+            String name = names[0];
+            String type = types[0];
+            if (self.get_type(value) != type)
+            {
+                errors::print_node(self.file_path, node_in, string::tformat("Expected type `%s`, got `%s`", type, self.get_type(value)));
+                os::exit(1);
+            }
+            self.add_variable(node_in, type, name);
         }
-        self.add_variable(node_in, type, name);
     }
 }
 
@@ -380,7 +386,6 @@ fn String SemanticAnalyser.get_ident_type(&self, ASTNode node_in)
 
     io::eprintfn("Unable to match type `%s`", node_in.node_type);
     os::exit(1);
-    return "";
 }
 
 fn void SemanticAnalyser.analyse_bin(&self, ASTNode node_in)
@@ -456,7 +461,7 @@ fn String SemanticAnalyser.get_call_type(&self, ASTNode node_in)
         }
     }
 
-    List{String} types = def.types;
+    StringList types = def.types;
     if (types.len() > 1)
     {
         // tuple
@@ -475,6 +480,11 @@ fn void SemanticAnalyser.analyse_call(&self, ASTNode node_in)
 {
     CallNode node = node_in.node.call_node;
     String name = node.name;
+
+    foreach (arg : node.arguments)
+    {
+        self.analyse_node(arg);
+    }
 
     bool found;
     foreach (function : self.functions)

@@ -35,7 +35,6 @@ fn String ArgParser.get_arg(&self, String name)
 
     io::eprintfn("%sArgument '%s' is not defined%s", color_util::COLOR_RED, name, color_util::COLOR_RESET);
     os::exit(EXIT_FAILURE);
-    return "";
 }
 
 fn bool ArgParser.has_arg(&self, String name)

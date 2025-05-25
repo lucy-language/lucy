@@ -1,17 +1,16 @@
 module lucy;
 
-import std::core::mem;
-import std::io::file;
-import std::io;
-import std::os;
+import std;
 
 import lucy::semantic_analyser;
 import lucy::compiler;
 import lucy::parser;
 import lucy::lexer;
+import lucy::node;
 
 import argparser;
 import color_util;
+import json;
 
 fn int main(String[] args)
 {
@@ -31,13 +30,18 @@ fn int main(String[] args)
 
     String path    = arg_parser.get_arg("file");
     String content = read_file(path);
-    Lexer  lexer   = lexer::new(content);
-    Parser parser  = parser::new(lexer, path);
 
-    SemanticAnalyser semantic_analyser = semantic_analyser::new(parser);
+    lucy::lexer::Lexer  lexer = lexer::new(content);
+
+    Parser parser  = parser::new(lexer, path);
+    ASTNode ast    = parser.parse();
+
+//    io::printn(json::to_json(ast, mem)!!);
+
+    SemanticAnalyser semantic_analyser = semantic_analyser::new(path, ast);
     semantic_analyser.analyse();
 
-    Compiler compiler = compiler::new(parser);
+    Compiler compiler = compiler::new(path, ast);
     compiler.compile();
 
     return 0;

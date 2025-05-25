@@ -1,12 +1,7 @@
 module lucy::lexer;
 
-import std::collections::list;
-import std::core::dstring;
-import std::ascii;
-import std::io;
-
-import lucy::token;
-import lucy::util;
+import std;
+import lucy;
 
 alias TokenList = List{Token};
 
@@ -118,6 +113,7 @@ fn TokenList Lexer.tokenize(&self)
 fn Token Lexer.string(&self)
 {
     DString result;
+    defer result.free();
     int start = self.column;
 
     self.column++;
@@ -132,12 +128,13 @@ fn Token Lexer.string(&self)
     self.column++;
     self.consume();
 
-    return { STRING, result.str_view(), { start, self.column }, self.line, self.get_context_lines() };
+    return { STRING, result.copy_str(mem), { start, self.column }, self.line, self.get_context_lines() };
 }
 
 fn Token Lexer.number(&self)
 {
     DString result;
+    defer result.free();
     int start = self.column;
 
     if (self.current == '0' && self.peek().in({ 'x', 'X' }))
@@ -155,7 +152,7 @@ fn Token Lexer.number(&self)
             self.consume();
         }
 
-        return { INTEGER, result.str_view(), { start, self.column }, self.line, self.get_context_lines() };
+        return { INTEGER, result.copy_str(mem), { start, self.column }, self.line, self.get_context_lines() };
     }
 
     while (self.current.is_digit())
@@ -221,6 +218,7 @@ fn Token Lexer.number(&self)
 fn Token Lexer.identifier(&self)
 {
     DString result;
+    defer result.free();
     int start = self.column;
 
     while (self.current.is_alnum() || self.current.in({ '_', '$' }))
@@ -230,30 +228,30 @@ fn Token Lexer.identifier(&self)
         self.consume();
     }
 
-    String str = result.str_view();
+    String str = result.copy_str(mem);
 
     if (str.in({ "true", "false" }))
     {
         return { BOOLEAN, str, { start, self.column }, self.line, self.get_context_lines() };
     }
 
-    if (str == "as")     return { KW_AS, str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "pkg")    return { KW_PKG, str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "def")    return { KW_DEF, str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "use")    return { KW_USE, str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "ext")    return { KW_EXT, str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "var")    return { KW_VAR, str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "const")  return { KW_CONST, str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "as")     return { KW_AS,     str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "pkg")    return { KW_PKG,    str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "def")    return { KW_DEF,    str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "use")    return { KW_USE,    str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "ext")    return { KW_EXT,    str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "var")    return { KW_VAR,    str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "const")  return { KW_CONST,  str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "return") return { KW_RETURN, str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "global") return { KW_GLOBAL, str, { start, self.column }, self.line, self.get_context_lines() };
 
     return { IDENTIFIER, str, { start, self.column }, self.line, self.get_context_lines() };
 }
 
-fn List{String} Lexer.get_context_lines(&self)
+fn StringList Lexer.get_context_lines(&self)
 {
     int error_line = self.line;
-    List{String} context_lines;
+    StringList context_lines;
     int current_pos = 0;
     int current_line = 1;
     int line_start = 0;

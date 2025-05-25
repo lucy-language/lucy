@@ -4,29 +4,18 @@ pkg test;
 
 ext int printf(str fmt, var str args);
 
-const double PI = 3.141592653589793238462643383279502884197;
-global const double E = 2.718281828459045235360287471352662497757;
-
-def int greet(str name)
-{
-    return 0;
-}
-
-def int main(str[] args)
-{
-    var str name = "Alexa";
-    var int age  = 22;
-
-    var str test = age;
-
-    var {str, int} name2, age2 = test();
-
-    var int erE = 0;
-
-    return 0;
-}
 
 def {str, int} test()
 {
     return "Kiana", 22;
+}
+
+def int main(str[] args)
+{
+    var {str, int} name, age = test();
+
+    printf("%s\n", name);
+    printf("%d\n", age);
+
+    return 0;
 }

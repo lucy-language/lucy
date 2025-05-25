@@ -85,7 +85,7 @@ fn ASTNodeList Parser.linker_options(&self)
     {
         int line = self.current.line;
         int start = self.current.range.start;
-        List{String} context_lines = self.current.context_lines;
+        StringList context_lines = self.current.context_lines;
         self.consume();
 
         DString value;
@@ -94,7 +94,7 @@ fn ASTNodeList Parser.linker_options(&self)
 
         self.try_consume(STRING);
 
-        List{String} platforms;
+        StringList platforms;
 
         while (self.current.type == AT)
         {
@@ -128,7 +128,7 @@ fn ASTNode Parser.use(&self)
 {
     int line = self.current.line;
     int start = self.current.range.start;
-    List{String} context_lines = self.current.context_lines;
+    StringList context_lines = self.current.context_lines;
     self.try_consume(KW_USE);
 
     String path = self.path();
@@ -162,10 +162,10 @@ fn ASTNode Parser.def(&self)
 {
     int line = self.current.line;
     int start = self.current.range.start;
-    List{String} context_lines = self.current.context_lines;
+    StringList context_lines = self.current.context_lines;
     self.consume();
 
-    List{String} types;
+    StringList types;
     if (self.current.type == LBRACE)
     {
         self.consume();
@@ -207,7 +207,9 @@ fn ASTNode Parser.def(&self)
         switch (self.current.type)
         {
             case KW_VAR: children.push(self.var_stmt());
-            case IDENTIFIER: children.push(self.identifier());
+            case IDENTIFIER:
+                children.push(self.identifier());
+                self.try_consume(SEMICOLON);
             case KW_RETURN: children.push(self.return_stmt());
             default: errors::print(self.file_path, self.current, string::tformat("statement expected, got %s", self.current.type.str));
         }
@@ -247,7 +249,7 @@ fn ASTNodeList Parser.def_parameters(&self)
     {
         int line = self.current.line;
         int start = self.current.range.start;
-        List{String} context_lines = self.current.context_lines;
+        StringList context_lines = self.current.context_lines;
         bool vararg;
         DString type;
         defer type.free();
@@ -282,7 +284,7 @@ fn ASTNodeList Parser.def_parameters(&self)
 
             int other_line = self.current.line;
             int other_start = self.current.range.start;
-            List{String} other_context_lines = self.current.context_lines;
+            StringList other_context_lines = self.current.context_lines;
             bool other_vararg;
             DString other_type;
             defer other_type.free();
@@ -325,7 +327,7 @@ fn ASTNode Parser.expr(&self)
     left.push(node);
 
     int line = node.line;
-    List{String} context_lines = node.context_lines;
+    StringList context_lines = node.context_lines;
     int start = node.range.start;
 
     while (self.current.type == PLUS || self.current.type == MINUS)
@@ -351,7 +353,7 @@ fn ASTNode Parser.term(&self)
     left.push(node);
 
     int line = node.line;
-    List{String} context_lines = node.context_lines;
+    StringList context_lines = node.context_lines;
     int start = node.range.start;
 
     while (self.current.type == STAR || self.current.type == SLASH)
@@ -377,24 +379,19 @@ fn ASTNode Parser.factor(&self)
     switch (self.current.type)
     {
         case INTEGER:
-            node = { INT, { .int_node = { self.current.value } }, self.current.range, self.current.line,
-                                                                           self.current.context_lines };
+            node = { INT, { .int_node = { self.current.value.copy(mem) } }, self.current.range, self.current.line, self.current.context_lines };
             self.consume();
         case DOUBLE:
-            node = { DOUBLE, { .double_node = { self.current.value } }, self.current.range, self.current.line,
-                                                                                 self.current.context_lines };
+            node = { DOUBLE, { .double_node = { self.current.value.copy(mem) } }, self.current.range, self.current.line, self.current.context_lines };
             self.consume();
         case FLOAT:
-            node = { FLOAT, { .float_node = { self.current.value } }, self.current.range, self.current.line,
-                                                                               self.current.context_lines };
+            node = { FLOAT, { .float_node = { self.current.value.copy(mem) } }, self.current.range, self.current.line, self.current.context_lines };
             self.consume();
         case BOOLEAN:
-            node = { BOOL, { .bool_node = { self.current.value } }, self.current.range, self.current.line,
-                                                                             self.current.context_lines };
+            node = { BOOL, { .bool_node = { self.current.value.copy(mem) } }, self.current.range, self.current.line, self.current.context_lines };
             self.consume();
         case STRING:
-            node = { STR, { .str_node = { self.current.value } }, self.current.range, self.current.line,
-                                                                           self.current.context_lines };
+            node = { STR, { .str_node = { self.current.value.copy(mem) } }, self.current.range, self.current.line, self.current.context_lines };
             self.consume();
         case LPAREN:
             self.consume();
@@ -413,7 +410,7 @@ fn ASTNode Parser.factor(&self)
 fn ASTNode Parser.ext(&self)
 {
     int line = self.current.line;
-    List{String} context_lines = self.current.context_lines;
+    StringList context_lines = self.current.context_lines;
     int start = self.current.range.start;
     self.consume();
 
@@ -442,7 +439,7 @@ fn ASTNode Parser.ext(&self)
 fn ASTNode Parser.const_stmt(&self)
 {
     int line = self.current.line;
-    List{String} context_lines = self.current.context_lines;
+    StringList context_lines = self.current.context_lines;
     int start = self.current.range.start;
     self.consume();
 
@@ -466,7 +463,7 @@ fn ASTNode Parser.global(&self)
 {
     int line = self.current.line;
     int start = self.current.range.start;
-    List{String} context_lines = self.current.context_lines;
+    StringList context_lines = self.current.context_lines;
     self.consume();
     ASTNodeList node;
 
@@ -487,10 +484,10 @@ fn ASTNode Parser.var_stmt(&self)
 {
     int line = self.current.line;
     int start = self.current.range.start;
-    List{String} context_lines = self.current.context_lines;
+    StringList context_lines = self.current.context_lines;
     self.consume();
 
-    List{String} types;
+    StringList types;
     if (self.current.type == LBRACE)
     {
         self.consume();
@@ -518,7 +515,7 @@ fn ASTNode Parser.var_stmt(&self)
         self.try_consume(IDENTIFIER);
     }
 
-    List{String} names;
+    StringList names;
     names.push(self.current.value);
     self.try_consume(IDENTIFIER);
 
@@ -547,16 +544,19 @@ fn ASTNode Parser.return_stmt(&self)
 {
     int line = self.current.line;
     int start = self.current.range.start;
-    List{String} context_lines = self.current.context_lines;
+    StringList context_lines = self.current.context_lines;
     self.consume();
 
     ASTNodeList values;
-    values.push(self.expr());
-
-    while (self.current.type == COMMA)
+    if (self.current.type != SEMICOLON)
     {
-        self.consume();
         values.push(self.expr());
+
+        while (self.current.type == COMMA)
+        {
+            self.consume();
+            values.push(self.expr());
+        }
     }
 
     int end = self.current.range.end;
@@ -569,7 +569,7 @@ fn ASTNode Parser.identifier(&self)
 {
     int line = self.current.line;
     int start = self.current.range.start;
-    List{String} context_lines = self.current.context_lines;
+    StringList context_lines = self.current.context_lines;
     String id = self.current.value;
     self.consume();
 

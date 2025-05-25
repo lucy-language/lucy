@@ -1,7 +1,7 @@
 module lucy::token;
 
-import std::collections::list;
-import std::core::string;
+import lucy;
+import std;
 
 struct Range
 {
@@ -15,7 +15,7 @@ struct Token
     String       value;
     Range        range;
     int          line;
-    List{String} context_lines;
+    StringList context_lines;
 }
 
 fn String Token.str_view(&self)
