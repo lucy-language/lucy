@@ -121,6 +121,12 @@ fn Token Lexer.string(&self)
 
     while (self.current != '"')
     {
+        if (self.current == '\\')
+        {
+            result.append_char(self.current);
+            self.consume();
+            self.column++;
+        }
         result.append_char(self.current);
         self.column++;
         self.consume();

@@ -17,6 +17,21 @@ fn int main(String[] args)
     Option[] options =
     {
         {
+            .short_name  = 'l',
+            .long_name   = "lexer",
+            .description = "Stops after the lexing stage",
+            .has_arg     = false,
+            .required    = false
+        },
+        {
+            .short_name  = 'p',
+            .long_name   = "parser",
+            .description = "Stops after the parsing stage",
+            .has_arg     = false,
+            .required    = false
+        },
+        {
+
             .short_name  = 'f',
             .long_name   = "file",
             .description = "The file to compile",
@@ -31,10 +46,26 @@ fn int main(String[] args)
     String path    = arg_parser.get_arg("file");
     String content = read_file(path);
 
-    lucy::lexer::Lexer  lexer = lexer::new(content);
+    lucy::lexer::Lexer lexer = lexer::new(content);
+
+    if (arg_parser.has_arg("lexer"))
+    {
+        foreach(token : lexer.tokenize())
+        {
+            io::printn(token.type);
+        }
+        io::printn("Stopped after the lexing stage");
+        os::exit(0);
+    }
 
     Parser parser  = parser::new(lexer, path);
     ASTNode ast    = parser.parse();
+
+    if (arg_parser.has_arg("parser"))
+    {
+        io::printn("Stopped after the parsing stage");
+        os::exit(0);
+    }
 
 //    io::printn(json::to_json(ast, mem)!!);
 
