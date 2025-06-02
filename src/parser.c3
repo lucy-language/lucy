@@ -319,8 +319,8 @@ fn ASTNodeList Parser.def_parameters(&self)
 fn ASTNode Parser.expr(&self)
 {
     ASTNode node = self.term();
-    ASTNodeList left;
-    left.push(node);
+    ASTNode* left = malloc(ASTNode.sizeof);
+    *left = node;
 
     int line = node.line;
     StringList context_lines = node.context_lines;
@@ -330,12 +330,11 @@ fn ASTNode Parser.expr(&self)
     {
         String operator = self.current.value;
         self.consume();
-        ASTNode term = self.term();
 
-        ASTNodeList right;
-        right.push(term);
+        ASTNode* right = malloc(ASTNode.sizeof);
+        *right = self.term();
 
-        int end = term.range.end;
+        int end = right.range.end;
         node = { BIN, { .bin_node = { operator, left, right } }, { start, end }, line, context_lines };
     }
 
@@ -345,8 +344,8 @@ fn ASTNode Parser.expr(&self)
 fn ASTNode Parser.term(&self)
 {
     ASTNode node = self.factor();
-    ASTNodeList left;
-    left.push(node);
+    ASTNode* left = malloc(ASTNode.sizeof);
+    *left = node;
 
     int line = node.line;
     StringList context_lines = node.context_lines;
@@ -356,12 +355,11 @@ fn ASTNode Parser.term(&self)
     {
         String operator = self.current.value;
         self.consume();
-        ASTNode factor = self.factor();
 
-        ASTNodeList right;
-        right.push(factor);
+        ASTNode* right = malloc(ASTNode.sizeof);
+        *right = self.factor();
 
-        int end = factor.range.end;
+        int end = right.range.end;
         node = { BIN, { .bin_node = { operator, left, right } }, { start, end }, line, context_lines};
     }
 
@@ -449,8 +447,8 @@ fn ASTNode Parser.const_stmt(&self)
     self.try_consume(IDENTIFIER);
 
     self.try_consume(EQUALS);
-    ASTNodeList value;
-    value.push(self.expr());
+    ASTNode* value = malloc(ASTNode.sizeof);
+    *value = self.expr();
 
     int end = self.current.range.end;
     self.try_consume(SEMICOLON);
@@ -464,17 +462,17 @@ fn ASTNode Parser.global(&self)
     int start = self.current.range.start;
     StringList context_lines = self.current.context_lines;
     self.consume();
-    ASTNodeList node;
+    ASTNode* node = malloc(ASTNode.sizeof);
 
     switch (self.current.type)
     {
-        case KW_DEF: node.push(self.def());
-        case KW_EXT: node.push(self.ext());
-        case KW_CONST: node.push(self.const_stmt());
+        case KW_DEF: *node = self.def();
+        case KW_EXT: *node = self.ext();
+        case KW_CONST: *node = self.const_stmt();
         default: errors::print(self.file_path, self.current, string::tformat("statement expected, got %s", self.current.type.str));
     }
 
-    int end = node[0].range.end;
+    int end = node.range.end;
 
     return { GLOBAL, { .global_node = { node } }, { start, end }, line, context_lines };
 }
@@ -525,12 +523,12 @@ fn ASTNode Parser.var_stmt(&self)
         self.try_consume(IDENTIFIER);
     }
 
-    ASTNodeList value;
+    ASTNode* value = malloc(ASTNode.sizeof);
 
     if (self.current.type == EQUALS)
     {
         self.consume();
-        value.push(self.expr());
+        *value = self.expr();
     }
 
     int end = self.current.range.end;
@@ -575,8 +573,8 @@ fn ASTNode Parser.identifier(&self)
     if (self.current.type == EQUALS)
     {
         self.consume();
-        ASTNodeList value;
-        value.push(self.expr());
+        ASTNode* value = malloc(ASTNode.sizeof);
+        *value = self.expr();
 
         int end = self.current.range.end;
         self.try_consume(SEMICOLON);

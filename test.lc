@@ -2,6 +2,9 @@
 
 pkg test;
 
+const int TEST = 22;
+global const int TEST2 = 69;
+
 ext int printf(str fmt, var str args);
 
 

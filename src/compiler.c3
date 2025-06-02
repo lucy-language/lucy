@@ -191,12 +191,12 @@ fn void Compiler.compile_const(&self, ConstNode node, bool global = false)
 
     switch (node.type)
     {
-        case "bool": value = llvm::const_int(llvm::int1_type(), node.value[0].node.bool_node.value == "true" ? 1 : 0, llvm::FALSE);
-        case "char": value = llvm::const_int(llvm::int8_type(), node.value[0].node.char_node.value.to_uchar(), 1)!!;
-        case "int": value = llvm::const_int(llvm::int32_type(), node.value[0].node.int_node.value.to_int(), llvm::TRUE)!!; // TODO: return llvm::int64_type() if on 64 bit system
-        case "float": value = llvm::const_real(llvm::float_type(), node.value[0].node.float_node.value.to_float())!!;
-        case "double": value = llvm::const_real(llvm::double_type(), node.value[0].node.double_node.value.to_double())!!;
-        case "str": value = llvm::const_string(node.value[0].node.str_node.value, node.value[0].node.str_node.value.len, llvm::TRUE);
+        case "bool": value = llvm::const_int(llvm::int1_type(), node.value.node.bool_node.value == "true" ? 1 : 0, llvm::FALSE);
+        case "char": value = llvm::const_int(llvm::int8_type(), node.value.node.char_node.value.to_uchar(), 1)!!;
+        case "int": value = llvm::const_int(llvm::int32_type(), node.value.node.int_node.value.to_int(), llvm::TRUE)!!; // TODO: return llvm::int64_type() if on 64 bit system
+        case "float": value = llvm::const_real(llvm::float_type(), node.value.node.float_node.value.to_float())!!;
+        case "double": value = llvm::const_real(llvm::double_type(), node.value.node.double_node.value.to_double())!!;
+        case "str": value = llvm::const_string(node.value.node.str_node.value, node.value.node.str_node.value.len, llvm::TRUE);
         default:
             io::eprintn("A constant can only be a builtin type");
             os::exit(1);
@@ -245,7 +245,7 @@ fn LLVMTypeRef Compiler.get_type(&self, StringList types)
 
 fn void Compiler.compile_global(&self, GlobalNode node)
 {
-    switch (node.node[0].node_type)
+    switch (node.node.node_type)
     {
         case DEF: break; // TODO
         case EXT: break; // TODO
@@ -256,21 +256,16 @@ fn void Compiler.compile_global(&self, GlobalNode node)
 
 fn void Compiler.compile_var(&self, VarNode node)
 {
-    if (node.value.len() == 0)
-    {
-        return;
-    }
-
     if (node.names.len() == 1)
     {
         LLVMValueRef variable = llvm::build_alloca(self.builder, self.get_type(node.types), node.names[0]);
-        llvm::build_store(self.builder, self.compile_node(node.value[0]), variable);
+        llvm::build_store(self.builder, self.compile_node(*node.value), variable);
 
         self.scope.variables.set(node.names[0], variable);
         return;
     }
 
-    LLVMValueRef value = self.compile_node(node.value[0]);
+    LLVMValueRef value = self.compile_node(*node.value);
     LLVMTypeRef valueType = llvm::type_of(value);
 
     if (llvm::get_type_kind(valueType) == STRUCT_TYPE_KIND)
@@ -292,7 +287,7 @@ fn void Compiler.compile_var(&self, VarNode node)
 
 fn void Compiler.compile_reassign(&self, ReassignNode node)
 {
-    LLVMValueRef value = llvm::const_string(node.value[0].node.str_node.value, node.value[0].node.str_node.value.len, llvm::TRUE);
+    LLVMValueRef value = llvm::const_string(node.value.node.str_node.value, node.value.node.str_node.value.len, llvm::TRUE);
     llvm::build_store(self.builder, value, self.scope.get_var(node.name));
 }
 

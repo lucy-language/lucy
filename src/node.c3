@@ -107,7 +107,7 @@ struct ParameterNode
 
 struct DefNode
 {
-    StringList types;
+    StringList   types;
     String       name;
     ASTNodeList  parameters;
     ASTNodeList  children;
@@ -130,9 +130,9 @@ struct StrNode
 
 struct BinNode
 {
-    String      op;
-    ASTNodeList left;
-    ASTNodeList right;
+    String   op;
+    ASTNode* left;
+    ASTNode* right;
 }
 
 struct DoubleNode
@@ -167,25 +167,25 @@ struct ConstNode
 {
     String      type;
     String      name;
-    ASTNodeList value;
+    ASTNode*    value;
 }
 
 struct GlobalNode
 {
-    ASTNodeList node;
+    ASTNode* node;
 }
 
 struct VarNode
 {
-    StringList  types;
-    StringList  names;
-    ASTNodeList value;
+    StringList types;
+    StringList names;
+    ASTNode*   value;
 }
 
 struct ReassignNode
 {
-    String      name;
-    ASTNodeList value;
+    String   name;
+    ASTNode* value;
 }
 
 struct CallNode

@@ -323,20 +323,17 @@ fn void SemanticAnalyser.analyse_var(&self, ASTNode node_in)
         }
     } else
     {
-        if (node.value.len() == 1)
+        ASTNode value = node.value[0];
+        self.analyse_node(value);
+ 
+        String name = names[0];
+        String type = types[0];
+        if (self.get_type(value) != type)
         {
-            ASTNode value = node.value[0];
-            self.analyse_node(value);
-
-            String name = names[0];
-            String type = types[0];
-            if (self.get_type(value) != type)
-            {
-                errors::print_node(self.file_path, node_in, string::tformat("Expected type `%s`, got `%s`", type, self.get_type(value)));
-                os::exit(1);
-            }
-            self.add_variable(node_in, type, name);
+            errors::print_node(self.file_path, node_in, string::tformat("Expected type `%s`, got `%s`", type, self.get_type(value)));
+            os::exit(1);
         }
+        self.add_variable(node_in, type, name);
     }
 }
 
@@ -392,8 +389,8 @@ fn String SemanticAnalyser.get_ident_type(&self, ASTNode node_in)
 fn void SemanticAnalyser.analyse_bin(&self, ASTNode node_in)
 {
     BinNode node = node_in.node.bin_node;
-    ASTNode left = node.left[0];
-    ASTNode right = node.right[0];
+    ASTNode left = *node.left;
+    ASTNode right = *node.right;
 
     self.analyse_node(left);
     self.analyse_node(right);
