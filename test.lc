@@ -13,6 +13,8 @@ def {str, int} test()
 def int main(str[] args)
 {
     var {str, int} name, age = test();
+    var char c = 'c';
+    printf("%c\n", c);
 
     printf("%s\n", "\"Test\"");
     

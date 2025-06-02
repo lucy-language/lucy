@@ -15,7 +15,7 @@ struct Token
     String       value;
     Range        range;
     int          line;
-    StringList context_lines;
+    StringList   context_lines;
 }
 
 fn String Token.str_view(&self)
@@ -49,6 +49,7 @@ enum TokenType : (String str)
     STRING  = "string",
     DOUBLE  = "double",
     FLOAT   = "float",
+    CHAR    = "char",
 
     KW_RETURN = "return",
     KW_GLOBAL = "global",

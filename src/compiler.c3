@@ -69,6 +69,7 @@ fn LLVMValueRef Compiler.compile_node(&self, ASTNode ast)
         case REASSIGN: self.compile_reassign(ast.node.reassign_node);
         case STR: return self.compile_str(ast.node.str_node);
         case INT: return self.compile_int(ast.node.int_node);
+        case CHAR: return self.compile_char(ast.node.char_node);
         case BOOL: return self.compile_bool(ast.node.bool_node);
         case CALL: return self.compile_call(ast.node.call_node);
         case IDENT: return self.compile_ident(ast.node.ident_node);
@@ -150,7 +151,6 @@ fn void Compiler.compile_return(&self, ReturnNode node)
     }
 }
 
-// TODO: handle actual types and names
 fn void Compiler.compile_ext(&self, ExtNode node)
 {
     StringList types;
@@ -186,18 +186,20 @@ fn void Compiler.compile_ext(&self, ExtNode node)
 
 fn void Compiler.compile_const(&self, ConstNode node, bool global = false)
 {
-    // TODO: figure out types
-
+    
     LLVMValueRef value;
 
     switch (node.type)
     {
         case "bool": value = llvm::const_int(llvm::int1_type(), node.value[0].node.bool_node.value == "true" ? 1 : 0, llvm::FALSE);
-//        case "char": value = llvm::const_int(llvm::int8_type(), node.value[0].node.char_node.value, 1); // TODO: add char type
+        case "char": value = llvm::const_int(llvm::int8_type(), node.value[0].node.char_node.value.to_uchar(), 1)!!;
         case "int": value = llvm::const_int(llvm::int32_type(), node.value[0].node.int_node.value.to_int(), llvm::TRUE)!!; // TODO: return llvm::int64_type() if on 64 bit system
         case "float": value = llvm::const_real(llvm::float_type(), node.value[0].node.float_node.value.to_float())!!;
         case "double": value = llvm::const_real(llvm::double_type(), node.value[0].node.double_node.value.to_double())!!;
         case "str": value = llvm::const_string(node.value[0].node.str_node.value, node.value[0].node.str_node.value.len, llvm::TRUE);
+        default:
+            io::eprintn("A constant can only be a builtin type");
+            os::exit(1);
     }
     LLVMValueRef constant = llvm::add_global(self.mod, llvm::type_of(value), node.name);
 
@@ -321,6 +323,17 @@ fn LLVMValueRef Compiler.compile_int(&self, IntNode node)
 fn LLVMValueRef Compiler.compile_bool(&self, BoolNode node)
 {
     return llvm::const_int(llvm::int1_type(), node.value == "true" ? 1 : 0, llvm::FALSE);
+}
+
+fn LLVMValueRef Compiler.compile_char(&self, CharNode node)
+{
+    char value = node.value[0];
+    if (value == '\\')
+    {
+        value = node.value[1];
+    }
+
+    return llvm::const_int(llvm::int8_type(), value, llvm::FALSE);
 }
 
 fn LLVMValueRef Compiler.compile_call(&self, CallNode node)

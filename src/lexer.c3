@@ -101,6 +101,7 @@ fn TokenList Lexer.tokenize(&self)
         }
 
         if (self.current == '"') tokens.push(self.string());
+        if (self.current == '\'') tokens.push(self.character());
         if (self.current.is_digit()) tokens.push(self.number());
         if (self.current == '$' || self.current.is_alpha()) tokens.push(self.identifier());
     }
@@ -135,6 +136,33 @@ fn Token Lexer.string(&self)
     self.consume();
 
     return { STRING, result.copy_str(mem), { start, self.column }, self.line, self.get_context_lines() };
+}
+
+fn Token Lexer.character(&self)
+{
+    DString result;
+    defer result.free();
+    int start = self.column;
+
+    self.column++;
+    self.consume();
+    
+    if (self.current != '\'')
+    {
+        if (self.current == '\\')
+        {
+            result.append_char(self.current);
+            self.consume();
+            self.column++;
+        }
+        result.append_char(self.current);
+        self.column++;
+        self.consume();
+    }
+    self.column++;
+    self.consume();
+
+    return { CHAR, result.copy_str(mem), { start, self.column }, self.line, self.get_context_lines() };
 }
 
 fn Token Lexer.number(&self)

@@ -21,6 +21,7 @@ enum NodeType
     BOOL,
     LINK,
     CALL,
+    CHAR,
     USE,
     DEF,
     INT,
@@ -44,6 +45,7 @@ fn void? ASTNode.to_json(&self, DString* dest) {
 		case BOOL:      serialize::add_json(self.node.bool_node, dest)!;
 		case LINK:      serialize::add_json(self.node.linker_option_node, dest)!;
 		case CALL:      serialize::add_json(self.node.call_node, dest)!;
+        case CHAR:      serialize::add_json(self.node.char_node, dest)!;
 		case USE:       serialize::add_json(self.node.use_node, dest)!;
 		case DEF:       serialize::add_json(self.node.def_node, dest)!;
 		case INT:       serialize::add_json(self.node.int_node, dest)!;
@@ -71,6 +73,7 @@ struct ASTNode
         FileNode         file_node;
         BoolNode         bool_node;
         CallNode         call_node;
+        CharNode         char_node;
         UseNode          use_node;
         DefNode          def_node;
         IntNode          int_node;
@@ -194,4 +197,9 @@ struct CallNode
 struct IdentNode
 {
     String name;
+}
+
+struct CharNode
+{
+    String value;
 }

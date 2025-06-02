@@ -43,8 +43,7 @@ fn void Parser.try_consume(&self, TokenType type)
         self.consume();
     } else
     {
-        errors::print(self.file_path, self.current, string::tformat("%s expected, got %s", type.str,
-                                                                            self.current.type.str));
+        errors::print(self.file_path, self.current, string::tformat("%s expected, got %s", type.str, self.current.type.str));
     }
 }
 
@@ -106,8 +105,7 @@ fn ASTNodeList Parser.linker_options(&self)
         int end = self.current.range.end;
         self.try_consume(SEMICOLON);
 
-        linker_options.push({ LINK, { .linker_option_node = { value.copy_str(mem) } }, { start, end }, line,
-                                                                                           context_lines });
+        linker_options.push({ LINK, { .linker_option_node = { value.copy_str(mem) } }, { start, end }, line, context_lines });
     }
 
     return linker_options;
@@ -275,8 +273,7 @@ fn ASTNodeList Parser.def_parameters(&self)
         String name = self.current.value;
         self.try_consume(IDENTIFIER);
 
-        parameters.push({ PARAMETER, { .parameter_node = { vararg, type.copy_str(mem), name } }, { start, end },
-                                                                                         line, context_lines });
+        parameters.push({ PARAMETER, { .parameter_node = { vararg, type.copy_str(mem), name } }, { start, end }, line, context_lines });
 
         while (self.current.type == COMMA)
         {
@@ -310,8 +307,7 @@ fn ASTNodeList Parser.def_parameters(&self)
             String other_name = self.current.value;
             self.try_consume(IDENTIFIER);
 
-            parameters.push({ PARAMETER, { .parameter_node = { other_vararg, other_type.copy_str(mem), other_name } },
-                                                       { other_start, other_end }, other_line, other_context_lines });
+            parameters.push({ PARAMETER, { .parameter_node = { other_vararg, other_type.copy_str(mem), other_name } }, { other_start, other_end }, other_line, other_context_lines });
         }
     }
 
@@ -392,6 +388,9 @@ fn ASTNode Parser.factor(&self)
             self.consume();
         case STRING:
             node = { STR, { .str_node = { self.current.value.copy(mem) } }, self.current.range, self.current.line, self.current.context_lines };
+            self.consume();
+        case CHAR:
+            node = { CHAR, { .char_node = { self.current.value.copy(mem) } }, self.current.range, self.current.line, self.current.context_lines };
             self.consume();
         case LPAREN:
             self.consume();

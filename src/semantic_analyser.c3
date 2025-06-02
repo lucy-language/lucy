@@ -14,7 +14,7 @@ struct Const
 struct Def
 {
     ASTNode       node;
-    StringList  types;
+    StringList    types;
     String        name;
 }
 
@@ -281,6 +281,7 @@ fn String SemanticAnalyser.get_type(&self, ASTNode node)
         case INT:    return "int";
         case STR:    return "str";
         case DOUBLE: return "double";
+        case CHAR:   return "char";
         case FLOAT:  return "float";
         case IDENT:  return self.get_ident_type(node);
         case BIN:    return self.get_type(node.node.bin_node.left[0]);
