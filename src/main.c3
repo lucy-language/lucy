@@ -61,6 +61,8 @@ fn int main(String[] args)
     Parser parser  = parser::new(lexer, path);
     ASTNode ast    = parser.parse();
 
+    io::printn(json::to_json(ast, mem)!!);
+
     if (arg_parser.has_arg("parser"))
     {
         io::printn("Stopped after the parsing stage");

@@ -116,7 +116,7 @@ fn void Compiler.compile_def(&self, DefNode node)
     LLVMValueRef fN = llvm::add_function(self.mod, node.name, fn_type);
 
     for (int i = 0; i < parameters.len; i++) {
-        llvm::set_value_name(llvm::get_param(fN, i), node.parameters[i].node.parameter_node.name);
+        llvm::set_value_name(llvm::get_param(fN, i), (node.parameters)[i].node.parameter_node.name);
     }
 
     LLVMBasicBlockRef entry_block = llvm::append_basic_block(fN, "entry");
@@ -132,22 +132,22 @@ fn void Compiler.compile_def(&self, DefNode node)
 
 fn void Compiler.compile_return(&self, ReturnNode node)
 {
-    ASTNodeList values = node.values;
-    if (values.len() == 0)
+    ASTNode[] values = node.values;
+    if (values.len == 0)
     {
         llvm::build_ret_void(self.builder);
-    } else if (values.len() == 1)
+    } else if (values.len == 1)
     {
         llvm::build_ret(self.builder, self.compile_node(values[0]));
     } else
     {
-        LLVMValueRef[] llvm_values = mem::new_array(LLVMValueRef, values.len());
+        LLVMValueRef[] llvm_values = mem::new_array(LLVMValueRef, values.len);
         for (int i = 0; i < llvm_values.len; i++)
         {
             llvm_values[i] = self.compile_node(values[i]);
         }
 
-        llvm::build_ret(self.builder, llvm::const_struct(llvm_values, values.len(), llvm::FALSE));
+        llvm::build_ret(self.builder, llvm::const_struct(llvm_values, values.len, llvm::FALSE));
     }
 }
 
@@ -167,7 +167,7 @@ fn void Compiler.compile_ext(&self, ExtNode node)
         }
     }
 
-    usz size = vararg ? node.parameters.len() - 1 : node.parameters.len();
+    usz size = vararg ? node.parameters.len - 1 : node.parameters.len;
     LLVMTypeRef[] llvm_param_types = mem::new_array(LLVMTypeRef, size);
     for (int i = 0; i < size; i++)
     {
@@ -343,8 +343,8 @@ fn LLVMValueRef Compiler.compile_call(&self, CallNode node)
     LLVMValueRef function = def.function;
     LLVMTypeRef function_type = def.type;
 
-    LLVMValueRef[] llvm_args = mem::new_array(LLVMValueRef, node.arguments.len());
-    for (int i = 0; i < node.arguments.len(); ++i) {
+    LLVMValueRef[] llvm_args = mem::new_array(LLVMValueRef, node.arguments.len);
+    for (int i = 0; i < node.arguments.len; ++i) {
         ASTNode arg_node = node.arguments[i];
         LLVMValueRef arg_value = self.compile_node(arg_node);
         llvm_args[i] = arg_value;
