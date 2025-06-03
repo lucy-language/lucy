@@ -165,31 +165,31 @@ fn ASTNode Parser.def(&self)
     StringList context_lines = self.current.context_lines;
     self.consume();
 
-    StringList types;
+    String[] types;
     if (self.current.type == LBRACE)
     {
         self.consume();
 
-        types.push(self.current.value);
+        types = util::array_insert(String, types, self.current.value);
         self.try_consume(IDENTIFIER);
 
         self.try_consume(COMMA);
 
-        types.push(self.current.value);
+        types = util::array_insert(String, types, self.current.value);
         self.try_consume(IDENTIFIER);
 
         while (self.current.type == COMMA)
         {
             self.consume();
 
-            types.push(self.current.value);
+            types = util::array_insert(String, types, self.current.value);
             self.try_consume(IDENTIFIER);
         }
 
         self.try_consume(RBRACE);
     } else
     {
-        types.push(self.current.value);
+        types = util::array_insert(String, types, self.current.value);
         self.try_consume(IDENTIFIER);
     }
 
@@ -274,7 +274,7 @@ fn ASTNode[] Parser.def_parameters(&self)
         String name = self.current.value;
         self.try_consume(IDENTIFIER);
 
-        util::array_insert(ASTNode, parameters, (ASTNode){ PARAMETER, { .parameter_node = { vararg, type.copy_str(mem), name } }, { start, end }, line, context_lines });
+        parameters = util::array_insert(ASTNode, parameters, (ASTNode){ PARAMETER, { .parameter_node = { vararg, type.copy_str(mem), name } }, { start, end }, line, context_lines });
 
         while (self.current.type == COMMA)
         {
@@ -308,7 +308,7 @@ fn ASTNode[] Parser.def_parameters(&self)
             String other_name = self.current.value;
             self.try_consume(IDENTIFIER);
 
-            util::array_insert(ASTNode, parameters, (ASTNode){ PARAMETER, { .parameter_node = { other_vararg, other_type.copy_str(mem), other_name } }, { other_start, other_end }, other_line, other_context_lines });
+            parameters = util::array_insert(ASTNode, parameters, (ASTNode){ PARAMETER, { .parameter_node = { other_vararg, other_type.copy_str(mem), other_name } }, { other_start, other_end }, other_line, other_context_lines });
         }
     }
 
@@ -485,42 +485,42 @@ fn ASTNode Parser.var_stmt(&self)
     StringList context_lines = self.current.context_lines;
     self.consume();
 
-    StringList types;
+    String[] types;
     if (self.current.type == LBRACE)
     {
         self.consume();
 
-        types.push(self.current.value);
+        types = util::array_insert(String, types, self.current.value);
         self.try_consume(IDENTIFIER);
 
         self.try_consume(COMMA);
 
-        types.push(self.current.value);
+        types = util::array_insert(String, types, self.current.value);
         self.try_consume(IDENTIFIER);
 
         while (self.current.type == COMMA)
         {
             self.consume();
 
-            types.push(self.current.value);
+            types = util::array_insert(String, types, self.current.value);
             self.try_consume(IDENTIFIER);
         }
 
         self.try_consume(RBRACE);
     } else
     {
-        types.push(self.current.value);
+        types = util::array_insert(String, types, self.current.value);
         self.try_consume(IDENTIFIER);
     }
 
-    StringList names;
-    names.push(self.current.value);
+    String[] names;
+    names = util::array_insert(String, names, self.current.value);
     self.try_consume(IDENTIFIER);
 
     while (self.current.type == COMMA)
     {
         self.consume();
-        names.push(self.current.value);
+        names = util::array_insert(String, names, self.current.value);
         self.try_consume(IDENTIFIER);
     }
 

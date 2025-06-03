@@ -37,6 +37,13 @@ fn int main(String[] args)
             .description = "The file to compile",
             .has_arg     = true,
             .required    = true
+        },
+        {
+            .short_name  = 't',
+            .long_name   = "tree",
+            .description = "Prints the AST in JSON format to stdout",
+            .has_arg     = false,
+            .required    = false
         }
     };
 
@@ -60,8 +67,11 @@ fn int main(String[] args)
 
     Parser parser  = parser::new(lexer, path);
     ASTNode ast    = parser.parse();
-
-    io::printn(json::to_json(ast, mem)!!);
+    
+    if (arg_parser.has_arg("tree"))
+    {
+        io::printn(json::to_json(ast, mem)!!);
+    }
 
     if (arg_parser.has_arg("parser"))
     {

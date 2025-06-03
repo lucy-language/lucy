@@ -13,9 +13,9 @@ struct Const
 
 struct Def
 {
-    ASTNode       node;
-    StringList    types;
-    String        name;
+    ASTNode  node;
+    String[] types;
+    String   name;
 }
 
 struct Parameter
@@ -107,7 +107,7 @@ fn void SemanticAnalyser.add_const(&self, ASTNode node_in)
 fn void SemanticAnalyser.add_def(&self, ASTNode node_in)
 {
     DefNode node = node_in.node.def_node;
-    StringList types = node.types;
+    String[] types = node.types;
     String name = node.name;
 
     Def def;
@@ -172,9 +172,7 @@ fn void SemanticAnalyser.add_ext(&self, ASTNode node_in)
         }
     } else
     {
-        StringList types;
-        types.push(type);
-        self.functions.push({ node_in, types, alias_name != "" ? alias_name : name });
+        self.functions.push({ node_in, (String[]){ type }, alias_name != "" ? alias_name : name });
     }
 }
 
@@ -262,7 +260,7 @@ fn void SemanticAnalyser.analyse_reassign(&self, ASTNode node_in)
 fn void SemanticAnalyser.analyse_def(&self, ASTNode node_in)
 {
     DefNode node = node_in.node.def_node;
-    StringList types = node.types;
+    String[] types = node.types;
     String name = node.name;
 
     foreach (child : node.children)
@@ -296,8 +294,8 @@ fn String SemanticAnalyser.get_type(&self, ASTNode node)
 fn void SemanticAnalyser.analyse_var(&self, ASTNode node_in)
 {
     VarNode node = node_in.node.var_node;
-    StringList types = node.types;
-    StringList names = node.names;
+    String[] types = node.types;
+    String[] names = node.names;
 
     foreach (name : names)
     {
@@ -308,18 +306,18 @@ fn void SemanticAnalyser.analyse_var(&self, ASTNode node_in)
         }
     }
 
-    if (types.len() != names.len())
+    if (types.len != names.len)
     {
-        errors::print_node(self.file_path, node_in, string::tformat("Tuple requires %d fields, got %d", types.len(), names.len()));
+        errors::print_node(self.file_path, node_in, string::tformat("Tuple requires %d fields, got %d", types.len, names.len));
         os::exit(1);
     }
 
-    if (types.len() > 1)
+    if (types.len > 1)
     {
         // tuple
-        for (int i = 0; i < types.len(); i++)
+        for (int i = 0; i < types.len; i++)
         {
-            self.add_variable(node_in, types.get(i), names.get(i));
+            self.add_variable(node_in, types[i], names[i]);
         }
     } else
     {
@@ -459,8 +457,8 @@ fn String SemanticAnalyser.get_call_type(&self, ASTNode node_in)
         }
     }
 
-    StringList types = def.types;
-    if (types.len() > 1)
+    String[] types = def.types;
+    if (types.len > 1)
     {
         // tuple
 

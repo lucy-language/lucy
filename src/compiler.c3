@@ -153,9 +153,7 @@ fn void Compiler.compile_return(&self, ReturnNode node)
 
 fn void Compiler.compile_ext(&self, ExtNode node)
 {
-    StringList types;
-    types.push(node.type);
-    LLVMTypeRef type = self.get_type(types);
+    LLVMTypeRef type = self.get_type((String[]){ node.type });
 
     bool vararg;
     foreach (param : node.parameters)
@@ -172,10 +170,7 @@ fn void Compiler.compile_ext(&self, ExtNode node)
     for (int i = 0; i < size; i++)
     {
         ParameterNode param = node.parameters[i].node.parameter_node;
-        StringList param_types;
-        param_types.push(param.type);
-
-        llvm_param_types[i] = self.get_type(param_types);
+        llvm_param_types[i] = self.get_type((String[]){ param.type });
     }
 
     LLVMTypeRef fn_type = llvm::function_type(type, llvm_param_types, llvm_param_types.len, vararg ? llvm::TRUE : llvm::FALSE);
@@ -209,9 +204,9 @@ fn void Compiler.compile_const(&self, ConstNode node, bool global = false)
     llvm::set_unnamed_addr(constant, llvm::TRUE);
 }
 
-fn LLVMTypeRef Compiler.get_type(&self, StringList types)
+fn LLVMTypeRef Compiler.get_type(&self, String[] types)
 {
-    if (types.len() == 1)
+    if (types.len == 1)
     {
         String type = types[0];
         switch (type)
@@ -227,13 +222,10 @@ fn LLVMTypeRef Compiler.get_type(&self, StringList types)
         }
     } else
     {
-        LLVMTypeRef[] llvm_types = mem::new_array(LLVMTypeRef, types.len());
+        LLVMTypeRef[] llvm_types = mem::new_array(LLVMTypeRef, types.len);
         for (int i = 0; i < llvm_types.len; i++)
         {
-            StringList tmp;
-            tmp.init(mem, String.sizeof);
-            tmp.push(types[i]);
-            llvm_types[i] = self.get_type(tmp);
+            llvm_types[i] = self.get_type((String[]){ types[i] });
         }
 
         return llvm::struct_type(llvm_types, llvm_types.len, llvm::FALSE);
@@ -256,7 +248,7 @@ fn void Compiler.compile_global(&self, GlobalNode node)
 
 fn void Compiler.compile_var(&self, VarNode node)
 {
-    if (node.names.len() == 1)
+    if (node.names.len == 1)
     {
         LLVMValueRef variable = llvm::build_alloca(self.builder, self.get_type(node.types), node.names[0]);
         llvm::build_store(self.builder, self.compile_node(*node.value), variable);

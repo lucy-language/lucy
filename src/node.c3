@@ -4,7 +4,6 @@ import std;
 import lucy::token;
 import json::serialize;
 
-alias ASTNodeList = List{ASTNode};
 alias StringList = List{String};
 
 enum NodeType
@@ -35,31 +34,6 @@ struct JsonElement
 {
     NodeType type;
     void*    node;
-}
-
-fn void? ASTNode.to_json(&self, DString* dest) {
-	switch (self.node_type) {
-		case PARAMETER: serialize::add_json((JsonElement){ self.node_type, &self.node.parameter_node }, dest)!;
-		case REASSIGN:  serialize::add_json((JsonElement){ self.node_type, &self.node.reassign_node }, dest)!;
-		case RETURN:    serialize::add_json((JsonElement){ self.node_type, &self.node.return_node }, dest)!;
-		case DOUBLE:    serialize::add_json((JsonElement){ self.node_type, &self.node.double_node }, dest)!;
-		case GLOBAL:    serialize::add_json((JsonElement){ self.node_type, &self.node.global_node }, dest)!;
-		case FLOAT:     serialize::add_json((JsonElement){ self.node_type, &self.node.float_node }, dest)!;
-		case CONST:     serialize::add_json((JsonElement){ self.node_type, &self.node.const_node }, dest)!;
-		case IDENT:     serialize::add_json((JsonElement){ self.node_type, &self.node.ident_node }, dest)!;
-		case FILE:      serialize::add_json((JsonElement){ self.node_type, &self.node.file_node }, dest)!;
-		case BOOL:      serialize::add_json((JsonElement){ self.node_type, &self.node.bool_node }, dest)!;
-		case LINK:      serialize::add_json((JsonElement){ self.node_type, &self.node.linker_option_node }, dest)!;
-		case CALL:      serialize::add_json((JsonElement){ self.node_type, &self.node.call_node }, dest)!;
-        case CHAR:      serialize::add_json((JsonElement){ self.node_type, &self.node.char_node }, dest)!;
-		case USE:       serialize::add_json((JsonElement){ self.node_type, &self.node.use_node }, dest)!;
-		case DEF:       serialize::add_json((JsonElement){ self.node_type, &self.node.def_node }, dest)!;
-		case INT:       serialize::add_json((JsonElement){ self.node_type, &self.node.int_node }, dest)!;
-		case STR:       serialize::add_json((JsonElement){ self.node_type, &self.node.str_node }, dest)!;
-		case BIN:       serialize::add_json((JsonElement){ self.node_type, &self.node.bin_node }, dest)!;
-		case EXT:       serialize::add_json((JsonElement){ self.node_type, &self.node.ext_node }, dest)!;
-		case VAR:       serialize::add_json((JsonElement){ self.node_type, &self.node.var_node }, dest)!;
-	}
 }
 
 struct ASTNode
@@ -114,10 +88,10 @@ struct ParameterNode
 
 struct DefNode
 {
-    StringList types;
-    String     name;
-    ASTNode[]  parameters;
-    ASTNode[]  children;
+    String[]  types;
+    String    name;
+    ASTNode[] parameters;
+    ASTNode[] children;
 }
 
 struct ReturnNode
@@ -185,9 +159,9 @@ struct GlobalNode
 
 struct VarNode
 {
-    StringList types;
-    StringList names;
-    ASTNode*   value;
+    String[] types;
+    String[] names;
+    ASTNode* value;
 }
 
 struct ReassignNode
