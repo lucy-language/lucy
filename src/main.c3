@@ -68,7 +68,6 @@ fn int main(String[] args)
         {
             io::printn(token.type);
         }
-        io::printn("Stopped after the lexing stage");
         os::exit(0);
     }
 
@@ -87,7 +86,6 @@ fn int main(String[] args)
 
     if (arg_parser.has_arg("parser"))
     {
-        io::printn("Stopped after the parsing stage");
         os::exit(0);
     }
 
