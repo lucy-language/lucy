@@ -76,12 +76,12 @@ fn int main(String[] args)
     
     if (arg_parser.has_arg("tree"))
     {
-        io::printn(json::to_json(ast, mem)!!);
+        io::printn(json::to_json(ast, mem, true)!!);
     }
 
     if (arg_parser.has_arg("ast"))
     {
-        file::save("ast.json", json::to_json(ast, mem)!!)!!;
+        file::save("ast.json", json::to_json(ast, mem, true)!!)!!;
     }
 
     if (arg_parser.has_arg("parser"))
@@ -89,12 +89,12 @@ fn int main(String[] args)
         os::exit(0);
     }
 
-//    io::printn(json::to_json(ast, mem)!!);
-
     SemanticAnalyser semantic_analyser = semantic_analyser::new(path, ast);
     semantic_analyser.analyse();
-
-    Compiler compiler = compiler::new(path, ast);
+    
+    // Need to reinstantiate because json fucks it up somehow
+    parser = parser::new(lexer, path);
+    Compiler compiler = compiler::new(path, parser.parse());
     compiler.compile();
 
     return 0;
@@ -102,7 +102,7 @@ fn int main(String[] args)
 
 fn String read_file(String path)
 {
-    File? file     = file::open(path, "r");
+    File? file = file::open(path, "r");
 
     if (catch file)
     {

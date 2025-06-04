@@ -1,7 +1,7 @@
 all: clean build run compile exec
 
 run: build
-	./build/lucy -f test.lc --tree
+	./build/lucy -f test.lc --ast
 
 compile: run
 	clang *.ll -o program

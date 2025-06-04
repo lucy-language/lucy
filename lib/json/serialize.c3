@@ -1,9 +1,11 @@
 module json::serialize;
-import std::core;
+import std::core, std::io;
 
-macro void? add_json(src, DString* dest) {
+const SPACES = 4;
+
+macro void? add_json(src, DString* dest, bool pretty = false, int indent = 0) {
 	$if ($defined($typeof(src).to_json)):
-		src.to_json(dest)!;
+		src.to_json(dest, pretty, indent)!;
 		return;
 	$endif
 
@@ -40,7 +42,7 @@ macro void? add_json(src, DString* dest) {
 			// Check Maybe first
 			$if ($typeof(src).nameof == "Maybe"):
 				if (src.has_value) {
-					add_json(src.$eval($typeof(src).membersof[0].nameof), dest)!!;
+					add_json(src.$eval($typeof(src).membersof[0].nameof), dest, pretty, indent)!!;
 				} else {
 					dest.appendf("null");
 				}
@@ -48,12 +50,14 @@ macro void? add_json(src, DString* dest) {
 			$endif
 
 			$if ($typeof(src).nameof == "HashMap"):
-				add_hashmap(src, dest)!!;
+				add_hashmap(src, dest, pretty, indent)!!;
 				return;
 			$endif
 
 			// Not Maybe, just regular struct
 			dest.append("{");
+            if (pretty) dest.append("\n");
+            indent++;
 			int members_written;
 			$foreach $member : $typeof(src).membersof:
 				$if ($member.kindof == TypeKind.UNION):
@@ -76,33 +80,79 @@ macro void? add_json(src, DString* dest) {
 						} else {
 							if (members_written > 0) {
 								dest.append(",");
+                                if (pretty) dest.append("\n");
 							}
+                            if (pretty)
+                            {
+                                for (int i = 0; i < indent * SPACES; i++)
+                                {
+                                    dest.append(" ");
+                                }
+                            }
 							dest.appendf(`"%s":`, $member.nameof);
-							add_json(src.$eval($member.nameof), dest)!!;
+                            if (pretty) dest.append(" ");
+							add_json(src.$eval($member.nameof), dest, pretty, indent)!!;
 							members_written += 1;
 						}
 					$else
 						if (members_written > 0) {
 							dest.append(",");
+                            if (pretty) dest.append("\n");
 						}
+                        if (pretty)
+                        {
+                            for (int i = 0; i < indent * SPACES; i++)
+                            {
+                                dest.append(" ");
+                            }
+                        }
 						dest.appendf(`"%s":`, $member.nameof);
-						add_json(src.$eval($member.nameof), dest)!!;
+                        if (pretty) dest.append(" ");
+						add_json(src.$eval($member.nameof), dest, pretty, indent)!!;
 						members_written += 1;
 					$endif
 				$endif
 			$endforeach
-			dest.append("}");
+            if (pretty) dest.append("\n");
+            indent--;
+            if (pretty)
+            {
+                for (int i = 0; i < indent * SPACES; i++)
+                {
+                    dest.append(" ");
+                }
+            }
+            dest.append("}");
 			return;
 		$case TypeKind.SLICE:
 			dest.append("[");
+            if (pretty) dest.append("\n");
+            indent++;
 			foreach (idx, element : src) {
 				if (idx > 0) {
 					dest.append(",");
+                    if (pretty) dest.append("\n");
 				}
-				add_json(element, dest)!!;
+                if (pretty)
+                {
+                    for (int i = 0; i < indent * SPACES; i++)
+                    {
+                        dest.append(" ");
+                    }
+                }
+				add_json(element, dest, pretty, indent)!!;
 			}
-			dest.append("]");
-			return;
+            if (pretty) dest.append("\n");
+            indent--;
+            if (pretty)
+            {
+                for (int i = 0; i < indent * SPACES; i++)
+                {
+                    dest.append(" ");
+                }
+            }
+            dest.append("]");
+            return;
 		$case TypeKind.UNION:
 			return UNION_NOT_SUPPORTED?;
 	$endswitch
@@ -112,12 +162,13 @@ macro void? add_json(src, DString* dest) {
 
 // Using iter; with the @each_entry, didn't like using var
 // in the macro body call.
-macro void? add_hashmap(src, DString* dest) {
+macro void? add_hashmap(src, DString* dest, bool pretty, int indent) {
 	$if ($typeof(src).nameof != "HashMap"):
 		return EXPECTED_HASHMAP?;
 	$endif
 
 	dest.append("{");
+    if (pretty) dest.append("\n");
 	usz idx;
 	var iter = src.iter();
 	while (idx < iter.len()) {
@@ -126,13 +177,24 @@ macro void? add_hashmap(src, DString* dest) {
 		var value = entry.value;
 		if (idx > 0) {
 			dest.append(",");
+            if (pretty) dest.append("\n");
 		}
-		add_json(key, dest)!;
+        if (pretty)
+        {
+            for (int i = 0; i < indent * SPACES; i++)
+            {
+                dest.append(" ");
+            }
+        }
+		add_json(key, dest, pretty, indent)!;
 		dest.append(":");
-		add_json(value, dest)!;
+        if (pretty) dest.append(" ");
+		add_json(value, dest, pretty, indent)!;
 		idx += 1;
 	};
+    if (pretty) dest.append("\n");
 	dest.append("}");
+    if (pretty) dest.append("\n");
 }
 
 faultdef UNION_NOT_SUPPORTED, EXPECTED_HASHMAP;
