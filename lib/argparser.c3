@@ -15,6 +15,7 @@ struct Option
     bool   has_arg;
     bool   required;
     String value;
+    bool   subcommand;
 }
 
 struct ArgParser
@@ -61,6 +62,15 @@ fn void ArgParser.parse(&self)
             os::exit(EXIT_SUCCESS);
         }
 
+        // TODO: add checking for missing value
+        foreach (j, option : self.options)
+        {
+            if (option.subcommand && option.long_name == arg)
+            {
+                self.options[j].value = self.args[i + 1];
+            }
+        }
+
         for (int j = 0; j < self.options.len; j++)
         {
             bool is_long = arg.starts_with("--") && arg[2..] == self.options[j].long_name;
@@ -98,9 +108,9 @@ fn void ArgParser.parse(&self)
 
 fn void ArgParser.print_usage(&self)
 {
-    io::printfn("Usage: %s [OPTIONS]", self.args[0]);
+    io::printfn("Usage: %s [<SUBCOMMAND>] [OPTIONS]", self.args[0]);
     io::printn();
-    io::printn("Options:");
+    io::printn("Subcommands:");
 
     int max_long_name_len = 0;
     for (int i = 0; i < self.options.len; i++)
@@ -112,6 +122,30 @@ fn void ArgParser.print_usage(&self)
         }
     }
 
+    int max_subcommand_len = 0;
+    for (int i = 0; i < self.options.len; i++)
+    {
+        if (self.options[i].subcommand)
+        {
+            int len = self.options[i].long_name.len;
+            if (len > max_subcommand_len)
+            {
+                max_subcommand_len = len;
+            }
+        }
+    }
+
+    foreach (option : self.options)
+    {
+        if (option.subcommand)
+        {
+            io::printfn("  %-10s  %s", option.long_name, option.description);
+        }
+    }
+    
+    io::printn();
+    io::printn("Options:");
+    
     Option help_option = { .short_name = 'h', .long_name = "help", .description = "Displays this message",  .has_arg = false };
 
     if (help_option.short_name)
@@ -124,12 +158,15 @@ fn void ArgParser.print_usage(&self)
 
     for (int i = 0; i < self.options.len; i++)
     {
-        if (self.options[i].short_name)
+        if (!self.options[i].subcommand)
         {
-            io::printfn("  -%c, --%-10s  %s", self.options[i].short_name, self.options[i].long_name, self.options[i].description);
-        } else
-        {
-            io::printfn("      --%-10s  %s", self.options[i].long_name, self.options[i].description);
+            if (self.options[i].short_name)
+            {
+                io::printfn("  -%c, --%-10s  %s", self.options[i].short_name, self.options[i].long_name, self.options[i].description);
+            } else
+            {
+                io::printfn("      --%-10s  %s", self.options[i].long_name, self.options[i].description);
+            }
         }
     }
 }

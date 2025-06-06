@@ -28,11 +28,10 @@ fn int main(String[] args)
         },
         {
 
-            .short_name  = 'f',
-            .long_name   = "file",
+            .long_name   = "compile",
             .description = "The file to compile",
             .has_arg     = true,
-            .required    = true
+            .subcommand  = true
         },
         {
             .short_name  = 't',
@@ -48,56 +47,71 @@ fn int main(String[] args)
             .short_name  = 'a',
             .long_name   = "analyser",
             .description = "Stops after the analysing stage"
+        },
+        {
+            .short_name  = 'v',
+            .long_name   = "version",
+            .description = "prints version info to stdout"
         }
     };
 
     ArgParser arg_parser = { args, options };
     arg_parser.parse();
 
-    String path    = arg_parser.get_arg("file");
-    String content = read_file(path);
-
-    lucy::lexer::Lexer lexer = lexer::new(content);
-
-    if (arg_parser.has_arg("lexer"))
+    if (arg_parser.has_arg("version"))
     {
-        foreach(token : lexer.tokenize())
+        io::printfn("Compiler Version:     %s", VERSION);
+        io::printfn("Backends:             %s", BACKENDS);
+    }
+
+    if (arg_parser.has_arg("compile"))
+    {
+        String path    = arg_parser.get_arg("compile");
+        String content = read_file(path);
+
+        lucy::lexer::Lexer lexer = lexer::new(content);
+
+        if (arg_parser.has_arg("lexer"))
         {
-            io::printn(token.type);
+            foreach(token : lexer.tokenize())
+            {
+                io::printn(token.type);
+            }
+            os::exit(0);
         }
-        os::exit(0);
-    }
 
-    Parser parser = parser::new(lexer, path);
-    ASTNode ast   = parser.parse();
+        Parser parser = parser::new(lexer, path);
+        ASTNode ast   = parser.parse();
     
-    if (arg_parser.has_arg("tree"))
-    {
-        io::printn(json::to_json(ast, mem, true)!!);
-    }
+        if (arg_parser.has_arg("tree"))
+        {
+            io::printn(json::to_json(ast, mem, true)!!);
+        }
 
-    if (arg_parser.has_arg("ast"))
-    {
-        file::save("ast.json", json::to_json(ast, mem, true)!!)!!;
-    }
+        if (arg_parser.has_arg("ast"))
+        {
+            file::save("ast.json", json::to_json(ast, mem, true)!!)!!;
+        }
 
-    if (arg_parser.has_arg("parser"))
-    {
-        os::exit(0);
-    }
+        if (arg_parser.has_arg("parser"))
+        {
+            os::exit(0);
+        }
 
-    SemanticAnalyser semantic_analyser = semantic_analyser::new(path, ast);
-    semantic_analyser.analyse();
+        SemanticAnalyser semantic_analyser = semantic_analyser::new(path, ast);
+        semantic_analyser.analyse();
 
-    if (arg_parser.has_arg("analyser"))
-    {
-        os::exit(0);
-    }
+        if (arg_parser.has_arg("analyser"))
+        {
+            os::exit(0);
+        }
     
-    // Need to reinstantiate because json fucks it up somehow
-    parser = parser::new(lexer, path);
-    Compiler compiler = compiler::new(path, parser.parse());
-    compiler.compile();
+        // Need to reinstantiate because json fucks it up somehow
+        // TODO: fix
+        parser = parser::new(lexer, path);
+        Compiler compiler = compiler::new(path, parser.parse());
+        compiler.compile();
+    }
 
     return 0;
 }
