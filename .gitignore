@@ -3,3 +3,4 @@ program
 test.ll
 build/
 .idea/
+ast.json

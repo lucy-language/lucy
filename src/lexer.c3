@@ -38,9 +38,9 @@ fn Lexer new(String text)
     };
 }
 
-fn void Lexer.consume(&self)
+fn void Lexer.consume(&self, int amount = 1)
 {
-    self.pos++;
+    self.pos += amount;
     if (self.pos < self.text.len)
     {
         self.current = self.text[self.pos];
@@ -72,6 +72,9 @@ fn TokenList Lexer.tokenize(&self)
             }
             self.consume();
         }
+
+        if (self.current == '=' && self.peek() == '=') { tokens.push({ IS_EQUAL,  "==", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
+        if (self.current == '!' && self.peek() == '=') { tokens.push({ NOT_EQUAL, "!=", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
 
         if (self.current == ';') { tokens.push({ SEMICOLON, ";", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
         if (self.current == '.') { tokens.push({ PERIOD,    ".", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
@@ -269,12 +272,14 @@ fn Token Lexer.identifier(&self)
         return { BOOLEAN, str, { start, self.column }, self.line, self.get_context_lines() };
     }
 
+    if (str == "if")     return { KW_IF,     str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "as")     return { KW_AS,     str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "pkg")    return { KW_PKG,    str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "def")    return { KW_DEF,    str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "use")    return { KW_USE,    str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "ext")    return { KW_EXT,    str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "var")    return { KW_VAR,    str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "else")   return { KW_ELSE,   str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "const")  return { KW_CONST,  str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "return") return { KW_RETURN, str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "global") return { KW_GLOBAL, str, { start, self.column }, self.line, self.get_context_lines() };

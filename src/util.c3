@@ -26,16 +26,18 @@ fn bool String.in(self, String[] arr)
     return false;
 }
 
-macro array_insert($Type, arr, element)
+macro void array_insert(arr, element)
 {
-    $Type[] new_arr = mem::new_array($Type, arr.len + 1);
+    var $Type = $typeof(element);
+    $Type[] tmp = mem::new_array($Type, (*arr).len + 1);
     
-    for (int i = 0; i < arr.len; i++)
+    // avoid mem::copy for 0 sized array
+    for (int i = 0; i < (*arr).len; i++)
     {
-        new_arr[i] = arr[i];
+        tmp[i] = (*arr)[i];
     }
 
-    new_arr[arr.len] = element;
+    tmp[(*arr).len] = element;
 
-    return new_arr;
+    *arr = tmp;
 }

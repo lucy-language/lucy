@@ -1,15 +1,7 @@
 module lucy::semantic_analyser;
 
 import std;
-import lucy;
-import lucy::errors;
-
-struct Const
-{
-    ASTNode node;
-    String  type;
-    String  name;
-}
+import lucy::node, lucy::errors, lucy::scope::sema;
 
 struct Def
 {
@@ -24,27 +16,24 @@ struct Parameter
     String name;
 }
 
-struct Var
-{
-    ASTNode node;
-    String  type;
-    String  name;
-}
-
 struct SemanticAnalyser
 {
     String      file_path;
     ASTNode     ast;
-    List{Const} constants;
     List{Def}   functions;
-    List{Var}   variables;
+    SemScope*   scope;
 }
 
 fn SemanticAnalyser new(String file_path, ASTNode ast)
 {
+    SemScope* scope    = malloc(SemScope.sizeof);
+    (*scope).parent    = null;
+    (*scope).variables = {};
+    (*scope).constants = {};
     return {
         .file_path = file_path,
-        .ast       = ast
+        .ast       = ast,
+        .scope     = scope
     };
 }
 
@@ -82,25 +71,15 @@ fn void SemanticAnalyser.add_const(&self, ASTNode node_in)
     String type = node.type;
     String name = node.name;
 
-    Const con;
-    bool found;
-    foreach (constant : self.constants)
+    if (self.scope.has_const(name))
     {
-        if (constant.name == name)
-        {
-            found = true;
-            con = constant;
-        }
-    }
-
-    if (found)
-    {
-        errors::print_node(self.file_path, con.node, "Previous definition was here");
+        SemConst constant = (*self.scope).get_const(name);
+        errors::print_node(self.file_path, constant.node, "Previous definition was here");
         errors::print_node(self.file_path, node_in, string::tformat("A constant with the name `%s` is already defined", name));
         os::exit(1);
     } else
     {
-        self.constants.push({ node_in, type, name });
+        (*self.scope).constants.set(name, { node_in, type });
     }
 }
 
@@ -180,16 +159,18 @@ fn void SemanticAnalyser.analyse_node(&self, ASTNode node)
 {
     switch (node.node_type)
     {
-        case CONST: self.analyse_const(node);
-        case REASSIGN: self.analyse_reassign(node);
-        case DEF: self.analyse_def(node);
-        case VAR: self.analyse_var(node);
-        case EXT: self.analyse_ext(node);
-        case BIN: self.analyse_bin(node);
-        case IDENT: self.analyse_ident(node);
-        case GLOBAL: self.analyse_global(node);
-        case CALL: self.analyse_call(node);
-        default: break;
+        case CONST    : self.analyse_const(node);
+        case REASSIGN : self.analyse_reassign(node);
+        case DEF      : self.analyse_def(node);
+        case VAR      : self.analyse_var(node);
+        case EXT      : self.analyse_ext(node);
+        case BIN      : self.analyse_bin(node);
+        case IDENT    : self.analyse_ident(node);
+        case GLOBAL   : self.analyse_global(node);
+        case CALL     : self.analyse_call(node);
+        case IF       : self.analyse_if(node);
+        case PARAMETER: self.analyse_parameter(node);
+        default       : break;
     }
 }
 
@@ -223,38 +204,26 @@ fn void SemanticAnalyser.analyse_reassign(&self, ASTNode node_in)
     ASTNode value = node.value[0];
 
     self.analyse_node(value);
-
-    foreach (constant : self.constants)
+    
+    if ((*self.scope).has_const(name))
     {
-        if (constant.name == name)
-        {
-            errors::print_node(self.file_path, node_in, "Cannot reassign a constant");
-            os::exit(1);
-        }
-    }
-
-    bool found;
-    foreach (variable : self.variables)
-    {
-        if (variable.name == name)
-        {
-            found = true;
-
-            if (variable.type != self.get_type(value))
-            {
-                errors::print_node(self.file_path, node_in, string::tformat("Expected type `%s`, got `%s`", variable.type, self.get_type(value)));
-                os::exit(1);
-            }
-
-            break;
-        }
-    }
-
-    if (!found)
-    {
-        errors::print_node(self.file_path, node_in, string::tformat("Unable to find variable `%s`", name));
+        errors::print_node(self.file_path, node_in, "Cannot reassign a constant");
         os::exit(1);
     }
+
+    if ((*self.scope).has_var(name))
+    {
+        SemVar variable = (*self.scope).get_var(name);
+        if (variable.type != self.get_type(value))
+        {
+            errors::print_node(self.file_path, node_in, string::tformat("Expected type `%s`, got `%s`", variable.type, self.get_type(value)));
+            os::exit(1);
+        }
+        return;
+    }
+
+    errors::print_node(self.file_path, node_in, string::tformat("Unable to find variable `%s`", name));
+    os::exit(1);
 }
 
 fn void SemanticAnalyser.analyse_def(&self, ASTNode node_in)
@@ -262,13 +231,18 @@ fn void SemanticAnalyser.analyse_def(&self, ASTNode node_in)
     DefNode node = node_in.node.def_node;
     String[] types = node.types;
     String name = node.name;
+    
+    self.scope = (*self.scope).new();
+    foreach (parameter : node.parameters)
+    {
+        self.analyse_node(parameter);
+    }
 
     foreach (child : node.children)
     {
         self.analyse_node(child);
     }
-
-    // TODO: parameters
+    self.scope = (*self.scope).parent;
 }
 
 fn String SemanticAnalyser.get_type(&self, ASTNode node)
@@ -337,17 +311,15 @@ fn void SemanticAnalyser.analyse_var(&self, ASTNode node_in)
 
 fn void SemanticAnalyser.add_variable(&self, ASTNode node, String type, String name)
 {
-    foreach (variable : self.variables)
+    if ((*self.scope).has_var(name))
     {
-        if (variable.name == name)
-        {
-            errors::print_node(self.file_path, variable.node, "Previous definition was here");
-            errors::print_node(self.file_path, node, string::tformat("Variable `%s` already defined", name));
-            os::exit(1);
-        }
+        SemVar variable = (*self.scope).get_var(name);
+        errors::print_node(self.file_path, variable.node, "Previous definition was here");
+        errors::print_node(self.file_path, node, string::tformat("Variable `%s` already defined", name));
+        os::exit(1);
     }
-
-    self.variables.push({ node, type, name });
+    
+    (*self.scope).variables.set(name, { node, type });
 }
 
 fn void SemanticAnalyser.analyse_ext(&self, ASTNode node_in)
@@ -363,21 +335,17 @@ fn String SemanticAnalyser.get_ident_type(&self, ASTNode node_in)
 {
     IdentNode node = node_in.node.ident_node;
     String name = node.name;
-
-    foreach (variable : self.variables)
+    
+    if ((*self.scope).has_var(name))
     {
-        if (variable.name == name)
-        {
-            return variable.type;
-        }
+        SemVar variable = (*self.scope).get_var(name);
+        return variable.type;
     }
-
-    foreach (constant : self.constants)
+    
+    if ((*self.scope).has_const(name))
     {
-        if (constant.name == name)
-        {
-            return constant.type;
-        }
+        SemConst constant = (*self.scope).get_const(name);
+        return constant.type;
     }
 
     io::eprintfn("Unable to match type `%s`", node_in.node_type);
@@ -402,26 +370,7 @@ fn void SemanticAnalyser.analyse_bin(&self, ASTNode node_in)
 
 fn bool SemanticAnalyser.has_variable(&self, String name)
 {
-    bool found;
-    foreach (variable : self.variables)
-    {
-        if (variable.name == name)
-        {
-            found = true;
-            break;
-        }
-    }
-
-    foreach (constant : self.constants)
-    {
-        if (constant.name == name)
-        {
-            found = true;
-            break;
-        }
-    }
-
-    return found;
+    return (*self.scope).has_var(name) || (*self.scope).has_const(name);
 }
 
 fn void SemanticAnalyser.analyse_ident(&self, ASTNode node_in)
@@ -470,7 +419,6 @@ fn String SemanticAnalyser.get_call_type(&self, ASTNode node_in)
     return "";
 }
 
-// TODO!: let analyser get all functions before analysing
 // TODO: analyse_call, check arg/param count and param types
 fn void SemanticAnalyser.analyse_call(&self, ASTNode node_in)
 {
@@ -497,4 +445,38 @@ fn void SemanticAnalyser.analyse_call(&self, ASTNode node_in)
         errors::print_node(self.file_path, node_in, string::tformat("Unable to find function `%s`", name));
         os::exit(1);
     }
+}
+
+fn void SemanticAnalyser.analyse_if(&self, ASTNode node_in)
+{
+    IfNode node = node_in.node.if_node;
+    ASTNode condition = *node.condition;
+
+    self.analyse_node(condition);
+
+    self.scope = (*self.scope).new();
+    foreach (child : node.children)
+    {
+        self.analyse_node(child);
+    }
+    self.scope = (*self.scope).parent;
+
+    if (node.else_if != null)
+    {
+        self.analyse_node(*node.else_if);
+    }
+    
+    self.scope = (*self.scope).new();
+    foreach(child : node.else_children)
+    {
+        self.analyse_node(child);
+    }
+    self.scope = (*self.scope).parent;
+}
+
+fn void SemanticAnalyser.analyse_parameter(&self, ASTNode node_in)
+{
+    ParameterNode node = node_in.node.parameter_node;
+
+    (*self.scope).variables.set(node.name, { node_in, node.type });
 }

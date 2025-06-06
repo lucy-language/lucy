@@ -28,6 +28,7 @@ enum NodeType
     BIN,
     EXT,
     VAR,
+    IF,
 }
 
 struct JsonElement
@@ -61,6 +62,7 @@ struct ASTNode
         BinNode          bin_node;
         ExtNode          ext_node;
         VarNode          var_node;
+        IfNode           if_node;
     }
     Range        range;
     int          line;
@@ -184,4 +186,12 @@ struct IdentNode
 struct CharNode
 {
     String value;
+}
+
+struct IfNode
+{
+    ASTNode*  condition;
+    ASTNode[] children;
+    ASTNode*  else_if;
+    ASTNode[] else_children;
 }

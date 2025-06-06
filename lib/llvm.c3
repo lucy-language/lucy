@@ -54,6 +54,9 @@ extern fn LLVMValueRef build_ret_void(LLVMBuilderRef builder) @extern("LLVMBuild
 extern fn LLVMValueRef build_ret(LLVMBuilderRef builder, LLVMValueRef v) @extern("LLVMBuildRet");
 extern fn LLVMValueRef build_add(LLVMBuilderRef builder, LLVMValueRef lhs, LLVMValueRef rhs, char * name) @extern("LLVMBuildAdd");
 extern fn LLVMValueRef build_load_2(LLVMBuilderRef builder, LLVMTypeRef type, LLVMValueRef val, char* name) @extern("LLVMBuildLoad2");
+extern fn LLVMValueRef build_br(LLVMBuilderRef builder, LLVMBasicBlockRef dest) @extern("LLVMBuildBr");
+extern fn LLVMValueRef build_cond_br(LLVMBuilderRef builder, LLVMValueRef condition, LLVMBasicBlockRef then_block, LLVMBasicBlockRef else_block) @extern("LLVMBuildCondBr");
+extern fn LLVMValueRef build_i_cmp(LLVMBuilderRef builder, LLVMIntPredicate operation, LLVMValueRef lhs, LLVMValueRef rhs, char* name) @extern("LLVMBuildICmp");
 extern fn void build_store(LLVMBuilderRef builder, LLVMValueRef val, LLVMValueRef variable) @extern("LLVMBuildStore");
 
 extern fn LLVMTypeKind get_type_kind(LLVMTypeRef type) @extern("LLVMGetTypeKind");
@@ -64,6 +67,8 @@ extern fn usz get_num_operands(LLVMValueRef val) @extern("LLVMGetNumOperands");
 extern fn LLVMTypeRef struct_get_type_at_index(LLVMTypeRef type, CUInt index) @extern("LLVMStructGetTypeAtIndex");
 
 extern fn usz count_struct_element_types(LLVMTypeRef type) @extern("LLVMCountStructElementTypes");
+
+extern fn LLVMBasicBlockRef create_basic_block_in_context(LLVMContextRef ctx, char* name) @extern("LLVMCreateBasicBlockInContext");
 
 const TRUE  = 1;
 const FALSE = 0;
@@ -95,6 +100,7 @@ alias LLVMNamedMDNodeRef           = void * ;
 alias LLVMValueMetadataEntry       = void * ;
 alias LLVMInlineAsmDialect         = CUInt;
 alias LLVMAttributeRef             = void * ;
+alias LLVMIntPredicate             = int;
 
 enum LLVMTypeKind
 {
@@ -137,4 +143,35 @@ enum LLVMLinkage
     COMMON_LINKAGE,
     LINKER_PRIVATE_LINKAGE,
     LINKER_PRIVATE_WEAK_LINKAGE
+}
+
+const LLVMIntPredicate INT_EQ  = 32;
+const LLVMIntPredicate INT_NE  = 33;
+const LLVMIntPredicate INT_UGT = 34;
+const LLVMIntPredicate INT_UGE = 35;
+const LLVMIntPredicate INT_ULT = 36;
+const LLVMIntPredicate INT_ULE = 37;
+const LLVMIntPredicate INT_SGT = 38;
+const LLVMIntPredicate INT_SGE = 39;
+const LLVMIntPredicate INT_SLT = 40;
+const LLVMIntPredicate INT_SLE = 41;
+
+enum LLVMRealPredicate : (int v)
+{
+    REAL_PREDICATE_FALSE = 0,
+    REAL_OEQ             = 1,
+    REAL_OGT             = 2,
+    REAL_OGE             = 3,
+    REAL_OLT             = 4,
+    REAL_OLE             = 5,
+    REAL_ONE             = 6,
+    REAL_ORD             = 7,
+    REAL_UNO             = 8,
+    REAL_UEQ             = 9,
+    REAL_UGT             = 10,
+    REAL_UGE             = 11,
+    REAL_ULT             = 12,
+    REAL_ULE             = 13,
+    REAL_UNE             = 14,
+    REAL_PREDICATE_TRUE  = 15
 }

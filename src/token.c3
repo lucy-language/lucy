@@ -25,6 +25,9 @@ fn String Token.str_view(&self)
 
 enum TokenType : (String str)
 {
+    NOT_EQUAL = "`!=`",
+    IS_EQUAL  = "`==`",
+
     SEMICOLON = "`;`",
     LBRACKET  = "`[`",
     RBRACKET  = "`]`",
@@ -54,12 +57,14 @@ enum TokenType : (String str)
     KW_RETURN = "return",
     KW_GLOBAL = "global",
     KW_CONST  = "const",
+    KW_ELSE   = "else",
     KW_PKG    = "pkg",
     KW_DEF    = "def",
     KW_USE    = "use",
     KW_EXT    = "ext",
     KW_VAR    = "var",
     KW_AS     = "as",
+    KW_IF     = "if",
 
     IDENTIFIER = "identifier",
 

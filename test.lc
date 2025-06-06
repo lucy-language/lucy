@@ -7,7 +7,6 @@ global const int TEST2 = 69;
 
 ext int printf(str fmt, var str args);
 
-
 def {str, int} test()
 {
     return "Kiana", 22;
@@ -19,12 +18,38 @@ def int main(str[] args)
     var char c = 'c';
     printf("%c\n", c);
 
-    printf("%s\n", "\"Test\"");
+    printn("\"Test\"");
+
+    if (c == 'A')
+    {
+        printn(true);
+    } else
+    {
+        printn(false);
+    }
     
     # var str example = "Hello, ${name + " ${name}"}";
 
-    printf("%s\n", name);
+    if (1 == 1)
+    {
+        printn(name);
+        var int hehe = 0;
+        hehe = 1;
+    } else
+    {
+        #hehe = 1;
+    }
+
+    #printf("%d\n", hehe);
+
+    printf("%d\n", TEST2);
     printf("%d\n", age);
 
     return 0;
+}
+
+def void printn(str s)
+{
+    printf("%s\n", s);
+    return;
 }

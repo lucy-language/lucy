@@ -26,6 +26,7 @@ fn void? ASTNode.to_json(&self, DString* dest, bool pretty, int indent)
 		case BIN:       serialize::add_json(self.node.bin_node, dest, pretty, indent)!;
 		case EXT:       serialize::add_json(self.node.ext_node, dest, pretty, indent)!;
 		case VAR:       serialize::add_json(self.node.var_node, dest, pretty, indent)!;
+		case IF:        serialize::add_json(self.node.if_node, dest, pretty, indent)!;
 	}
 }
 
@@ -161,6 +162,15 @@ struct VarJson
     ASTNode  value;
 }
 
+struct IfJson
+{
+    NodeType  node_type;
+    ASTNode   condition;
+    ASTNode[] children;
+    ASTNode   else_if;
+    ASTNode[] else_children;
+}
+
 fn void? ParameterNode.to_json(&self, DString* dest, bool pretty, int indent)
 {
     serialize::add_json((ParameterJson){ PARAMETER, self.vararg, self.type, self.name }, dest, pretty, indent)!;
@@ -254,4 +264,9 @@ fn void? ExtNode.to_json(&self, DString* dest, bool pretty, int indent)
 fn void? VarNode.to_json(&self, DString* dest, bool pretty, int indent)
 {
     serialize::add_json((VarJson){ VAR, self.types, self.names, *self.value }, dest, pretty, indent)!;
+}
+
+fn void? IfNode.to_json(&self, DString* dest, bool pretty, int indent)
+{
+    serialize::add_json((IfJson){ IF, *self.condition, self.children, *self.else_if, self.else_children }, dest, pretty, indent)!;
 }

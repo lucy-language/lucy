@@ -19,16 +19,12 @@ fn int main(String[] args)
         {
             .short_name  = 'l',
             .long_name   = "lexer",
-            .description = "Stops after the lexing stage",
-            .has_arg     = false,
-            .required    = false
+            .description = "Stops after the lexing stage"
         },
         {
             .short_name  = 'p',
             .long_name   = "parser",
-            .description = "Stops after the parsing stage",
-            .has_arg     = false,
-            .required    = false
+            .description = "Stops after the parsing stage"
         },
         {
 
@@ -41,16 +37,17 @@ fn int main(String[] args)
         {
             .short_name  = 't',
             .long_name   = "tree",
-            .description = "Prints the AST in JSON format to stdout",
-            .has_arg     = false,
-            .required    = false
+            .description = "Prints the AST in JSON format to stdout"
         },
         {
             .short_name  = 'T',
             .long_name   = "ast",
-            .description = "Writes the AST in JSON to a file",
-            .has_arg     = false,
-            .required    = false
+            .description = "Writes the AST in JSON to a file"
+        },
+        {
+            .short_name  = 'a',
+            .long_name   = "analyser",
+            .description = "Stops after the analysing stage"
         }
     };
 
@@ -91,6 +88,11 @@ fn int main(String[] args)
 
     SemanticAnalyser semantic_analyser = semantic_analyser::new(path, ast);
     semantic_analyser.analyse();
+
+    if (arg_parser.has_arg("analyser"))
+    {
+        os::exit(0);
+    }
     
     // Need to reinstantiate because json fucks it up somehow
     parser = parser::new(lexer, path);

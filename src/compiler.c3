@@ -1,20 +1,24 @@
 module lucy::compiler;
 
 import std;
-import lucy;
+import lucy::node, lucy::errors, lucy::scope::comp;
 import llvm;
 
 faultdef INVALID_TYPE;
 
 struct Compiler
 {
-    FileNode                      file_node;
-    String                        module_name;
-    String                        file_path;
-    LLVMModuleRef                 mod;
-    LLVMBuilderRef                builder;
-    HashMap{String, Def}          functions;
-    Scope                         scope;
+    FileNode             file_node;
+    String               module_name;
+    String               file_path;
+    LLVMModuleRef        mod;
+    LLVMBuilderRef       builder;
+    LLVMContextRef       context;
+    HashMap{String, Def} functions;
+    Scope*               scope;
+    int                  index;
+    LLVMValueRef         true_ptr;
+    LLVMValueRef         false_ptr;
 }
 
 struct Def
@@ -25,9 +29,14 @@ struct Def
 
 fn Compiler new(String file_path, ASTNode file)
 {
-    String mod_name = file.node.file_node.module_name;
-    LLVMModuleRef mod = llvm::module_create_with_name(mod_name);
+    String mod_name        = file.node.file_node.module_name;
+    LLVMModuleRef mod      = llvm::module_create_with_name(mod_name);
     LLVMBuilderRef builder = llvm::create_builder();
+    LLVMContextRef context = llvm::context_create();
+    Scope* scope           = malloc(Scope.sizeof);
+    (*scope).parent        = null;
+    (*scope).variables     = {};
+    (*scope).constants     = {};
 
     return
     {
@@ -35,12 +44,23 @@ fn Compiler new(String file_path, ASTNode file)
         .module_name = mod_name,
         .file_path   = file_path,
         .mod         = mod,
-        .builder     = builder
+        .builder     = builder,
+        .context     = context,
+        .scope       = scope
     };
 }
 
 fn void Compiler.compile(&self)
 {
+    // register functions first so they can be found even if declared later than call
+    foreach (child : self.file_node.children)
+    {
+        if (child.node_type == DEF)
+        {
+            self.add_def(child.node.def_node);
+        }
+    }
+    
     defer llvm::dispose_builder(self.builder);
     foreach (ast : self.file_node.children)
     {
@@ -56,30 +76,7 @@ fn void Compiler.compile(&self)
     }
 }
 
-fn LLVMValueRef Compiler.compile_node(&self, ASTNode ast)
-{
-    switch (ast.node_type)
-    {
-        case DEF: self.compile_def(ast.node.def_node);
-        case RETURN: self.compile_return(ast.node.return_node);
-        case EXT: self.compile_ext(ast.node.ext_node);
-        case CONST: self.compile_const(ast.node.const_node);
-        case GLOBAL: self.compile_global(ast.node.global_node);
-        case VAR: self.compile_var(ast.node.var_node);
-        case REASSIGN: self.compile_reassign(ast.node.reassign_node);
-        case STR: return self.compile_str(ast.node.str_node);
-        case INT: return self.compile_int(ast.node.int_node);
-        case CHAR: return self.compile_char(ast.node.char_node);
-        case BOOL: return self.compile_bool(ast.node.bool_node);
-        case CALL: return self.compile_call(ast.node.call_node);
-        case IDENT: return self.compile_ident(ast.node.ident_node);
-        default: break;
-    }
-
-    return {};
-}
-
-fn void Compiler.compile_def(&self, DefNode node)
+fn void Compiler.add_def(&self, DefNode node)
 {
     LLVMTypeRef type = self.get_type(node.types);
 
@@ -118,16 +115,58 @@ fn void Compiler.compile_def(&self, DefNode node)
     for (int i = 0; i < parameters.len; i++) {
         llvm::set_value_name(llvm::get_param(fN, i), (node.parameters)[i].node.parameter_node.name);
     }
+    
+    self.functions.set(node.name, { fN, fn_type });
+}
 
-    LLVMBasicBlockRef entry_block = llvm::append_basic_block(fN, "entry");
+fn LLVMValueRef Compiler.compile_node(&self, ASTNode ast, LLVMValueRef fN = null)
+{
+    switch (ast.node_type)
+    {
+        case DEF      : self.compile_def(ast.node.def_node);
+        case RETURN   : self.compile_return(ast.node.return_node);
+        case EXT      : self.compile_ext(ast.node.ext_node);
+        case CONST    : self.compile_const(ast.node.const_node);
+        case GLOBAL   : self.compile_global(ast.node.global_node);
+        case VAR      : self.compile_var(ast.node.var_node);
+        case REASSIGN : self.compile_reassign(ast.node.reassign_node);
+        case STR      : return self.compile_str(ast.node.str_node);
+        case INT      : return self.compile_int(ast.node.int_node);
+        case CHAR     : return self.compile_char(ast.node.char_node);
+        case BOOL     : return self.compile_bool(ast.node.bool_node);
+        case CALL     : return self.compile_call(ast.node.call_node);
+        case IDENT    : return self.compile_ident(ast.node.ident_node);
+        case IF       : self.compile_if(ast.node.if_node, fN);
+        case BIN      : return self.compile_bin(ast.node.bin_node);
+        case PARAMETER: self.compile_parameter(ast.node.parameter_node);
+        default       : break;
+    }
+
+    return {};
+}
+
+fn void Compiler.compile_def(&self, DefNode node)
+{
+    Def def = self.functions.get(node.name)!!;
+    LLVMValueRef function = def.function;
+
+    LLVMBasicBlockRef entry_block = llvm::append_basic_block(function, "entry");
     llvm::position_builder_at_end(self.builder, entry_block);
+
+    self.scope = (*self.scope).new();
+    foreach (index, parameter : node.parameters)
+    {
+        ParameterNode param = parameter.node.parameter_node;
+        LLVMValueRef llvm_param = llvm::get_param(function, index);
+        (*self.scope).parameters.set(param.name, { param.type, llvm_param });
+        // self.compile_node(parameter);
+    }
 
     foreach (child : node.children)
     {
-        self.compile_node(child);
+        self.compile_node(child, function);
     }
-
-    self.functions.set(node.name, { fN, fn_type });
+    self.scope = (*self.scope).parent;
 }
 
 fn void Compiler.compile_return(&self, ReturnNode node)
@@ -202,6 +241,8 @@ fn void Compiler.compile_const(&self, ConstNode node, bool global = false)
     llvm::set_linkage(constant, global ? EXTERNAL_LINKAGE : PRIVATE_LINKAGE);
     llvm::set_global_constant(constant, llvm::TRUE);
     llvm::set_unnamed_addr(constant, llvm::TRUE);
+
+    (*self.scope).constants.set(node.name, { node.type, constant });
 }
 
 fn LLVMTypeRef Compiler.get_type(&self, String[] types)
@@ -253,7 +294,7 @@ fn void Compiler.compile_var(&self, VarNode node)
         LLVMValueRef variable = llvm::build_alloca(self.builder, self.get_type(node.types), node.names[0]);
         llvm::build_store(self.builder, self.compile_node(*node.value), variable);
 
-        self.scope.variables.set(node.names[0], variable);
+        self.scope.variables.set(node.names[0], { node.types[0], variable });
         return;
     }
 
@@ -272,15 +313,16 @@ fn void Compiler.compile_var(&self, VarNode node)
             LLVMValueRef variable = llvm::build_alloca(self.builder, fieldType, name);
             llvm::build_store(self.builder, field, variable);
 
-            self.scope.variables.set(node.names[i], variable);
+            self.scope.variables.set(node.names[i], { node.types[i], variable });
         }
     }
 }
 
 fn void Compiler.compile_reassign(&self, ReassignNode node)
 {
+    // TODO: figure out type
     LLVMValueRef value = llvm::const_string(node.value.node.str_node.value, node.value.node.str_node.value.len, llvm::TRUE);
-    llvm::build_store(self.builder, value, self.scope.get_var(node.name));
+    llvm::build_store(self.builder, value, self.scope.get_var(node.name).value);
 }
 
 fn LLVMValueRef Compiler.compile_str(&self, StrNode node)
@@ -309,7 +351,38 @@ fn LLVMValueRef Compiler.compile_int(&self, IntNode node)
 
 fn LLVMValueRef Compiler.compile_bool(&self, BoolNode node)
 {
-    return llvm::const_int(llvm::int1_type(), node.value == "true" ? 1 : 0, llvm::FALSE);
+    String value = node.value;
+    if (value == "true")
+    {
+        if (self.true_ptr != null)
+        {
+            return self.true_ptr;
+        }
+    } else
+    {
+        if (self.false_ptr != null)
+        {
+            return self.false_ptr;
+        }
+    }
+
+    LLVMValueRef str = llvm::const_string(value, value.len, llvm::FALSE);
+    LLVMTypeRef arr_type = llvm::array_type(llvm::int8_type(), value.len + 1);
+    LLVMValueRef global = llvm::add_global(self.mod, arr_type, value);
+    llvm::set_initializer(global, str);
+    llvm::set_linkage(global, PRIVATE_LINKAGE);
+    llvm::set_unnamed_addr(global, llvm::TRUE);
+    llvm::set_global_constant(global, llvm::TRUE);
+
+    if (value == "true")
+    {
+        self.true_ptr = global;
+    } else
+    {
+        self.false_ptr = global;
+    }
+
+    return global;
 }
 
 fn LLVMValueRef Compiler.compile_char(&self, CharNode node)
@@ -356,8 +429,23 @@ fn LLVMValueRef Compiler.compile_call(&self, CallNode node)
 
 fn LLVMValueRef Compiler.compile_ident(&self, IdentNode node)
 {
-    LLVMValueRef variable = self.scope.get_var(node.name);
-    LLVMValueRef loaded = llvm::build_load_2(self.builder, llvm::type_of(variable), variable, "");
+    String name = node.name;
+    LLVMValueRef loaded;
+    if ((self.scope).has_var(name))
+    {
+        Var variable = (*self.scope).get_var(name);
+        LLVMTypeRef type = self.get_type((String[]){ variable.type });
+        loaded = llvm::build_load_2(self.builder, type, variable.value, "");
+    } else if ((*self.scope).has_const(name))
+    {
+        Const constant = (*self.scope).get_const(name);
+        LLVMTypeRef type = self.get_type((String[]){ constant.type });
+        loaded = llvm::build_load_2(self.builder, type, constant.value, "");
+    } else if ((*self.scope).has_param(name))
+    {
+        loaded = (*self.scope).get_param(name).value;
+    }
+
     return loaded;
 }
 
@@ -385,4 +473,65 @@ fn String Compiler.process_escape_sequences(&self, String input)
     }
 
     return output.copy_str(mem);
+}
+
+fn void Compiler.compile_if(&self, IfNode node, LLVMValueRef* fN)
+{
+    int index = self.index++;
+    // TODO: condition and jmp
+    LLVMValueRef condition = self.compile_node(*node.condition);
+
+    // create end first for reference to jump
+    LLVMBasicBlockRef then_block = llvm::append_basic_block(fN, "");
+    LLVMBasicBlockRef else_block = llvm::append_basic_block(fN, "");
+    LLVMBasicBlockRef end_block = llvm::append_basic_block(fN, "");
+
+    // evaluate condition
+    llvm::build_cond_br(self.builder, condition, then_block, else_block);
+
+    // evaluate then
+    self.scope = (*self.scope).new();
+    llvm::position_builder_at_end(self.builder, then_block);
+    foreach (child : node.children)
+    {
+        self.compile_node(child);
+    }
+    llvm::build_br(self.builder, end_block);
+    self.scope = (*self.scope).parent;
+
+    // evaluate else
+    self.scope = (*self.scope).new();
+    llvm::position_builder_at_end(self.builder, else_block);
+    foreach (child : node.else_children)
+    {
+        self.compile_node(child);
+    }
+    llvm::build_br(self.builder, end_block);
+    self.scope = (*self.scope).parent;
+
+    // continue code
+    llvm::position_builder_at_end(self.builder, end_block);
+}
+
+fn LLVMValueRef Compiler.compile_bin(&self, BinNode node)
+{
+    LLVMValueRef left  = self.compile_node(*node.left);
+    LLVMValueRef right = self.compile_node(*node.right);
+    
+    // TODO: add type checking
+    switch (node.op)
+    {
+        // conditions
+        case "==": return llvm::build_i_cmp(self.builder, llvm::INT_EQ, left, right, "");
+        case "!=": return llvm::build_i_cmp(self.builder, llvm::INT_NE, left, right, "");
+
+        // bitwise
+
+        // other
+        default: return null;
+    }
+}
+
+fn void Compiler.compile_parameter(&self, ParameterNode node)
+{
 }
