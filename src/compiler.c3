@@ -134,11 +134,12 @@ fn LLVMValueRef Compiler.compile_node(&self, ASTNode ast, LLVMValueRef fN = null
         case INT      : return self.compile_int(ast.node.int_node);
         case CHAR     : return self.compile_char(ast.node.char_node);
         case BOOL     : return self.compile_bool(ast.node.bool_node);
+        case FLOAT    : return self.compile_float(ast.node.float_node);
+        case DOUBLE   : return self.compile_double(ast.node.double_node);
         case CALL     : return self.compile_call(ast.node.call_node);
         case IDENT    : return self.compile_ident(ast.node.ident_node);
         case IF       : self.compile_if(ast.node.if_node, fN);
         case BIN      : return self.compile_bin(ast.node.bin_node);
-        case PARAMETER: self.compile_parameter(ast.node.parameter_node);
         default       : break;
     }
 
@@ -225,8 +226,8 @@ fn void Compiler.compile_const(&self, ConstNode node, bool global = false)
 
     switch (node.type)
     {
-        case "bool": value = llvm::const_int(llvm::int1_type(), node.value.node.bool_node.value == "true" ? 1 : 0, llvm::FALSE);
-        case "char": value = llvm::const_int(llvm::int8_type(), node.value.node.char_node.value.to_uchar(), 1)!!;
+        case "bool": value = llvm::const_int(llvm::int1_type(), node.value.node.bool_node.value == "true" ? llvm::TRUE : llvm::FALSE, llvm::FALSE);
+        case "char": value = llvm::const_int(llvm::int8_type(), node.value.node.char_node.value.to_uchar(), llvm::TRUE)!!;
         case "int": value = llvm::const_int(llvm::int32_type(), node.value.node.int_node.value.to_int(), llvm::TRUE)!!; // TODO: return llvm::int64_type() if on 64 bit system
         case "float": value = llvm::const_real(llvm::float_type(), node.value.node.float_node.value.to_float())!!;
         case "double": value = llvm::const_real(llvm::double_type(), node.value.node.double_node.value.to_double())!!;
@@ -321,8 +322,12 @@ fn void Compiler.compile_var(&self, VarNode node)
 fn void Compiler.compile_reassign(&self, ReassignNode node)
 {
     // TODO: figure out type
-    LLVMValueRef value = llvm::const_string(node.value.node.str_node.value, node.value.node.str_node.value.len, llvm::TRUE);
-    llvm::build_store(self.builder, value, self.scope.get_var(node.name).value);
+    String name = node.name;
+    Var variable = (*self.scope).get_var(name);
+    
+    LLVMValueRef value = self.compile_node(*node.value);
+
+    llvm::build_store(self.builder, value, variable.value);
 }
 
 fn LLVMValueRef Compiler.compile_str(&self, StrNode node)
@@ -532,6 +537,12 @@ fn LLVMValueRef Compiler.compile_bin(&self, BinNode node)
     }
 }
 
-fn void Compiler.compile_parameter(&self, ParameterNode node)
+fn LLVMValueRef Compiler.compile_float(&self, FloatNode node)
 {
+    return llvm::const_real(llvm::float_type(), node.value.to_float())!!;
+}
+
+fn LLVMValueRef Compiler.compile_double(&self, DoubleNode node)
+{
+    return llvm::const_real(llvm::double_type(), node.value.to_double())!!;
 }

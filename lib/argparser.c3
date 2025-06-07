@@ -67,7 +67,14 @@ fn void ArgParser.parse(&self)
         {
             if (option.subcommand && option.long_name == arg)
             {
+                if (i + 1 >= self.args.len)
+                {
+                    io::eprintfn("%sSubcommand '%s' requires an argument%s", color_util::COLOR_RED, arg, color_util::COLOR_RESET);
+                    os::exit(EXIT_FAILURE);
+                }
+
                 self.options[j].value = self.args[i + 1];
+                i++;
             }
         }
 
@@ -139,7 +146,7 @@ fn void ArgParser.print_usage(&self)
     {
         if (option.subcommand)
         {
-            io::printfn("  %-10s  %s", option.long_name, option.description);
+            io::printfn("   %-10s <%s>  %s", option.long_name, option.value, option.description);
         }
     }
     

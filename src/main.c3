@@ -30,6 +30,7 @@ fn int main(String[] args)
 
             .long_name   = "compile",
             .description = "The file to compile",
+            .value       = "FILE",
             .has_arg     = true,
             .subcommand  = true
         },
@@ -67,7 +68,7 @@ fn int main(String[] args)
     if (arg_parser.has_arg("compile"))
     {
         String path    = arg_parser.get_arg("compile");
-        String content = read_file(path);
+        String content = (String)file::load(mem, path)!!;
 
         lucy::lexer::Lexer lexer = lexer::new(content);
 
@@ -90,7 +91,7 @@ fn int main(String[] args)
 
         if (arg_parser.has_arg("ast"))
         {
-            file::save("ast.json", json::to_json(ast, mem, true)!!)!!;
+            file::save("ast.json", json::to_json(ast, mem, true))!!;
         }
 
         if (arg_parser.has_arg("parser"))
@@ -114,22 +115,4 @@ fn int main(String[] args)
     }
 
     return 0;
-}
-
-fn String read_file(String path)
-{
-    File? file = file::open(path, "r");
-
-    if (catch file)
-    {
-        io::eprintfn("%sFile `%s` not found%s", color_util::COLOR_BRIGHT_RED, path, color_util::COLOR_RESET);
-        os::exit(1);
-    }
-
-    usz size      = file::get_size(path)!!;
-    String buffer = (String)mem::new_array(char, size);
-
-    file.read(buffer)!!;
-
-    return buffer;
 }

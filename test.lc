@@ -30,14 +30,12 @@ def int main(str[] args)
     
     # var str example = "Hello, ${name + " ${name}"}";
 
-    if (1 == 1)
+    if (true)
     {
         printn(name);
-        var int hehe = 0;
-        hehe = 1;
-    } else
-    {
-        #hehe = 1;
+        var float hehe = 0f;
+        hehe = 10.0215621515641f;
+        hehe = 10f;
     }
 
     #printf("%d\n", hehe);
