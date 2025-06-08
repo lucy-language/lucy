@@ -63,6 +63,7 @@ fn int main(String[] args)
     {
         io::printfn("Compiler Version:     %s", VERSION);
         io::printfn("Backends:             %s", BACKENDS);
+        os::exit(0);
     }
 
     if (arg_parser.has_arg("compile"))
