@@ -73,6 +73,11 @@ fn TokenList Lexer.tokenize(&self)
             self.consume();
         }
 
+        if (self.current == '\0') break;
+
+        int start_column = self.column;
+        int start_line   = self.line;
+
         if (self.current == '=' && self.peek() == '=') { tokens.push({ IS_EQUAL,  "==", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
         if (self.current == '!' && self.peek() == '=') { tokens.push({ NOT_EQUAL, "!=", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
         if (self.current == '>' && self.peek() == '=') { tokens.push({ GT,        ">=", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
@@ -111,6 +116,12 @@ fn TokenList Lexer.tokenize(&self)
         if (self.current == '\'') tokens.push(self.character());
         if (self.current.is_digit()) tokens.push(self.number());
         if (self.current == '$' || self.current.is_alpha()) tokens.push(self.identifier());
+
+        bool consumed = (self.column > start_column) || (self.line > start_line);
+        if (!consumed && !self.current.is_space() && self.current != '\0')
+        {
+            util::panic(string::tformat("Undefined character `%s`", (String){self.current}), $$FILE, $$LINE);
+        }
     }
 
     tokens.push({ EOF, "EOF", { self.column, self.column }, self.line, self.get_context_lines() });
