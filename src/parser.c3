@@ -244,13 +244,14 @@ fn ASTNode Parser.if_stmt(&self)
     
     ASTNode[] children      = self.body();
     ASTNode[] else_children = mem::new_array(ASTNode, 0);
-    ASTNode*  else_if = malloc(ASTNode.sizeof);
+    ASTNode*  else_if;
 
     if (self.current.type == KW_ELSE)
     {
         self.consume();
         if (self.current.type == KW_IF)
         {
+            else_if = malloc(ASTNode.sizeof);
             *else_if = self.if_stmt();
         } else
         {
@@ -271,7 +272,7 @@ fn ASTNode Parser.condition(&self)
     StringList context_lines = node.context_lines;
     int start = node.range.start;
 
-    while (self.current.type == IS_EQUAL || self.current.type == NOT_EQUAL)
+    while (util::in((TokenType[]){IS_EQUAL, NOT_EQUAL, GTE, LTE, GT, LT}, self.current.type))
     {
         String operator = self.current.value;
         self.consume();

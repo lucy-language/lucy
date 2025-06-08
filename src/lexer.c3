@@ -65,7 +65,7 @@ fn TokenList Lexer.tokenize(&self)
         {
             self.column++;
 
-            if (self.current.in({ '\n', '\r' }))
+            if (util::in((char[]){ '\n', '\r' }, self.current))
             {
                 self.column = 0;
                 self.line++;
@@ -75,6 +75,10 @@ fn TokenList Lexer.tokenize(&self)
 
         if (self.current == '=' && self.peek() == '=') { tokens.push({ IS_EQUAL,  "==", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
         if (self.current == '!' && self.peek() == '=') { tokens.push({ NOT_EQUAL, "!=", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
+        if (self.current == '>' && self.peek() == '=') { tokens.push({ GT,        ">=", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
+        if (self.current == '<' && self.peek() == '=') { tokens.push({ LTE,       "<=", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
+        if (self.current == '>') { tokens.push({ GT, ">", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '<') { tokens.push({ LT, "<", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
 
         if (self.current == ';') { tokens.push({ SEMICOLON, ";", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
         if (self.current == '.') { tokens.push({ PERIOD,    ".", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
@@ -97,7 +101,7 @@ fn TokenList Lexer.tokenize(&self)
 
         if (self.current == '#')
         {
-            while (self.current != '\0' && !self.current.in({ '\n', '\r' }))
+            while (self.current != '\0' && !util::in((char[]){ '\n', '\r' }, self.current))
             {
                 self.consume();
             }
@@ -174,7 +178,7 @@ fn Token Lexer.number(&self)
     defer result.free();
     int start = self.column;
 
-    if (self.current == '0' && self.peek().in({ 'x', 'X' }))
+    if (self.current == '0' && util::in((char[]){ 'x', 'X' }, self.peek()))
     {
         result.append_char(self.current);
         self.consume();
@@ -182,7 +186,7 @@ fn Token Lexer.number(&self)
         self.consume();
         self.column += 2;
 
-        while (self.current.is_digit() || self.current.in(util::LOWERCASE[0..5]) || self.current.in(util::UPPERCASE[0..5]))
+        while (self.current.is_digit() || util::in((char[])util::LOWERCASE[0..5], self.current) || util::in((char[])util::UPPERCASE[0..5], self.current))
         {
             result.append_char(self.current);
             self.column++;
@@ -215,14 +219,14 @@ fn Token Lexer.number(&self)
         }
     }
 
-    if (self.current.in({ 'e', 'E' }))
+    if (util::in((char[]){ 'e', 'E' }, self.current))
     {
         has_decimal_or_exponent = true;
         result.append_char(self.current);
         self.column++;
         self.consume();
 
-        if (self.current.in({ '+', '-' }))
+        if (util::in((char[]){ '+', '-' }, self.current))
         {
             result.append_char(self.current);
             self.column++;
@@ -237,7 +241,7 @@ fn Token Lexer.number(&self)
         }
     }
 
-    if (self.current.in({ 'f', 'F' }))
+    if (util::in((char[]){ 'f', 'F' }, self.current))
     {
         self.column++;
         self.consume();
@@ -258,7 +262,7 @@ fn Token Lexer.identifier(&self)
     defer result.free();
     int start = self.column;
 
-    while (self.current.is_alnum() || self.current.in({ '_', '$' }))
+    while (self.current.is_alnum() || util::in((char[]){ '_', '$' }, self.current))
     {
         result.append_char(self.current);
         self.column++;
@@ -267,7 +271,7 @@ fn Token Lexer.identifier(&self)
 
     String str = result.copy_str(mem);
 
-    if (str.in({ "true", "false" }))
+    if (util::in((String[]){ "true", "false" }, str))
     {
         return { BOOLEAN, str, { start, self.column }, self.line, self.get_context_lines() };
     }

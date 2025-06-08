@@ -171,6 +171,15 @@ struct IfJson
     ASTNode[] else_children;
 }
 
+struct IfJson2
+{
+    NodeType  node_type;
+    ASTNode   condition;
+    ASTNode[] children;
+    String    _null;
+    ASTNode[] else_children;
+}
+
 fn void? ParameterNode.to_json(&self, DString* dest, bool pretty, int indent)
 {
     serialize::add_json((ParameterJson){ PARAMETER, self.vararg, self.type, self.name }, dest, pretty, indent)!;
@@ -268,5 +277,11 @@ fn void? VarNode.to_json(&self, DString* dest, bool pretty, int indent)
 
 fn void? IfNode.to_json(&self, DString* dest, bool pretty, int indent)
 {
-    serialize::add_json((IfJson){ IF, *self.condition, self.children, *self.else_if, self.else_children }, dest, pretty, indent)!;
+    if (self.else_if == null)
+    {
+        serialize::add_json((IfJson2){ IF, *self.condition, self.children, "null", self.else_children }, dest, pretty, indent)!;
+    } else
+    {
+        serialize::add_json((IfJson){ IF, *self.condition, self.children, *self.else_if, self.else_children }, dest, pretty, indent)!;
+    }
 }

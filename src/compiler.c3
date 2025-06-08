@@ -1,7 +1,7 @@
 module lucy::compiler;
 
 import std;
-import lucy::node, lucy::errors, lucy::scope::comp;
+import lucy::node, lucy::errors, lucy::scope::comp, lucy::util;
 import llvm;
 
 faultdef INVALID_TYPE;
@@ -19,6 +19,7 @@ struct Compiler
     int                  index;
     LLVMValueRef         true_ptr;
     LLVMValueRef         false_ptr;
+    LLVMValueRef         strcmp;
 }
 
 struct Def
@@ -523,18 +524,75 @@ fn LLVMValueRef Compiler.compile_bin(&self, BinNode node)
     LLVMValueRef left  = self.compile_node(*node.left);
     LLVMValueRef right = self.compile_node(*node.right);
     
-    // TODO: add type checking
-    switch (node.op)
+    LLVMTypeRef[] int_types =
     {
-        // conditions
-        case "==": return llvm::build_i_cmp(self.builder, llvm::INT_EQ, left, right, "");
-        case "!=": return llvm::build_i_cmp(self.builder, llvm::INT_NE, left, right, "");
+        llvm::int1_type(),
+        llvm::int8_type(),
+        llvm::int32_type(),
+        llvm::int64_type()
+    };
 
-        // bitwise
+    LLVMTypeRef[] real_types =
+    {
+        llvm::double_type(),
+        llvm::float_type()
+    };
 
-        // other
-        default: return null;
+    // TODO: add type checking
+    // only need to check one side since sema rules out mismatch
+    if (util::in(int_types, llvm::type_of(left)))
+    {
+        switch (node.op)
+        {
+            case "==": return llvm::build_i_cmp(self.builder, llvm::INT_EQ, left, right, "");
+            case "!=": return llvm::build_i_cmp(self.builder, llvm::INT_NE, left, right, "");
+            case ">=": return llvm::build_i_cmp(self.builder, llvm::INT_SGE, left, right, "");
+            case "<=": return llvm::build_i_cmp(self.builder, llvm::INT_SLE, left, right, "");
+            case ">":  return llvm::build_i_cmp(self.builder, llvm::INT_SGT, left, right, "");
+            case "<":  return llvm::build_i_cmp(self.builder, llvm::INT_SLT, left, right, "");
+
+            case "+": return llvm::build_add(self.builder, left, right, "");
+            case "-": return llvm::build_sub(self.builder, left, right, "");
+            case "*": return llvm::build_mul(self.builder, left, right, "");
+            case "/": return llvm::build_s_div(self.builder, left, right, "");
+        }
+    } else if (util::in(real_types, llvm::type_of(left)))
+    {
+        switch (node.op)
+        {
+            case "==": return llvm::build_f_cmp(self.builder, llvm::REAL_OEQ, left, right, "");
+            case "!=": return llvm::build_f_cmp(self.builder, llvm::REAL_ONE, left, right, "");
+            case ">=": return llvm::build_f_cmp(self.builder, llvm::REAL_OGE, left, right, "");
+            case "<=": return llvm::build_f_cmp(self.builder, llvm::REAL_OLE, left, right, "");
+            case ">":  return llvm::build_f_cmp(self.builder, llvm::REAL_OGT, left, right, "");
+            case "<":  return llvm::build_f_cmp(self.builder, llvm::REAL_OLT, left, right, "");
+            
+            case "+": return llvm::build_f_add(self.builder, left, right, "");
+            case "-": return llvm::build_f_sub(self.builder, left, right, "");
+            case "*": return llvm::build_f_mul(self.builder, left, right, "");
+            case "/": return llvm::build_f_div(self.builder, left, right, "");
+        }
+    } else if (llvm::type_of(left) == llvm::pointer_type(llvm::int8_type(), 0))
+    // strings
+    {
+        util::panic("comparing strings", $$FILE, $$LINE);
+        /*
+        if (self.strcmp == null)
+        {
+            self.build_strcmp();
+        }
+
+        LLVMValueRef[] args =
+        {
+            left,
+            right
+        };
+
+        return llvm::build_call_2(self.builder, llvm::int1_type(), self.strcmp, args, 2, "");
+        */
     }
+
+    return null;
 }
 
 fn LLVMValueRef Compiler.compile_float(&self, FloatNode node)
@@ -545,4 +603,8 @@ fn LLVMValueRef Compiler.compile_float(&self, FloatNode node)
 fn LLVMValueRef Compiler.compile_double(&self, DoubleNode node)
 {
     return llvm::const_real(llvm::double_type(), node.value.to_double())!!;
+}
+
+fn void Compiler.build_strcmp(&self)
+{
 }

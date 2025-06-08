@@ -27,6 +27,10 @@ enum TokenType : (String str)
 {
     NOT_EQUAL = "`!=`",
     IS_EQUAL  = "`==`",
+    GTE       = "`>=`",
+    LTE       = "`<=`",
+    LT        = "`>`",
+    GT        = "`<`",
 
     SEMICOLON = "`;`",
     LBRACKET  = "`[`",

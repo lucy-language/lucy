@@ -5,9 +5,9 @@ extern fn void module_dispose(LLVMModuleRef m) @extern("LLVMModuleDispose");
 extern fn void dump_module(LLVMModuleRef m) @extern("LLVMDumpModule");
 extern fn LLVMContextRef context_create() @extern("LLVMContextCreate");
 extern fn void context_dispose(LLVMContextRef c) @extern("LLVMContextDispose");
-extern fn LLVMValueRef add_function(LLVMModuleRef m, char * name, LLVMTypeRef ty) @extern("LLVMAddFunction");
-extern fn LLVMValueRef get_named_function(LLVMModuleRef m, char * name) @extern("LLVMGetNamedFunction");
-extern fn LLVMBasicBlockRef append_basic_block(LLVMValueRef fN, char * name) @extern("LLVMAppendBasicBlock");
+extern fn LLVMValueRef add_function(LLVMModuleRef m, char* name, LLVMTypeRef ty) @extern("LLVMAddFunction");
+extern fn LLVMValueRef get_named_function(LLVMModuleRef m, char* name) @extern("LLVMGetNamedFunction");
+extern fn LLVMBasicBlockRef append_basic_block(LLVMValueRef fN, char* name) @extern("LLVMAppendBasicBlock");
 extern fn LLVMBasicBlockRef get_insert_block(LLVMBuilderRef builder) @extern("LLVMGetInsertBlock");
 extern fn void position_builder(LLVMBuilderRef builder, LLVMBasicBlockRef block, LLVMValueRef instr) @extern("LLVMPositionBuilder");
 extern fn void position_builder_at_end(LLVMBuilderRef builder, LLVMBasicBlockRef block) @extern("LLVMPositionBuilderAtEnd");
@@ -15,8 +15,8 @@ extern fn LLVMBuilderRef create_builder() @extern("LLVMCreateBuilder");
 extern fn void dispose_builder(LLVMBuilderRef builder) @extern("LLVMDisposeBuilder");
 extern fn int link_in_mcjit() @extern("LLVMLinkInMCJIT");
 extern fn int link_in_interpreter() @extern("LLVMLinkInInterpreter");
-extern fn int create_execution_engine_for_module(LLVMExecutionEngineRef * ee, LLVMModuleRef m, char * * error) @extern("LLVMCreateExecutionEngineForModule");
-extern fn int run_function(LLVMExecutionEngineRef ee, LLVMValueRef f, usz num_args, LLVMGenericValueRef * args) @extern("LLVMRunFunction");
+extern fn int create_execution_engine_for_module(LLVMExecutionEngineRef* ee, LLVMModuleRef m, char** error) @extern("LLVMCreateExecutionEngineForModule");
+extern fn int run_function(LLVMExecutionEngineRef ee, LLVMValueRef f, usz num_args, LLVMGenericValueRef* args) @extern("LLVMRunFunction");
 extern fn int print_module_to_file(LLVMModuleRef m, char* filename, char** rrror_message) @extern("LLVMPrintModuleToFile");
 extern fn void dispose_message(char* message) @extern("LLVMDisposeMessage");
 extern fn LLVMValueRef get_param(LLVMValueRef fN, usz index) @extern("LLVMGetParam");
@@ -37,7 +37,7 @@ extern fn LLVMTypeRef float_type() @extern("LLVMFloatType");
 extern fn LLVMTypeRef double_type() @extern("LLVMDoubleType");
 extern fn LLVMTypeRef void_type() @extern("LLVMVoidType");
 extern fn LLVMTypeRef pointer_type(LLVMTypeRef element_type, CUInt address_space) @extern("LLVMPointerType");
-extern fn LLVMTypeRef function_type(LLVMTypeRef return_type, LLVMTypeRef * param_types, usz param_count, int is_var_arg) @extern("LLVMFunctionType");
+extern fn LLVMTypeRef function_type(LLVMTypeRef return_type, LLVMTypeRef* param_types, usz param_count, int is_var_arg) @extern("LLVMFunctionType");
 extern fn LLVMTypeRef struct_type(LLVMTypeRef* types, CUInt size, LLVMBool packed) @extern("LLVMStructType");
 extern fn LLVMTypeRef array_type(LLVMTypeRef type, CUInt size) @extern("LLVMArrayType");
 
@@ -52,12 +52,23 @@ extern fn LLVMValueRef build_extract_value(LLVMBuilderRef builder, LLVMValueRef 
 extern fn LLVMValueRef build_alloca(LLVMBuilderRef builder, LLVMTypeRef type, char* name) @extern("LLVMBuildAlloca");
 extern fn LLVMValueRef build_ret_void(LLVMBuilderRef builder) @extern("LLVMBuildRetVoid");
 extern fn LLVMValueRef build_ret(LLVMBuilderRef builder, LLVMValueRef v) @extern("LLVMBuildRet");
-extern fn LLVMValueRef build_add(LLVMBuilderRef builder, LLVMValueRef lhs, LLVMValueRef rhs, char * name) @extern("LLVMBuildAdd");
+extern fn LLVMValueRef build_f_add(LLVMBuilderRef builder, LLVMValueRef lhs, LLVMValueRef rhs, char* name) @extern("LLVMBuildFAdd");
+extern fn LLVMValueRef build_f_sub(LLVMBuilderRef builder, LLVMValueRef lhs, LLVMValueRef rhs, char* name) @extern("LLVMBuildFSub");
+extern fn LLVMValueRef build_f_mul(LLVMBuilderRef builder, LLVMValueRef lhs, LLVMValueRef rhs, char* name) @extern("LLVMBuildFMul");
+extern fn LLVMValueRef build_f_div(LLVMBuilderRef builder, LLVMValueRef lhs, LLVMValueRef rhs, char* name) @extern("LLVMBuildFDiv");
+extern fn LLVMValueRef build_add(LLVMBuilderRef builder, LLVMValueRef lhs, LLVMValueRef rhs, char* name) @extern("LLVMBuildAdd");
+extern fn LLVMValueRef build_sub(LLVMBuilderRef builder, LLVMValueRef lhs, LLVMValueRef rhs, char* name) @extern("LLVMBuildSub");
+extern fn LLVMValueRef build_mul(LLVMBuilderRef builder, LLVMValueRef lhs, LLVMValueRef rhs, char* name) @extern("LLVMBuildMul");
+extern fn LLVMValueRef build_s_div(LLVMBuilderRef builder, LLVMValueRef lhs, LLVMValueRef rhs, char* name) @extern("LLVMBuildSDiv");
+extern fn LLVMValueRef build_load(LLVMBuilderRef builder, LLVMValueRef val, char* name) @extern("LLVMBuildLoad2");
 extern fn LLVMValueRef build_load_2(LLVMBuilderRef builder, LLVMTypeRef type, LLVMValueRef val, char* name) @extern("LLVMBuildLoad2");
 extern fn LLVMValueRef build_br(LLVMBuilderRef builder, LLVMBasicBlockRef dest) @extern("LLVMBuildBr");
 extern fn LLVMValueRef build_cond_br(LLVMBuilderRef builder, LLVMValueRef condition, LLVMBasicBlockRef then_block, LLVMBasicBlockRef else_block) @extern("LLVMBuildCondBr");
 extern fn LLVMValueRef build_i_cmp(LLVMBuilderRef builder, LLVMIntPredicate operation, LLVMValueRef lhs, LLVMValueRef rhs, char* name) @extern("LLVMBuildICmp");
+extern fn LLVMValueRef build_f_cmp(LLVMBuilderRef builder, LLVMIntPredicate operation, LLVMValueRef lhs, LLVMValueRef rhs, char* name) @extern("LLVMBuildFCmp");
 extern fn void build_store(LLVMBuilderRef builder, LLVMValueRef val, LLVMValueRef variable) @extern("LLVMBuildStore");
+extern fn LLVMValueRef build_gep(LLVMBuilderRef builder, LLVMValueRef pointer, LLVMValueRef* indices, CUInt num_indices, char* name) @extern("LLVMBuildGEP");
+extern fn LLVMValueRef build_phi(LLVMBuilderRef builder, LLVMTypeRef type, char* name) @extern("LLVMBuildPhi");
 
 extern fn LLVMTypeKind get_type_kind(LLVMTypeRef type) @extern("LLVMGetTypeKind");
 extern fn LLVMValueRef get_operand(LLVMValueRef val, CUInt index) @extern("LLVMGetOperand");
@@ -70,37 +81,40 @@ extern fn usz count_struct_element_types(LLVMTypeRef type) @extern("LLVMCountStr
 
 extern fn LLVMBasicBlockRef create_basic_block_in_context(LLVMContextRef ctx, char* name) @extern("LLVMCreateBasicBlockInContext");
 
+extern fn void add_incoming(LLVMValueRef phi_node, LLVMValueRef* incoming_values, LLVMBasicBlockRef* incoming_blocks, CUInt count) @extern("LLVMAddIncoming");
+
 const TRUE  = 1;
 const FALSE = 0;
 
 alias LLVMBool                     = CInt;
-alias LLVMContextRef               = void * ;
-alias LLVMModuleRef                = void * ;
-alias LLVMTypeRef                  = void * ;
-alias LLVMValueRef                 = void * ;
-alias LLVMBasicBlockRef            = void * ;
-alias LLVMBuilderRef               = void * ;
-alias LLVMPassManagerRef           = void * ;
-alias LLVMPassRegistryRef          = void * ;
-alias LLVMMemoryBufferRef          = void * ;
-alias LLVMOpaquePassManagerBuilder = void * ;
-alias LLVMPassManagerBuilderRef    = LLVMOpaquePassManagerBuilder * ;
-alias LLVMExecutionEngineRef       = void * ;
-alias LLVMTargetDataRef            = void * ;
-alias LLVMTargetMachineRef         = void * ;
-alias LLVMTargetRef                = void * ;
-alias LLVMTargetLibraryInfoRef     = void * ;
-alias LLVMGenericValueRef          = void * ;
-alias LLVMMCJITMemoryManagerRef    = void * ;
+alias LLVMContextRef               = void*;
+alias LLVMModuleRef                = void*;
+alias LLVMTypeRef                  = void*;
+alias LLVMValueRef                 = void*;
+alias LLVMBasicBlockRef            = void*;
+alias LLVMBuilderRef               = void*;
+alias LLVMPassManagerRef           = void*;
+alias LLVMPassRegistryRef          = void*;
+alias LLVMMemoryBufferRef          = void*;
+alias LLVMOpaquePassManagerBuilder = void*;
+alias LLVMPassManagerBuilderRef    = LLVMOpaquePassManagerBuilder*;
+alias LLVMExecutionEngineRef       = void*;
+alias LLVMTargetDataRef            = void*;
+alias LLVMTargetMachineRef         = void*;
+alias LLVMTargetRef                = void*;
+alias LLVMTargetLibraryInfoRef     = void*;
+alias LLVMGenericValueRef          = void*;
+alias LLVMMCJITMemoryManagerRef    = void*;
 alias LLVMOpcode                   = CUInt;
-alias LLVMDiagnosticInfoRef        = void * ;
-alias LLVMComdatRef                = void * ;
-alias LLVMMetadataRef              = void * ;
-alias LLVMNamedMDNodeRef           = void * ;
-alias LLVMValueMetadataEntry       = void * ;
+alias LLVMDiagnosticInfoRef        = void*;
+alias LLVMComdatRef                = void*;
+alias LLVMMetadataRef              = void*;
+alias LLVMNamedMDNodeRef           = void*;
+alias LLVMValueMetadataEntry       = void*;
 alias LLVMInlineAsmDialect         = CUInt;
-alias LLVMAttributeRef             = void * ;
+alias LLVMAttributeRef             = void*;
 alias LLVMIntPredicate             = int;
+alias LLVMRealPredicate            = int;
 
 enum LLVMTypeKind
 {
@@ -156,22 +170,19 @@ const LLVMIntPredicate INT_SGE = 39;
 const LLVMIntPredicate INT_SLT = 40;
 const LLVMIntPredicate INT_SLE = 41;
 
-enum LLVMRealPredicate : (int v)
-{
-    REAL_PREDICATE_FALSE = 0,
-    REAL_OEQ             = 1,
-    REAL_OGT             = 2,
-    REAL_OGE             = 3,
-    REAL_OLT             = 4,
-    REAL_OLE             = 5,
-    REAL_ONE             = 6,
-    REAL_ORD             = 7,
-    REAL_UNO             = 8,
-    REAL_UEQ             = 9,
-    REAL_UGT             = 10,
-    REAL_UGE             = 11,
-    REAL_ULT             = 12,
-    REAL_ULE             = 13,
-    REAL_UNE             = 14,
-    REAL_PREDICATE_TRUE  = 15
-}
+const LLVMRealPredicate REAL_PREDICATE_FALSE = 0;
+const LLVMRealPredicate REAL_OEQ             = 1;
+const LLVMRealPredicate REAL_OGT             = 2;
+const LLVMRealPredicate REAL_OGE             = 3;
+const LLVMRealPredicate REAL_OLT             = 4;
+const LLVMRealPredicate REAL_OLE             = 5;
+const LLVMRealPredicate REAL_ONE             = 6;
+const LLVMRealPredicate REAL_ORD             = 7;
+const LLVMRealPredicate REAL_UNO             = 8;
+const LLVMRealPredicate REAL_UEQ             = 9;
+const LLVMRealPredicate REAL_UGT             = 10;
+const LLVMRealPredicate REAL_UGE             = 11;
+const LLVMRealPredicate REAL_ULT             = 12;
+const LLVMRealPredicate REAL_ULE             = 13;
+const LLVMRealPredicate REAL_UNE             = 14;
+const LLVMRealPredicate REAL_PREDICATE_TRUE  = 15;

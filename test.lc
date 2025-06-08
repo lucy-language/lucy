@@ -30,12 +30,20 @@ def int main(str[] args)
     
     # var str example = "Hello, ${name + " ${name}"}";
 
-    if (true)
+    printf("%d\n", 7 + 3 * (10 / (12 / (3 + 1) - 1)) / (2 + 3) - 5 - 3 + (8));
+
+    var float lol = 0.2000001f;
+    if (0.1f + lol > 0.3f)
     {
         printn(name);
         var float hehe = 0f;
         hehe = 10.0215621515641f;
         hehe = 10f;
+    }
+
+    if ("Kiana" == name)
+    {
+        
     }
 
     #printf("%d\n", hehe);
