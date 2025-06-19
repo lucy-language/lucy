@@ -2,6 +2,7 @@ module lucy::util;
 
 import color_util;
 import std;
+import llvm;
 
 const String LOWERCASE   = "abcdefghijklmnopqrstuvwxyz";
 const String UPPERCASE   = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -31,10 +32,15 @@ macro void array_insert(arr, element)
     *arr = tmp;
 }
 
+macro void panicf(String fmt, args..., String file, int line) @noreturn
+{
+    panic(string::tformat(fmt, args), file, line);
+}
+
 <*
  @require message.len <= 73 : "message cannot be longer than 73 characters"
 *>
-fn void panic(String message, String file, int line)
+fn void panic(String message, String file, int line) @noreturn
 {
     io::eprint  (color_util::COLOR_YELLOW);
     io::eprintn ("╭──────────────────────────────────────────────────────────────────────────────────╮");

@@ -68,7 +68,9 @@ fn ASTNode Parser.parse(&self)
             case KW_DEF: util::array_insert(&children, self.def());
             case KW_EXT: util::array_insert(&children, self.ext());
             case KW_CONST: util::array_insert(&children, self.const_stmt());
+            case KW_MACRO: util::array_insert(&children, self.macro_stmt());
             case KW_GLOBAL: util::array_insert(&children, self.global());
+            case KW_STRUCT: util::array_insert(&children, self.struct_stmt());
             default: errors::print(self.file_path, self.current, string::tformat("statement expected, got %s", self.current.type.str));
         }
     }
@@ -318,8 +320,7 @@ fn ASTNode[] Parser.def_parameters(&self)
         int start = self.current.range.start;
         StringList context_lines = self.current.context_lines;
         bool vararg;
-        DString type;
-        defer type.free();
+        String type;
 
         if (self.current.type == KW_VAR)
         {
@@ -327,22 +328,13 @@ fn ASTNode[] Parser.def_parameters(&self)
             vararg = true;
         }
 
-        type.append_chars(self.current.value);
-        self.try_consume(IDENTIFIER);
-
-        if (self.current.type == LBRACKET)
-        {
-            self.consume();
-            self.try_consume(RBRACKET);
-
-            type.append_chars("[]");
-        }
+        type = self.type();
 
         int end = self.current.range.end;
         String name = self.current.value;
         self.try_consume(IDENTIFIER);
 
-        util::array_insert(&parameters, (ASTNode){ PARAMETER, { .parameter_node = { vararg, type.copy_str(mem), name } }, { start, end }, line, context_lines });
+        util::array_insert(&parameters, (ASTNode){ PARAMETER, { .parameter_node = { vararg, type, name } }, { start, end }, line, context_lines });
 
         while (self.current.type == COMMA)
         {
@@ -352,8 +344,7 @@ fn ASTNode[] Parser.def_parameters(&self)
             int other_start = self.current.range.start;
             StringList other_context_lines = self.current.context_lines;
             bool other_vararg;
-            DString other_type;
-            defer other_type.free();
+            String other_type;
 
             if (self.current.type == KW_VAR)
             {
@@ -361,22 +352,13 @@ fn ASTNode[] Parser.def_parameters(&self)
                 other_vararg = true;
             }
 
-            other_type.append_chars(self.current.value);
-            self.try_consume(IDENTIFIER);
-
-            if (self.current.type == LBRACKET)
-            {
-                self.consume();
-                self.try_consume(RBRACKET);
-
-                other_type.append_chars("[]");
-            }
+            other_type = self.type();
 
             int other_end = self.current.range.end;
             String other_name = self.current.value;
             self.try_consume(IDENTIFIER);
 
-            util::array_insert(&parameters, (ASTNode){ PARAMETER, { .parameter_node = { other_vararg, other_type.copy_str(mem), other_name } }, { other_start, other_end }, other_line, other_context_lines });
+            util::array_insert(&parameters, (ASTNode){ PARAMETER, { .parameter_node = { other_vararg, other_type, other_name } }, { other_start, other_end }, other_line, other_context_lines });
         }
     }
 
@@ -466,6 +448,8 @@ fn ASTNode Parser.factor(&self)
             self.try_consume(RPAREN);
         case IDENTIFIER:
             node = self.identifier();
+        case LBRACE:
+            node = self.initializer();
         default:
             errors::print(self.file_path, self.current, "expression expected");
     }
@@ -535,9 +519,11 @@ fn ASTNode Parser.global(&self)
 
     switch (self.current.type)
     {
-        case KW_DEF: *node = self.def();
-        case KW_EXT: *node = self.ext();
-        case KW_CONST: *node = self.const_stmt();
+        case KW_DEF:    *node = self.def();
+        case KW_EXT:    *node = self.ext();
+        case KW_CONST:  *node = self.const_stmt();
+        case KW_MACRO:  *node = self.macro_stmt();
+        case KW_STRUCT: *node = self.struct_stmt();
         default: errors::print(self.file_path, self.current, string::tformat("statement expected, got %s", self.current.type.str));
     }
 
@@ -558,27 +544,20 @@ fn ASTNode Parser.var_stmt(&self)
     {
         self.consume();
 
-        util::array_insert(&types, self.current.value);
-        self.try_consume(IDENTIFIER);
-
+        util::array_insert(&types, self.type());
         self.try_consume(COMMA);
 
-        util::array_insert(&types, self.current.value);
-        self.try_consume(IDENTIFIER);
-
+        util::array_insert(&types, self.type());
         while (self.current.type == COMMA)
         {
             self.consume();
-
-            util::array_insert(&types, self.current.value);
-            self.try_consume(IDENTIFIER);
+            util::array_insert(&types, self.type());
         }
 
         self.try_consume(RBRACE);
     } else
     {
-        util::array_insert(&types, self.current.value);
-        self.try_consume(IDENTIFIER);
+        util::array_insert(&types, self.type());
     }
 
     String[] names;
@@ -591,19 +570,21 @@ fn ASTNode Parser.var_stmt(&self)
         util::array_insert(&names, self.current.value);
         self.try_consume(IDENTIFIER);
     }
-
-    ASTNode* value = malloc(ASTNode.sizeof);
+    
+    int end = self.current.range.end;
 
     if (self.current.type == EQUALS)
     {
         self.consume();
+        ASTNode* value = malloc(ASTNode.sizeof);
         *value = self.expr();
+        self.try_consume(SEMICOLON);
+        return { VAR, { .var_node = { types, names, value } }, { start, end }, line, context_lines };
     }
 
-    int end = self.current.range.end;
     self.try_consume(SEMICOLON);
 
-    return { VAR, { .var_node = { types, names, value } }, { start, end }, line, context_lines };
+    return { VAR, { .var_node = { types, names, null } }, { start, end }, line, context_lines };
 }
 
 fn ASTNode Parser.return_stmt(&self)
@@ -673,6 +654,233 @@ fn ASTNode Parser.identifier(&self)
         return { CALL, { .call_node = { id, arguments } }, { start, end }, line, context_lines };
     }
 
+    if (self.current.type == PERIOD)
+    {
+        self.consume();
+        ASTNode* node = malloc(ASTNode.sizeof);
+        *node = self.identifier();
+        int end = node.range.end;
+        return { ACCESS, { .access_node = { id, node } }, { start, end }, line, context_lines };
+    }
+
     int end = self.tokens[(usz)self.pos - 1].range.end;
     return { IDENT, { .ident_node = { id } }, { start, end }, line, context_lines };
+}
+
+fn ASTNode Parser.struct_stmt(&self)
+{
+    int line = self.current.line;
+    int start = self.current.range.start;
+    StringList context_lines = self.current.context_lines;
+    self.consume();
+    
+    String name = self.current.value;
+    self.try_consume(IDENTIFIER);
+    ASTNode[] fields = mem::new_array(ASTNode, 0);
+    
+    self.try_consume(LBRACE);
+
+    while (self.current.type != RBRACE)
+    {
+        int field_line = self.current.line;
+        int field_start = self.current.range.start;
+        StringList field_context_lines = self.current.context_lines;
+        String field_type = self.type();
+
+        String field_name = self.current.value;
+        self.try_consume(IDENTIFIER);
+
+        int field_end = self.current.range.end;
+        self.try_consume(SEMICOLON);
+        util::array_insert(&fields, (ASTNode){ FIELD, { .field_node = { field_type, field_name } }, { field_start, field_end }, field_line, field_context_lines });
+    }
+
+    int end = self.current.range.end;
+    self.try_consume(RBRACE);
+
+    return { STRUCT, { .struct_node = { name, fields } }, { start, end }, line, context_lines };
+}
+
+fn ASTNode Parser.initializer(&self)
+{
+    int line = self.current.line;
+    int start = self.current.range.start;
+    StringList context_lines = self.current.context_lines;
+    self.consume();
+    
+    ASTNode[] values = mem::new_array(ASTNode, 0);
+
+    if (self.current.type != RBRACE)
+    {
+        int value_line  = self.current.line;
+        int value_start = self.current.range.start;
+        StringList value_context_lines = self.current.context_lines;
+
+        String name;
+        if (self.current.type == PERIOD)
+        {
+            self.consume();
+            name = self.current.value;
+            self.try_consume(IDENTIFIER);
+            self.try_consume(EQUALS);
+        }
+
+        ASTNode* value = malloc(ASTNode.sizeof);
+        *value = self.expr();
+        int value_end = (*value).range.end;
+
+        util::array_insert(&values, (ASTNode){ INIT_VALUE, { .init_value_node = { name, value } }, { value_start, value_end }, value_line, value_context_lines });
+
+        while (self.current.type == COMMA)
+        {
+            self.consume();
+            int other_value_line  = self.current.line;
+            int other_value_start = self.current.range.start;
+            StringList other_value_context_lines = self.current.context_lines;
+
+            String other_name;
+            if (self.current.type == PERIOD)
+            {
+                self.consume();
+                other_name = self.current.value;
+                self.try_consume(IDENTIFIER);
+                self.try_consume(EQUALS);
+            }
+
+            ASTNode* other_value = malloc(ASTNode.sizeof);
+            *other_value = self.expr();
+            int other_value_end = (*other_value).range.end;
+
+            util::array_insert(&values, (ASTNode){ INIT_VALUE, { .init_value_node = { other_name, other_value } }, { other_value_start, other_value_end }, other_value_line, other_value_context_lines });
+        }
+    }
+    
+    int end = self.current.range.end;
+    self.try_consume(RBRACE);
+
+    return { INIT, { .init_node = { values } }, { start, end }, line, context_lines };
+}
+
+fn String Parser.type(&self)
+{
+    DString type;
+    defer type.free();
+
+    type.append_chars(self.current.value);
+    self.try_consume(IDENTIFIER);
+
+    while (util::in((TokenType[]){LBRACKET, STAR}, self.current.type))
+    {
+        if (self.current.type == LBRACKET)
+        {
+            self.consume();
+            self.try_consume(RBRACKET);
+            type.append_chars("[]");
+        } else
+        {
+            self.consume();
+            type.append_char('*');
+        }
+    }
+
+    return type.copy_str(mem);
+}
+
+fn ASTNode Parser.macro_stmt(&self)
+{
+    int line                 = self.current.line;
+    int start                = self.current.range.start;
+    StringList context_lines = self.current.context_lines;
+    self.consume();
+    
+    String type;
+    String name;
+    String type_or_name = self.type();
+    if (self.current.type == IDENTIFIER)
+    {
+        type = type_or_name;
+        name = self.current.value;
+        self.consume();
+    } else
+    {
+        name = type_or_name;
+    }
+
+    int end = self.tokens[(usz)self.pos - 1].range.end;
+
+    ASTNode[] parameters = self.macro_parameters();
+    ASTNode[] body       = self.body();
+
+    return { MACRO, { .macro_node = { type, name, parameters, body } }, { start, end }, line, context_lines };
+}
+
+fn ASTNode[] Parser.macro_parameters(&self)
+{
+    ASTNode[] parameters;
+    self.try_consume(LPAREN);
+
+    if (self.current.type == IDENTIFIER)
+    {
+        int line                 = self.current.line;
+        int start                = self.current.range.start;
+        StringList context_lines = self.current.context_lines;
+        bool vararg;
+
+        if (self.current.type == KW_VAR)
+        {
+            vararg = true;
+            self.consume();
+        }
+
+        String type;
+        String name;
+        String type_or_name = self.type();
+        if (self.current.type == IDENTIFIER)
+        {
+            type = type_or_name;
+            name = self.current.value;
+            self.consume();
+        } else
+        {
+            name = type_or_name;
+        }
+        int end = self.tokens[(usz)self.pos - 1].range.end;
+
+        util::array_insert(&parameters, (ASTNode){ PARAMETER, { .parameter_node = { vararg, type, name } }, { start, end }, line, context_lines });
+
+        while (self.current.type == COMMA)
+        {
+            self.consume();
+            
+            int other_line                 = self.current.line;
+            int other_start                = self.current.range.start;
+            StringList other_context_lines = self.current.context_lines;
+            bool other_vararg;
+
+            if (self.current.type == KW_VAR)
+            {
+                other_vararg = true;
+                self.consume();
+            }
+
+            String other_type;
+            String other_name;
+            String other_type_or_name = self.type();
+            if (self.current.type == IDENTIFIER)
+            {
+                other_type = type_or_name;
+                other_name = self.current.value;
+                self.consume();
+            } else
+            {
+                other_name = type_or_name;
+            }
+            int other_end = self.tokens[(usz)self.pos - 1].range.end;
+
+            util::array_insert(&parameters, (ASTNode){ PARAMETER, { .parameter_node = { other_vararg, other_type, other_name } }, { other_start, other_end }, other_line, other_context_lines });
+        }
+    }
+
+    self.try_consume(RPAREN);
+    return parameters;
 }

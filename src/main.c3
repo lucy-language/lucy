@@ -100,7 +100,9 @@ fn int main(String[] args)
             os::exit(0);
         }
 
-        SemanticAnalyser semantic_analyser = semantic_analyser::new(path, ast);
+        TypeTable* type_table = malloc(TypeTable.sizeof);
+        (*type_table).init();
+        SemanticAnalyser semantic_analyser = semantic_analyser::new(path, ast, type_table);
         semantic_analyser.analyse();
 
         if (arg_parser.has_arg("analyser"))
@@ -111,7 +113,7 @@ fn int main(String[] args)
         // Need to reinstantiate because json fucks it up somehow
         // TODO: fix
         parser = parser::new(lexer, path);
-        Compiler compiler = compiler::new(path, parser.parse());
+        Compiler compiler = compiler::new(path, parser.parse(), type_table);
         compiler.compile();
     }
 

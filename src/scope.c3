@@ -2,7 +2,7 @@ module lucy::scope;
 
 import lucy::node;
 
-const FMT = "Could not find variable `%s` in current scope";
+const FMT = "Could not find variable `%s` in current scope (%s:%s)";
 
 
 module lucy::scope::comp;
@@ -59,7 +59,7 @@ fn Var Scope.get_var(&self, String name)
         return (*self.parent).get_var(name);
     }
 
-    io::eprintfn(scope::FMT, name);
+    io::eprintfn(scope::FMT, name, $$FILE, $$LINE);
     os::exit(1);
 }
 
@@ -75,7 +75,7 @@ fn Const Scope.get_const(&self, String name)
         return (*self.parent).get_const(name);
     }
 
-    io::eprintfn(scope::FMT, name);
+    io::eprintfn(scope::FMT, name, $$FILE, $$LINE);
     os::exit(1);
 }
 
@@ -91,7 +91,7 @@ fn Param Scope.get_param(&self, String name)
         return (*self.parent).get_param(name);
     }
 
-    io::eprintfn(scope::FMT, name);
+    io::eprintfn(scope::FMT, name, $$FILE, $$LINE);
     os::exit(1);
 }
 
@@ -187,7 +187,7 @@ fn SemVar SemScope.get_var(&self, String name)
         return (*self.parent).get_var(name);
     }
 
-    io::eprintfn(scope::FMT, name);
+    io::eprintfn(scope::FMT, name, $$FILE, $$LINE);
     os::exit(1);
 }
 
@@ -203,7 +203,7 @@ fn SemConst SemScope.get_const(&self, String name)
         return (*self.parent).get_const(name);
     }
 
-    io::eprintfn(scope::FMT, name);
+    io::eprintfn(scope::FMT, name, $$FILE, $$LINE);
     os::exit(1);
 }
 

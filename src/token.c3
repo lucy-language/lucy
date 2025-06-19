@@ -60,7 +60,9 @@ enum TokenType : (String str)
 
     KW_RETURN = "return",
     KW_GLOBAL = "global",
+    KW_STRUCT = "struct",
     KW_CONST  = "const",
+    KW_MACRO  = "macro",
     KW_ELSE   = "else",
     KW_PKG    = "pkg",
     KW_DEF    = "def",

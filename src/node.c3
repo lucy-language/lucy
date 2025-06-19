@@ -8,19 +8,25 @@ alias StringList = List{String};
 
 enum NodeType
 {
+    INIT_VALUE,
     PARAMETER,
     REASSIGN,
+    ACCESS,
+    STRUCT,
     RETURN,
     DOUBLE,
     GLOBAL,
     FLOAT,
     CONST,
     IDENT,
+    FIELD,
+    MACRO,
     FILE,
     BOOL,
     LINK,
     CALL,
     CHAR,
+    INIT,
     USE,
     DEF,
     INT,
@@ -43,18 +49,24 @@ struct ASTNode
     union        node
     {
         LinkerOptionNode linker_option_node;
+        InitValueNode    init_value_node;
         ParameterNode    parameter_node;
         ReassignNode     reassign_node;
+        AccessNode       access_node;
+        StructNode       struct_node;
         ReturnNode       return_node;
         DoubleNode       double_node;
         GlobalNode       global_node;
         FloatNode        float_node;
         ConstNode        const_node;
         IdentNode        ident_node;
+        FieldNode        field_node;
+        MacroNode        macro_node;
         FileNode         file_node;
         BoolNode         bool_node;
         CallNode         call_node;
         CharNode         char_node;
+        InitNode         init_node;
         UseNode          use_node;
         DefNode          def_node;
         IntNode          int_node;
@@ -194,4 +206,41 @@ struct IfNode
     ASTNode[] children;
     ASTNode*  else_if;
     ASTNode[] else_children;
+}
+
+struct FieldNode
+{
+    String type;
+    String name;
+}
+
+struct StructNode
+{
+    String    name;
+    ASTNode[] fields;
+}
+
+struct InitNode
+{
+    ASTNode[] values;
+}
+
+struct InitValueNode
+{
+    String   name;
+    ASTNode* value;
+}
+
+struct AccessNode
+{
+    String   id;
+    ASTNode* node;
+}
+
+struct MacroNode
+{
+    String    type;
+    String    name;
+    ASTNode[] parameters;
+    ASTNode[] children;
 }

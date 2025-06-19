@@ -46,6 +46,7 @@ extern fn LLVMValueRef const_real(LLVMTypeRef ty, double n) @extern("LLVMConstRe
 extern fn LLVMValueRef const_string(char* str, usz len, LLVMBool dont_null_terminate) @extern("LLVMConstString");
 extern fn LLVMValueRef const_struct(LLVMValueRef * constant_vals, usz count, int packed) @extern("LLVMConstStruct");
 extern fn LLVMValueRef const_string_in_context(LLVMContextRef context, char* str, usz len, LLVMBool dont_null_terminate) @extern("LLVMConstString");
+extern fn LLVMValueRef const_bit_cast(LLVMValueRef value, LLVMTypeRef type) @extern("LLVMConstBitCast");
 
 extern fn LLVMValueRef build_call_2(LLVMBuilderRef builder, LLVMTypeRef fn_type, LLVMValueRef fN, LLVMValueRef* args, CUInt size, char* name) @extern("LLVMBuildCall2");
 extern fn LLVMValueRef build_extract_value(LLVMBuilderRef builder, LLVMValueRef val, CUInt index, char* name) @extern("LLVMBuildExtractValue");
@@ -66,22 +67,46 @@ extern fn LLVMValueRef build_br(LLVMBuilderRef builder, LLVMBasicBlockRef dest) 
 extern fn LLVMValueRef build_cond_br(LLVMBuilderRef builder, LLVMValueRef condition, LLVMBasicBlockRef then_block, LLVMBasicBlockRef else_block) @extern("LLVMBuildCondBr");
 extern fn LLVMValueRef build_i_cmp(LLVMBuilderRef builder, LLVMIntPredicate operation, LLVMValueRef lhs, LLVMValueRef rhs, char* name) @extern("LLVMBuildICmp");
 extern fn LLVMValueRef build_f_cmp(LLVMBuilderRef builder, LLVMIntPredicate operation, LLVMValueRef lhs, LLVMValueRef rhs, char* name) @extern("LLVMBuildFCmp");
-extern fn void build_store(LLVMBuilderRef builder, LLVMValueRef val, LLVMValueRef variable) @extern("LLVMBuildStore");
+extern fn void         build_store(LLVMBuilderRef builder, LLVMValueRef val, LLVMValueRef variable) @extern("LLVMBuildStore");
 extern fn LLVMValueRef build_gep(LLVMBuilderRef builder, LLVMValueRef pointer, LLVMValueRef* indices, CUInt num_indices, char* name) @extern("LLVMBuildGEP");
+extern fn LLVMValueRef build_gep_2(LLVMBuilderRef builder, LLVMTypeRef type, LLVMValueRef pointer, LLVMValueRef* indices, CUInt num_indices, char* name) @extern("LLVMBuildGEP2");
+extern fn LLVMValueRef build_struct_gep_2(LLVMBuilderRef builder, LLVMTypeRef type, LLVMValueRef pointer, CUInt index, char* name) @extern("LLVMBuildStructGEP2");
 extern fn LLVMValueRef build_phi(LLVMBuilderRef builder, LLVMTypeRef type, char* name) @extern("LLVMBuildPhi");
 
 extern fn LLVMTypeKind get_type_kind(LLVMTypeRef type) @extern("LLVMGetTypeKind");
 extern fn LLVMValueRef get_operand(LLVMValueRef val, CUInt index) @extern("LLVMGetOperand");
-extern fn void get_struct_element_types(LLVMTypeRef type, LLVMTypeRef* dest) @extern("LLVMGetStructElementTypes");
-extern fn usz get_num_operands(LLVMValueRef val) @extern("LLVMGetNumOperands");
+extern fn void         get_struct_element_types(LLVMTypeRef type, LLVMTypeRef* dest) @extern("LLVMGetStructElementTypes");
+extern fn LLVMTypeRef  get_struct_element_type(LLVMTypeRef type, CInt index) @extern("LLVMGetStructElementTypes");
+extern fn usz          get_num_operands(LLVMValueRef val) @extern("LLVMGetNumOperands");
+extern fn LLVMTypeRef  get_element_type(LLVMTypeRef type) @extern("LLVMGetElementType");
+extern fn String       get_struct_element_name(LLVMTypeRef type, CUInt index) @extern("LLVMGetStructElementName");
+extern fn String       get_struct_name(LLVMTypeRef type) @extern("LLVMGetStructName");
+extern fn CInt         get_struct_field_index(LLVMTypeRef type, char* name) @extern("LLVMGetStructFieldIndex");
+extern fn LLVMTypeRef  get_type_by_name(LLVMModuleRef mod, char* name) @extern("LLVMGetTypeByName");
+extern fn char*        get_value_name(LLVMValueRef value) @extern("LLVMGetValueName");
+extern fn LLVMValueRef get_initializer(LLVMValueRef value) @extern("LLVMGetInitializer");
+extern fn char*        get_as_string(LLVMValueRef initializer, CInt* len) @extern("LLVMGetAsString");
 
-extern fn LLVMTypeRef struct_get_type_at_index(LLVMTypeRef type, CUInt index) @extern("LLVMStructGetTypeAtIndex");
-
-extern fn usz count_struct_element_types(LLVMTypeRef type) @extern("LLVMCountStructElementTypes");
+extern fn CUInt count_struct_element_types(LLVMTypeRef type) @extern("LLVMCountStructElementTypes");
 
 extern fn LLVMBasicBlockRef create_basic_block_in_context(LLVMContextRef ctx, char* name) @extern("LLVMCreateBasicBlockInContext");
 
 extern fn void add_incoming(LLVMValueRef phi_node, LLVMValueRef* incoming_values, LLVMBasicBlockRef* incoming_blocks, CUInt count) @extern("LLVMAddIncoming");
+
+extern fn LLVMTypeRef struct_create_named(LLVMContextRef context, char* name) @extern("LLVMStructCreateNamed");
+extern fn void        struct_set_body(LLVMTypeRef type, LLVMTypeRef* types, CUInt types_count, LLVMBool is_packed) @extern("LLVMStructSetBody");
+extern fn LLVMTypeRef struct_get_type_at_index(LLVMTypeRef type, CUInt index) @extern("LLVMStructGetTypeAtIndex");
+
+extern fn LLVMBool is_struct_type(LLVMTypeRef type) @extern("LLVMIsStructType");
+
+extern fn char* print_value_to_string(LLVMValueRef value) @extern("LLVMPrintValueToString");
+extern fn char* print_type_to_string(LLVMTypeRef value) @extern("LLVMPrintTypeToString");
+
+extern fn bool is_a_global_variable(LLVMValueRef variable) @extern("LLVMIsAGlobalVariable");
+extern fn bool is_constant(LLVMValueRef variable) @extern("LLVMIsConstant");
+extern fn bool is_a_constant_data_array(LLVMValueRef variable) @extern("LLVMIsAConstantDataArray");
+extern fn bool is_a_load_inst(LLVMValueRef variable) @extern("LLVMIsLoadInst");
+extern fn bool is_a_get_element_ptr_inst(LLVMValueRef variable) @extern("LLVMIsAGetElementPtrInst");
 
 const TRUE  = 1;
 const FALSE = 0;
@@ -115,6 +140,7 @@ alias LLVMInlineAsmDialect         = CUInt;
 alias LLVMAttributeRef             = void*;
 alias LLVMIntPredicate             = int;
 alias LLVMRealPredicate            = int;
+alias LLVMGlobalVariableRef        = void*;
 
 enum LLVMTypeKind
 {

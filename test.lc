@@ -2,60 +2,29 @@
 
 pkg test;
 
-const int TEST = 22;
-global const int TEST2 = 69;
-
 ext int printf(str fmt, var str args);
 
-def {str, int} test()
+struct Person
 {
-    return "Kiana", 22;
+    str name;
+    int age;
 }
 
 def int main(str[] args)
 {
-    var {str, int} name, age = test();
-    var char c = 'c';
-    printf("%c\n", c);
-
-    printn("\"Test\"");
-
-    if (c == 'A')
+    var Person p1 =
     {
-        printn(true);
-    } else
-    {
-        printn(false);
-    }
+        "Kiana",
+        22
+    };
+
+    printf("%s\n", p1.name);
     
-    # var str example = "Hello, ${name + " ${name}"}";
-
-    printf("%d\n", 7 + 3 * (10 / (12 / (3 + 1) - 1)) / (2 + 3) - 5 - 3 + (8));
-
-    var float lol = 0.2000001f;
-    if (0.1f + lol > 0.3f)
-    {
-        printn(name);
-        var float hehe = 0f;
-        hehe = 10.0215621515641f;
-        hehe = 10f;
-    }
-
-    if ("Kiana" == name)
-    {
-        
-    }
-
-    #printf("%d\n", hehe);
-
-    printf("%d\n", TEST2);
-    printf("%d\n", age);
-
     return 0;
 }
 
-def void printn(str s)
-{
-    printf("%s\n", s);
-    return;
-}
+# TODO
+#macro void printn(x)
+#{
+#    printf("%s", x);
+#}

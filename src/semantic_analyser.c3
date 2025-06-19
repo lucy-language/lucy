@@ -1,7 +1,8 @@
 module lucy::semantic_analyser;
 
-import std;
-import lucy::node, lucy::errors, lucy::scope::sema;
+import std::collections::list, std::collections::map, std::os, std::io;
+import lucy::node, lucy::errors, lucy::scope::sema, lucy::util, lucy::lookup_table;
+import llvm;
 
 struct Def
 {
@@ -16,24 +17,34 @@ struct Parameter
     String name;
 }
 
-struct SemanticAnalyser
+struct Struct
 {
-    String      file_path;
-    ASTNode     ast;
-    List{Def}   functions;
-    SemScope*   scope;
+    String      name;
+    FieldNode[] fields;
+    ASTNode     node;
 }
 
-fn SemanticAnalyser new(String file_path, ASTNode ast)
+struct SemanticAnalyser
+{
+    String        file_path;
+    ASTNode       ast;
+    List{Def}     functions;
+    List{Struct}  structs;
+    SemScope*     scope;
+    TypeTable*    type_table;
+}
+
+fn SemanticAnalyser new(String file_path, ASTNode ast, TypeTable* type_table)
 {
     SemScope* scope    = malloc(SemScope.sizeof);
     (*scope).parent    = null;
     (*scope).variables = {};
     (*scope).constants = {};
     return {
-        .file_path = file_path,
-        .ast       = ast,
-        .scope     = scope
+        .file_path  = file_path,
+        .ast        = ast,
+        .scope      = scope,
+        .type_table = type_table
     };
 }
 
@@ -47,12 +58,14 @@ fn void SemanticAnalyser.analyse(&self)
             case CONST: self.add_const(node);
             case DEF: self.add_def(node);
             case EXT: self.add_ext(node);
+            case STRUCT: self.add_struct(node);
             case GLOBAL:
-                switch (node.node.global_node.node[0].node_type)
+                switch ((*node.node.global_node.node).node_type)
                 {
-                    case CONST: self.add_const(node.node.global_node.node[0]);
-                    case DEF: self.add_def(node.node.global_node.node[0]);
-                    case EXT: self.add_ext(node.node.global_node.node[0]);
+                    case CONST: self.add_const(*node.node.global_node.node);
+                    case DEF: self.add_def(*node.node.global_node.node);
+                    case EXT: self.add_ext(*node.node.global_node.node);
+                    case STRUCT: self.add_struct(*node.node.global_node.node);
                     default: break;
                 }
             default: break;
@@ -155,22 +168,50 @@ fn void SemanticAnalyser.add_ext(&self, ASTNode node_in)
     }
 }
 
+fn void SemanticAnalyser.add_struct(&self, ASTNode node_in)
+{
+    StructNode node = node_in.node.struct_node;
+    String     name = node.name;
+
+    FieldNode[] fields = mem::new_array(FieldNode, node.fields.len);
+    foreach (i, field : node.fields)
+    {
+        fields[i] = field.node.field_node;
+    }
+
+    self.structs.push({ name, fields, node_in });
+
+    Field* type_fields = malloc(Field.sizeof * node.fields.len);
+    Type* type = malloc(Type.sizeof);
+    LLVMTypeRef* llvm_type = malloc(LLVMTypeRef.sizeof);
+    *llvm_type = null;
+    (*type) = { name.zstr_copy(mem), type_fields, node.fields.len, llvm_type };
+    (*self.type_table).insert(type);
+}
+
 fn void SemanticAnalyser.analyse_node(&self, ASTNode node)
 {
     switch (node.node_type)
     {
-        case CONST    : self.analyse_const(node);
-        case REASSIGN : self.analyse_reassign(node);
-        case DEF      : self.analyse_def(node);
-        case VAR      : self.analyse_var(node);
-        case EXT      : self.analyse_ext(node);
-        case BIN      : self.analyse_bin(node);
-        case IDENT    : self.analyse_ident(node);
-        case GLOBAL   : self.analyse_global(node);
-        case CALL     : self.analyse_call(node);
-        case IF       : self.analyse_if(node);
+        case CONST:     self.analyse_const(node);
+        case REASSIGN:  self.analyse_reassign(node);
+        case DEF:       self.analyse_def(node);
+        case VAR:       self.analyse_var(node);
+        case EXT:       self.analyse_ext(node);
+        case BIN:       self.analyse_bin(node);
+        case IDENT:     self.analyse_ident(node);
+        case GLOBAL:    self.analyse_global(node);
+        case CALL:      self.analyse_call(node);
+        case IF:        self.analyse_if(node);
         case PARAMETER: self.analyse_parameter(node);
-        default       : break;
+        //case INIT:      util::panic("Init analyser not implemented", $$FILE, $$LINE);
+        case STRUCT:    self.analyse_struct(node);
+        case ACCESS:    self.analyse_access(node);
+        
+        case STR:
+        case INIT:
+        case RETURN: break;
+        default:        break;//util::panicf("missing analyse function `%s`", node.node_type, file: $$FILE, line: $$LINE);
     }
 }
 
@@ -256,13 +297,12 @@ fn String SemanticAnalyser.get_type(&self, ASTNode node)
         case CHAR:   return "char";
         case FLOAT:  return "float";
         case IDENT:  return self.get_ident_type(node);
-        case BIN:    return self.get_type(node.node.bin_node.left[0]);
+        case BIN:    return self.get_type(*node.node.bin_node.left);
         case CALL:   return self.get_call_type(node);
+        case INIT:   return self.get_struct_type(node);
 
-        default: io::eprintfn("Unable to match type `%s`", node.node_type);
+        default: util::panicf("Unable to match type `%s`", node.node_type, file: $$FILE, line: $$LINE);
     }
-
-    return "";
 }
 
 fn void SemanticAnalyser.analyse_var(&self, ASTNode node_in)
@@ -295,15 +335,19 @@ fn void SemanticAnalyser.analyse_var(&self, ASTNode node_in)
         }
     } else
     {
-        ASTNode value = node.value[0];
-        self.analyse_node(value);
- 
         String name = names[0];
         String type = types[0];
-        if (self.get_type(value) != type)
+        
+        if (node.value)
         {
-            errors::print_node(self.file_path, node_in, string::tformat("Expected type `%s`, got `%s`", type, self.get_type(value)));
-            os::exit(1);
+            ASTNode value = *node.value;
+            self.analyse_node(value);
+ 
+            if (self.get_type(value) != type)
+            {
+                errors::print_node(self.file_path, node_in, string::tformat("Expected type `%s`, got `%s`", type, self.get_type(value)));
+                os::exit(1);
+            }
         }
         self.add_variable(node_in, type, name);
     }
@@ -347,8 +391,8 @@ fn String SemanticAnalyser.get_ident_type(&self, ASTNode node_in)
         SemConst constant = (*self.scope).get_const(name);
         return constant.type;
     }
-
-    io::eprintfn("Unable to match type `%s`", node_in.node_type);
+    
+    errors::print_node(self.file_path, node_in, string::tformat("Unable to match type for variable `%s`", name));
     os::exit(1);
 }
 
@@ -479,4 +523,152 @@ fn void SemanticAnalyser.analyse_parameter(&self, ASTNode node_in)
     ParameterNode node = node_in.node.parameter_node;
 
     (*self.scope).variables.set(node.name, { node_in, node.type });
+}
+
+fn String SemanticAnalyser.get_struct_type(&self, ASTNode node_in)
+{
+    InitNode node = node_in.node.init_node;
+    InitValueNode[] values = mem::new_array(InitValueNode, node.values.len);
+    
+    foreach (i, value : node.values)
+    {
+        values[i] = value.node.init_value_node;
+    }
+    
+    String[] possible_structs = mem::new_array(String, 0);
+
+    foreach STRUCTS: (i, str : self.structs)
+    {
+        if (str.fields.len != values.len) continue;
+        foreach (j, field : str.fields)
+        {
+            if (field.type != self.get_type(*values[j].value)) continue STRUCTS;
+        }
+        util::array_insert(&possible_structs, str.name);
+    }
+    
+    if (possible_structs.len > 1)
+    {
+        errors::print_node(self.file_path, node_in, "Initializer can be of more than one type. Please typecast it");
+        os::exit(1);
+    }
+
+    if (possible_structs.len == 0)
+    {
+        errors::print_node(self.file_path, node_in, "Unable find a type with those fields");
+        os::exit(1);
+    }
+    
+    return possible_structs[0];
+}
+
+// TODO: move to new function
+/*fn void SemanticAnalyser.analyse_struct(&self, ASTNode node_in)
+{
+    StructNode node = node_in.node.struct_node;
+    
+    HashMap{String, ASTNode} prev;
+    prev.init(mem, node.fields.len);
+    defer prev.free();
+    foreach (field_node : node.fields)
+    {
+        FieldNode field = field_node.node.field_node;
+        if (prev.has_key(field.name))
+        {
+            errors::print_node(self.file_path, prev.get(field.name)!!, "Previous definition was here");
+            errors::print_node(self.file_path, field_node, string::tformat("Field `%s` already defined", field.name));
+            os::exit(1);
+        }
+        prev.set(field.name, field_node);
+    }
+}*/
+
+fn void SemanticAnalyser.analyse_access(&self, ASTNode node_in)
+{
+    AccessNode node = node_in.node.access_node;
+    SemVar variable = self.scope.get_var(node.id);
+    Type* base_type = self.type_table.lookup(variable.type);
+
+    Type* type = self.resolve_access(base_type, node.id, node.node);
+    if (!type)
+    {
+        io::eprintfn("sema -> Unknown type `%s`", node.id);
+        os::exit(1);
+    }
+}
+
+// TODO: recursive function for resolving full path
+fn Type* SemanticAnalyser.resolve_access(&self, Type* base_type, char* prev, ASTNode* next)
+{
+    if (!next)
+    {
+        return base_type;
+    }
+
+    switch ((*next).node_type)
+    {
+        case ACCESS:
+            AccessNode access_node = next.node.access_node;
+            Field* field           = base_type.get_field(access_node.id);
+            if (!field)
+            {
+                ASTNode struct_node;
+                foreach (str : self.structs)
+                {
+                    if (str.name == ((ZString)base_type.name).str_view())
+                    {
+                        struct_node = str.node;
+                    }
+                }
+                errors::print_node(self.file_path, struct_node, "Definition was here");
+                errors::print_node(self.file_path, *next, string::tformat("Type `%s` has no field `%s`", (ZString)base_type.name, access_node.id));
+                os::exit(1);
+            }
+            return self.resolve_access(field.type, access_node.id.zstr_copy(mem), access_node.node);
+        case IDENT:
+            char*  field_name = next.node.ident_node.name.zstr_copy(mem);
+            Field* field      = base_type.get_field(field_name);
+            if (!field)
+            {
+                ASTNode struct_node;
+                foreach (str : self.structs)
+                {
+                    if (str.name == ((ZString)base_type.name).str_view())
+                    {
+                        struct_node = str.node;
+                    }
+                }
+                errors::print_node(self.file_path, struct_node, "Definition was here");
+                errors::print_node(self.file_path, *next, string::tformat("Type `%s` has no field `%s`", (ZString)base_type.name, (ZString)field_name));
+                os::exit(1);
+            }
+            return (*field).type;
+        default:
+            util::panic("Unreachable", $$FILE, $$LINE);
+    }
+}
+
+fn void SemanticAnalyser.analyse_struct(&self, ASTNode node_in)
+{
+    StructNode node = node_in.node.struct_node;
+    String     name = node.name;
+
+    FieldNode[] fields = mem::new_array(FieldNode, node.fields.len);
+    foreach (i, field : node.fields)
+    {
+        fields[i] = field.node.field_node;
+    }
+
+    Type* type = self.type_table.lookup(name);
+
+    foreach (i, field : fields)
+    {
+        ((Field[])type.fields[:node.fields.len])[i].name = field.name;
+        ((Field[])type.fields[:node.fields.len])[i].type = self.type_table.lookup(field.type);
+        if (!fields[i].type)
+        {
+            io::eprintfn("Error: unknown type `%s` for field `%s`", field.type, field.name);
+            os::exit(1);
+        }
+    }
 }

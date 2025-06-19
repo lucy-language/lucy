@@ -1,25 +1,29 @@
 module lucy::compiler;
 
-import std;
-import lucy::node, lucy::errors, lucy::scope::comp, lucy::util;
+import std::collections::map, std::collections::list, std::os, std::io;
+import lucy::node, lucy::errors, lucy::scope::comp, lucy::util, lucy::lookup_table;
 import llvm;
+
+extern fn int strcmp(char* s1, char* s2);
 
 faultdef INVALID_TYPE;
 
 struct Compiler
 {
-    FileNode             file_node;
-    String               module_name;
-    String               file_path;
-    LLVMModuleRef        mod;
-    LLVMBuilderRef       builder;
-    LLVMContextRef       context;
-    HashMap{String, Def} functions;
-    Scope*               scope;
-    int                  index;
-    LLVMValueRef         true_ptr;
-    LLVMValueRef         false_ptr;
-    LLVMValueRef         strcmp;
+    FileNode                file_node;
+    String                  module_name;
+    String                  file_path;
+    LLVMModuleRef           mod;
+    LLVMBuilderRef          builder;
+    LLVMContextRef          context;
+    HashMap{String, Def}    functions;
+    HashMap{String, Struct} structs;
+    Scope*                  scope;
+    int                     index;
+    LLVMValueRef            true_ptr;
+    LLVMValueRef            false_ptr;
+    LLVMValueRef            strcmp;
+    TypeTable*              type_table;
 }
 
 struct Def
@@ -28,7 +32,12 @@ struct Def
     LLVMTypeRef  type;
 }
 
-fn Compiler new(String file_path, ASTNode file)
+struct Struct
+{
+    LLVMTypeRef type;
+}
+
+fn Compiler new(String file_path, ASTNode file, TypeTable* type_table)
 {
     String mod_name        = file.node.file_node.module_name;
     LLVMModuleRef mod      = llvm::module_create_with_name(mod_name);
@@ -47,7 +56,8 @@ fn Compiler new(String file_path, ASTNode file)
         .mod         = mod,
         .builder     = builder,
         .context     = context,
-        .scope       = scope
+        .scope       = scope,
+        .type_table  = type_table
     };
 }
 
@@ -56,9 +66,11 @@ fn void Compiler.compile(&self)
     // register functions first so they can be found even if declared later than call
     foreach (child : self.file_node.children)
     {
-        if (child.node_type == DEF)
+        switch (child.node_type)
         {
-            self.add_def(child.node.def_node);
+            case DEF:    self.add_def(child.node.def_node);
+            case STRUCT: self.add_struct(child.node.struct_node);
+            default: break;
         }
     }
     
@@ -71,9 +83,7 @@ fn void Compiler.compile(&self)
     char* error;
     if (llvm::print_module_to_file(self.mod, string::tformat("%s.ll", self.module_name), &error))
     {
-        io::eprintfn("Failed to write IR: %s", *error);
-        llvm::dispose_message(error);
-        return;
+        util::panic(string::tformat("Failed to write IR: %s", *error), $$FILE, $$LINE);
     }
 }
 
@@ -120,31 +130,43 @@ fn void Compiler.add_def(&self, DefNode node)
     self.functions.set(node.name, { fN, fn_type });
 }
 
-fn LLVMValueRef Compiler.compile_node(&self, ASTNode ast, LLVMValueRef fN = null)
+fn void Compiler.add_struct(&self, StructNode node)
+{
+    LLVMTypeRef struct_type = llvm::struct_create_named(self.context, node.name);
+
+    self.structs.set(node.name, { struct_type });
+}
+
+fn LLVMValueRef Compiler.compile_node(&self, ASTNode ast, LLVMValueRef fN = null, LLVMTypeRef type = null)
 {
     switch (ast.node_type)
     {
-        case DEF      : self.compile_def(ast.node.def_node);
-        case RETURN   : self.compile_return(ast.node.return_node);
-        case EXT      : self.compile_ext(ast.node.ext_node);
-        case CONST    : self.compile_const(ast.node.const_node);
-        case GLOBAL   : self.compile_global(ast.node.global_node);
-        case VAR      : self.compile_var(ast.node.var_node);
-        case REASSIGN : self.compile_reassign(ast.node.reassign_node);
-        case STR      : return self.compile_str(ast.node.str_node);
-        case INT      : return self.compile_int(ast.node.int_node);
-        case CHAR     : return self.compile_char(ast.node.char_node);
-        case BOOL     : return self.compile_bool(ast.node.bool_node);
-        case FLOAT    : return self.compile_float(ast.node.float_node);
-        case DOUBLE   : return self.compile_double(ast.node.double_node);
-        case CALL     : return self.compile_call(ast.node.call_node);
-        case IDENT    : return self.compile_ident(ast.node.ident_node);
-        case IF       : self.compile_if(ast.node.if_node, fN);
-        case BIN      : return self.compile_bin(ast.node.bin_node);
-        default       : break;
-    }
+        case DEF:        self.compile_def(ast.node.def_node);
+        case RETURN:     self.compile_return(ast.node.return_node);
+        case EXT:        self.compile_ext(ast.node.ext_node);
+        case CONST:      self.compile_const(ast.node.const_node);
+        case GLOBAL:     self.compile_global(ast.node.global_node);
+        case VAR:        self.compile_var(ast.node.var_node);
+        case REASSIGN:   self.compile_reassign(ast.node.reassign_node);
+        case STR:        return self.compile_str(ast.node.str_node);
+        case INT:        return self.compile_int(ast.node.int_node);
+        case CHAR:       return self.compile_char(ast.node.char_node);
+        case BOOL:       return self.compile_bool(ast.node.bool_node);
+        case FLOAT:      return self.compile_float(ast.node.float_node);
+        case DOUBLE:     return self.compile_double(ast.node.double_node);
+        case CALL:       return self.compile_call(ast.node.call_node);
+        case IDENT:      return self.compile_ident(ast.node.ident_node);
+        case IF:         self.compile_if(ast.node.if_node, fN);
+        case BIN:        return self.compile_bin(ast.node.bin_node);
+        case INIT:       return self.compile_init(ast.node.init_node, type);
+        case INIT_VALUE: return self.compile_node(*ast.node.init_value_node.value);
+        case ACCESS:     return self.compile_access(ast.node.access_node);
+        case STRUCT:     self.compile_struct(ast.node.struct_node);
+        case MACRO:      self.compile_macro(ast.node.macro_node);
 
-    return {};
+        default:         util::panic(string::tformat("Missing compile function `%s`", ast.node_type), $$FILE, $$LINE);
+    }
+    return null;
 }
 
 fn void Compiler.compile_def(&self, DefNode node)
@@ -161,7 +183,6 @@ fn void Compiler.compile_def(&self, DefNode node)
         ParameterNode param = parameter.node.parameter_node;
         LLVMValueRef llvm_param = llvm::get_param(function, index);
         (*self.scope).parameters.set(param.name, { param.type, llvm_param });
-        // self.compile_node(parameter);
     }
 
     foreach (child : node.children)
@@ -233,9 +254,7 @@ fn void Compiler.compile_const(&self, ConstNode node, bool global = false)
         case "float": value = llvm::const_real(llvm::float_type(), node.value.node.float_node.value.to_float())!!;
         case "double": value = llvm::const_real(llvm::double_type(), node.value.node.double_node.value.to_double())!!;
         case "str": value = llvm::const_string(node.value.node.str_node.value, node.value.node.str_node.value.len, llvm::TRUE);
-        default:
-            io::eprintn("A constant can only be a builtin type");
-            os::exit(1);
+        default: util::panic("A constant can only be a builtin type", $$FILE, $$LINE);
     }
     LLVMValueRef constant = llvm::add_global(self.mod, llvm::type_of(value), node.name);
 
@@ -261,7 +280,10 @@ fn LLVMTypeRef Compiler.get_type(&self, String[] types)
             case "double": return llvm::double_type();
             case "void": return llvm::void_type();
             case "str": return llvm::pointer_type(llvm::int8_type(), 0);
-            // TODO: add struct/custom type
+            // struct
+            default:
+                if (!self.structs.has_key(type)) util::panic(string::tformat("Type `%s` could not be matched", type), $$FILE, $$LINE);
+                return self.structs.get(type)!!.type;
         }
     } else
     {
@@ -273,9 +295,6 @@ fn LLVMTypeRef Compiler.get_type(&self, String[] types)
 
         return llvm::struct_type(llvm_types, llvm_types.len, llvm::FALSE);
     }
-
-    io::eprintfn("Type `%s` could not be matched", types);
-    os::exit(1);
 }
 
 fn void Compiler.compile_global(&self, GlobalNode node)
@@ -293,8 +312,15 @@ fn void Compiler.compile_var(&self, VarNode node)
 {
     if (node.names.len == 1)
     {
-        LLVMValueRef variable = llvm::build_alloca(self.builder, self.get_type(node.types), node.names[0]);
-        llvm::build_store(self.builder, self.compile_node(*node.value), variable);
+        LLVMTypeRef type = self.get_type(node.types);
+        if (llvm::get_type_kind(self.get_type(node.types)) == STRUCT_TYPE_KIND)
+        {
+            type = self.structs.get(node.types[0])!!.type;
+        }
+        
+        LLVMValueRef variable = llvm::build_alloca(self.builder, type, node.names[0]);
+        LLVMValueRef value = self.compile_node(*node.value, type: type);
+        llvm::build_store(self.builder, value, variable);
 
         self.scope.variables.set(node.names[0], { node.types[0], variable });
         return;
@@ -322,7 +348,6 @@ fn void Compiler.compile_var(&self, VarNode node)
 
 fn void Compiler.compile_reassign(&self, ReassignNode node)
 {
-    // TODO: figure out type
     String name = node.name;
     Var variable = (*self.scope).get_var(name);
     
@@ -333,8 +358,9 @@ fn void Compiler.compile_reassign(&self, ReassignNode node)
 
 fn LLVMValueRef Compiler.compile_str(&self, StrNode node)
 {
-    String value = node.value;
+    String value     = node.value;
     String processed = self.process_escape_sequences(value);
+    int    len       = processed.len;
 
     LLVMValueRef str = llvm::const_string(processed, processed.len, llvm::FALSE);
     LLVMTypeRef arr_type = llvm::array_type(llvm::int8_type(), processed.len + 1);
@@ -343,7 +369,7 @@ fn LLVMValueRef Compiler.compile_str(&self, StrNode node)
     llvm::set_linkage(global_str, PRIVATE_LINKAGE);
     llvm::set_unnamed_addr(global_str, llvm::TRUE);
     llvm::set_global_constant(global_str, llvm::TRUE);
-
+    
     return global_str;
 }
 
@@ -407,8 +433,7 @@ fn LLVMValueRef Compiler.compile_call(&self, CallNode node)
     Def? def = self.functions.get(node.name);
     if (catch error = def)
     {
-        io::eprintfn("Could not find function `%s`", node.name);
-        os::exit(1);
+        util::panic(string::tformat("Could not find function `%s`", node.name), $$FILE, $$LINE);
     }
 
     LLVMValueRef function = def.function;
@@ -484,10 +509,9 @@ fn String Compiler.process_escape_sequences(&self, String input)
 fn void Compiler.compile_if(&self, IfNode node, LLVMValueRef* fN)
 {
     int index = self.index++;
-    // TODO: condition and jmp
     LLVMValueRef condition = self.compile_node(*node.condition);
 
-    // create end first for reference to jump
+    // create first for reference to jump
     LLVMBasicBlockRef then_block = llvm::append_basic_block(fN, "");
     LLVMBasicBlockRef else_block = llvm::append_basic_block(fN, "");
     LLVMBasicBlockRef end_block = llvm::append_basic_block(fN, "");
@@ -538,7 +562,7 @@ fn LLVMValueRef Compiler.compile_bin(&self, BinNode node)
         llvm::float_type()
     };
 
-    // TODO: add type checking
+    // TODO: extend type checking
     // only need to check one side since sema rules out mismatch
     if (util::in(int_types, llvm::type_of(left)))
     {
@@ -575,7 +599,7 @@ fn LLVMValueRef Compiler.compile_bin(&self, BinNode node)
     } else if (llvm::type_of(left) == llvm::pointer_type(llvm::int8_type(), 0))
     // strings
     {
-        util::panic("comparing strings", $$FILE, $$LINE);
+        util::panic("comparing strings. use libc->strcmp instead", $$FILE, $$LINE);
         /*
         if (self.strcmp == null)
         {
@@ -605,6 +629,108 @@ fn LLVMValueRef Compiler.compile_double(&self, DoubleNode node)
     return llvm::const_real(llvm::double_type(), node.value.to_double())!!;
 }
 
-fn void Compiler.build_strcmp(&self)
+fn LLVMValueRef Compiler.compile_init(&self, InitNode node, LLVMTypeRef type)
 {
+    LLVMValueRef[] values = mem::new_array(LLVMValueRef, node.values.len);
+    foreach (i, value : node.values)
+    {
+        values[i] = self.compile_node(value);
+    }
+
+    LLVMValueRef instance = llvm::const_struct(values, values.len, 0);
+
+    return instance;
+}
+
+fn LLVMValueRef Compiler.compile_access(&self, AccessNode node)
+{
+    Var variable = self.scope.get_var(node.id);
+    LLVMValueRef struct_value = variable.value;
+    LLVMTypeRef struct_type = self.structs.get(variable.type)!!.type;
+    
+    return self.resolve_access(struct_value, struct_type, variable.type.zstr_copy(mem), node.node);
+}
+
+fn LLVMValueRef Compiler.resolve_access(&self, LLVMValueRef base_value, LLVMTypeRef base_type, char* prev_id, ASTNode* next_node)
+{
+    if (!next_node) return base_value;
+
+    switch (next_node.node_type)
+    {
+        case ACCESS:
+            AccessNode access = next_node.node.access_node;
+            char* field_name  = access.id.zstr_copy(mem);
+            int num_fields    = llvm::count_struct_element_types(base_type);
+            Type* type        = self.type_table.lookup(prev_id); // lookup type name
+            for (int i = 0; i < num_fields; i++)
+            {
+                Field field = ((Field[])(*type).fields[:num_fields])[i];
+                if (strcmp(field.name, field_name) == 0)
+                {
+                    LLVMValueRef field_ptr = llvm::build_struct_gep_2(self.builder, base_type, base_value, i, "");
+                    LLVMValueRef loaded_value = llvm::build_load_2(self.builder, field.type.llvm_type, field_ptr, "");
+                    
+                    return self.resolve_access(field_ptr, field.type.llvm_type, field.type.name, access.node);
+                }
+            }
+        case IDENT:
+            IdentNode ident  = next_node.node.ident_node;
+            char* field_name = ident.name.zstr_copy(mem);
+            int num_fields   = llvm::count_struct_element_types(base_type);
+            Type* type       = self.type_table.lookup(prev_id); // lookup type name
+            if (ident.name[0] == '$')
+            {//detect early
+                return self.resolve_builtin_field(base_value, base_type, prev_id, field_name);
+            }
+
+            for (int i = 0; i < num_fields; i++)
+            {
+                Field field = ((Field[])(*type).fields[:num_fields])[i];
+                if (strcmp(field.name, field_name) == 0)
+                {
+                    if (((ZString)field_name)[0] == '$')
+                    {
+                        LLVMValueRef type_struct = llvm::build_load_2(self.builder, base_type, base_value, "");
+                        return llvm::build_extract_value(self.builder, type_struct, i + 1, "");
+                    }
+                    LLVMValueRef field_ptr = llvm::build_struct_gep_2(self.builder, base_type, base_value, i, "");
+                    LLVMValueRef loaded_value = llvm::build_load_2(self.builder, field.type.llvm_type, field_ptr, "");
+
+                    return loaded_value;
+                }
+            }
+            util::panic("Unreachable", $$FILE, $$LINE);
+        default:
+            util::panic("Unsupported node type in access chain", $$FILE, $$LINE);
+    }
+    util::panic("Unreachable", $$FILE, $$LINE);
+}
+
+fn void Compiler.compile_struct(&self, StructNode node)
+{
+    LLVMTypeRef[] fields = mem::new_array(LLVMTypeRef, node.fields.len);
+    foreach(i, field : node.fields)
+    {
+        fields[i] = self.get_type((String[]){field.node.field_node.type});
+    }
+    
+    LLVMTypeRef struct_type = self.structs.get(node.name)!!.type;
+    llvm::struct_set_body(struct_type, fields, fields.len, llvm::FALSE);
+
+    Type* type = self.type_table.lookup(node.name.zstr_copy(mem));
+    (*type).llvm_type = struct_type;
+}
+
+fn LLVMValueRef Compiler.resolve_builtin_field(&self, LLVMValueRef value, LLVMTypeRef type, char* prev, char* id)
+{
+    io::printn((ZString)self.type_table.lookup(prev).name);
+
+    io::printn((ZString)llvm::print_value_to_string(value));
+    
+    return null;
+}
+
+fn void Compiler.compile_macro(&self, MacroNode node)
+{
+    // TODO
 }
