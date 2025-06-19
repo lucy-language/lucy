@@ -141,13 +141,13 @@ fn LLVMValueRef Compiler.compile_node(&self, ASTNode ast, LLVMValueRef fN = null
 {
     switch (ast.node_type)
     {
-        case DEF:        self.compile_def(ast.node.def_node);
-        case RETURN:     self.compile_return(ast.node.return_node);
-        case EXT:        self.compile_ext(ast.node.ext_node);
-        case CONST:      self.compile_const(ast.node.const_node);
-        case GLOBAL:     self.compile_global(ast.node.global_node);
-        case VAR:        self.compile_var(ast.node.var_node);
-        case REASSIGN:   self.compile_reassign(ast.node.reassign_node);
+        case DEF:               self.compile_def(ast.node.def_node);
+        case RETURN:            self.compile_return(ast.node.return_node);
+        case EXT:               self.compile_ext(ast.node.ext_node);
+        case CONST:             self.compile_const(ast.node.const_node);
+        case GLOBAL:            self.compile_global(ast.node.global_node);
+        case VAR:               self.compile_var(ast.node.var_node);
+        case REASSIGN:          self.compile_reassign(ast.node.reassign_node);
         case STR:        return self.compile_str(ast.node.str_node);
         case INT:        return self.compile_int(ast.node.int_node);
         case CHAR:       return self.compile_char(ast.node.char_node);
@@ -156,13 +156,15 @@ fn LLVMValueRef Compiler.compile_node(&self, ASTNode ast, LLVMValueRef fN = null
         case DOUBLE:     return self.compile_double(ast.node.double_node);
         case CALL:       return self.compile_call(ast.node.call_node);
         case IDENT:      return self.compile_ident(ast.node.ident_node);
-        case IF:         self.compile_if(ast.node.if_node, fN);
+        case IF:                self.compile_if(ast.node.if_node, fN);
         case BIN:        return self.compile_bin(ast.node.bin_node);
         case INIT:       return self.compile_init(ast.node.init_node, type);
         case INIT_VALUE: return self.compile_node(*ast.node.init_value_node.value);
         case ACCESS:     return self.compile_access(ast.node.access_node);
-        case STRUCT:     self.compile_struct(ast.node.struct_node);
-        case MACRO:      self.compile_macro(ast.node.macro_node);
+        case STRUCT:            self.compile_struct(ast.node.struct_node);
+        case MACRO:             self.compile_macro(ast.node.macro_node);
+        case WHILE:             self.compile_while(ast.node.while_node, fN);
+        case UNARY:      return self.compile_unary(ast.node.unary_node);
 
         default:         util::panic(string::tformat("Missing compile function `%s`", ast.node_type), $$FILE, $$LINE);
     }
@@ -238,7 +240,8 @@ fn void Compiler.compile_ext(&self, ExtNode node)
     LLVMTypeRef fn_type = llvm::function_type(type, llvm_param_types, llvm_param_types.len, vararg ? llvm::TRUE : llvm::FALSE);
     LLVMValueRef fN = llvm::add_function(self.mod, node.name, fn_type);
 
-    self.functions.set(node.name, { fN, fn_type });
+    String name = node.alias_name != "" ? node.alias_name : node.name;
+    self.functions.set(name, { fN, fn_type });
 }
 
 fn void Compiler.compile_const(&self, ConstNode node, bool global = false)
@@ -375,7 +378,7 @@ fn LLVMValueRef Compiler.compile_str(&self, StrNode node)
 
 fn LLVMValueRef Compiler.compile_int(&self, IntNode node)
 {
-    int value = node.value.to_int()!!;
+    int value = (int)node.value.to_uint()!!;
     LLVMTypeRef type = llvm::int32_type(); // TODO: return llvm::int64_type() if on 64 bit system
 
     return llvm::const_int(type, value, llvm::FALSE);
@@ -508,7 +511,6 @@ fn String Compiler.process_escape_sequences(&self, String input)
 
 fn void Compiler.compile_if(&self, IfNode node, LLVMValueRef* fN)
 {
-    int index = self.index++;
     LLVMValueRef condition = self.compile_node(*node.condition);
 
     // create first for reference to jump
@@ -733,4 +735,47 @@ fn LLVMValueRef Compiler.resolve_builtin_field(&self, LLVMValueRef value, LLVMTy
 fn void Compiler.compile_macro(&self, MacroNode node)
 {
     // TODO
+}
+
+fn void Compiler.compile_while(&self, WhileNode node, LLVMValueRef fN)
+{
+    LLVMValueRef condition = self.compile_node(*node.condition);
+
+    // create first for reference to jump
+    LLVMBasicBlockRef then_block = llvm::append_basic_block(fN, "");
+    LLVMBasicBlockRef end_block = llvm::append_basic_block(fN, "");
+
+    // evaluate condition
+    llvm::build_cond_br(self.builder, condition, then_block, end_block);
+
+    // evaluate then
+    self.scope = (*self.scope).new();
+    llvm::position_builder_at_end(self.builder, then_block);
+    foreach (child : node.children)
+    {
+        self.compile_node(child);
+    }
+    LLVMValueRef new_condition = self.compile_node(*node.condition);
+    llvm::build_cond_br(self.builder, new_condition, then_block, end_block);
+    self.scope = (*self.scope).parent;
+
+    // continue code
+    llvm::position_builder_at_end(self.builder, end_block);
+}
+
+fn LLVMValueRef Compiler.compile_unary(&self, UnaryNode node)
+{
+    LLVMValueRef expr = self.compile_node(*node.expr);
+    
+    if (llvm::type_of(expr) == llvm::int1_type())
+    {
+        switch (node.operator)
+        {
+            case "!":
+                return llvm::build_i_cmp(self.builder, llvm::INT_EQ, expr, llvm::const_int(llvm::int1_type(), llvm::FALSE, llvm::FALSE), "");
+            default:
+                util::panicf("Unsupported operator `%s` for type `bool`", node.operator, file: $$FILE, line: $$LINE);
+        }
+    }
+    util::panic("Unreachable", $$FILE, $$LINE);
 }

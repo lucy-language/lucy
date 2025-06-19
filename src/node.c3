@@ -21,6 +21,8 @@ enum NodeType
     IDENT,
     FIELD,
     MACRO,
+    UNARY,
+    WHILE,
     FILE,
     BOOL,
     LINK,
@@ -62,6 +64,8 @@ struct ASTNode
         IdentNode        ident_node;
         FieldNode        field_node;
         MacroNode        macro_node;
+        UnaryNode        unary_node;
+        WhileNode        while_node;
         FileNode         file_node;
         BoolNode         bool_node;
         CallNode         call_node;
@@ -242,5 +246,17 @@ struct MacroNode
     String    type;
     String    name;
     ASTNode[] parameters;
+    ASTNode[] children;
+}
+
+struct UnaryNode
+{
+    String   operator;
+    ASTNode* expr;
+}
+
+struct WhileNode
+{
+    ASTNode*  condition;
     ASTNode[] children;
 }

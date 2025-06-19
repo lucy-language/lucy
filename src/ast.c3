@@ -19,6 +19,8 @@ fn void? ASTNode.to_json(&self, DString* dest, bool pretty, int indent)
 		case IDENT:      serialize::add_json(self.node.ident_node, dest, pretty, indent)!;
 		case FIELD:      serialize::add_json(self.node.field_node, dest, pretty, indent)!;
 		case MACRO:      serialize::add_json(self.node.macro_node, dest, pretty, indent)!;
+		case UNARY:      serialize::add_json(self.node.unary_node, dest, pretty, indent)!;
+		case WHILE:      serialize::add_json(self.node.while_node, dest, pretty, indent)!;
 		case FILE:       serialize::add_json(self.node.file_node, dest, pretty, indent)!;
 		case BOOL:       serialize::add_json(self.node.bool_node, dest, pretty, indent)!;
 		case LINK:       serialize::add_json(self.node.linker_option_node, dest, pretty, indent)!;
@@ -237,6 +239,20 @@ struct MacroJson
     ASTNode[] children;
 }
 
+struct UnaryJson
+{
+    NodeType node_type;
+    String   operator;
+    ASTNode  expr;
+}
+
+struct WhileJson
+{
+    NodeType  node_type;
+    ASTNode   condition;
+    ASTNode[] children;
+}
+
 fn void? ParameterNode.to_json(&self, DString* dest, bool pretty, int indent)
 {
     serialize::add_json((ParameterJson){ PARAMETER, self.vararg, self.type, self.name }, dest, pretty, indent)!;
@@ -377,4 +393,14 @@ fn void? AccessNode.to_json(&self, DString* dest, bool pretty, int indent)
 fn void? MacroNode.to_json(&self, DString* dest, bool pretty, int indent)
 {
     serialize::add_json((MacroJson){ MACRO, self.type, self.name, self.parameters, self.children }, dest, pretty, indent)!;
+}
+
+fn void? UnaryNode.to_json(&self, DString* dest, bool pretty, int indent)
+{
+    serialize::add_json((UnaryJson){ UNARY, self.operator, *self.expr }, dest, pretty, indent)!;
+}
+
+fn void? WhileNode.to_json(&self, DString* dest, bool pretty, int indent)
+{
+    serialize::add_json((WhileJson){ WHILE, *self.condition, self.children }, dest, pretty, indent)!;
 }

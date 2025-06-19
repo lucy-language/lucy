@@ -65,10 +65,10 @@ fn ASTNode Parser.parse(&self)
         
         switch (self.current.type)
         {
-            case KW_DEF: util::array_insert(&children, self.def());
-            case KW_EXT: util::array_insert(&children, self.ext());
-            case KW_CONST: util::array_insert(&children, self.const_stmt());
-            case KW_MACRO: util::array_insert(&children, self.macro_stmt());
+            case KW_DEF:    util::array_insert(&children, self.def());
+            case KW_EXT:    util::array_insert(&children, self.ext());
+            case KW_CONST:  util::array_insert(&children, self.const_stmt());
+            case KW_MACRO:  util::array_insert(&children, self.macro_stmt());
             case KW_GLOBAL: util::array_insert(&children, self.global());
             case KW_STRUCT: util::array_insert(&children, self.struct_stmt());
             default: errors::print(self.file_path, self.current, string::tformat("statement expected, got %s", self.current.type.str));
@@ -214,8 +214,9 @@ fn ASTNode[] Parser.body(&self)
     {
         switch (self.current.type)
         {
-            case KW_VAR: util::array_insert(&body, self.var_stmt());
-            case KW_IF: util::array_insert(&body, self.if_stmt());
+            case KW_VAR:   util::array_insert(&body, self.var_stmt());
+            case KW_IF:    util::array_insert(&body, self.if_stmt());
+            case KW_WHILE: util::array_insert(&body, self.while_stmt());
             case IDENTIFIER:
                 util::array_insert(&body, self.identifier());
                 self.try_consume(SEMICOLON);
@@ -450,6 +451,16 @@ fn ASTNode Parser.factor(&self)
             node = self.identifier();
         case LBRACE:
             node = self.initializer();
+        case PLUS:
+        case MINUS:
+        case BANG:
+            String operator = self.current.value;
+            int start = self.current.range.start;
+            self.consume();
+            ASTNode* expr = malloc(ASTNode.sizeof);
+            *expr = self.expr();
+            int end = (*expr).range.end;
+            node = { UNARY, { .unary_node = { operator, expr } }, { start, end }, self.current.line, self.current.context_lines };
         default:
             errors::print(self.file_path, self.current, "expression expected");
     }
@@ -883,4 +894,22 @@ fn ASTNode[] Parser.macro_parameters(&self)
 
     self.try_consume(RPAREN);
     return parameters;
+}
+
+fn ASTNode Parser.while_stmt(&self)
+{
+    int line = self.current.line;
+    int start = self.current.range.start;
+    StringList context_lines = self.current.context_lines;
+    self.consume();
+
+    self.try_consume(LPAREN);
+    ASTNode* condition = malloc(ASTNode.sizeof);
+    *condition = self.condition();
+    int end = self.current.range.end;
+    self.try_consume(RPAREN);
+
+    ASTNode[] children = self.body();
+
+    return { WHILE, { .while_node = { condition, children } }, { start, end }, line, context_lines };
 }

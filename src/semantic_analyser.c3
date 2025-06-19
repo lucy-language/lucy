@@ -207,11 +207,14 @@ fn void SemanticAnalyser.analyse_node(&self, ASTNode node)
         //case INIT:      util::panic("Init analyser not implemented", $$FILE, $$LINE);
         case STRUCT:    self.analyse_struct(node);
         case ACCESS:    self.analyse_access(node);
+        case WHILE:     self.analyse_while(node);
         
         case STR:
         case INIT:
+        case INT:
+        case UNARY:
         case RETURN: break;
-        default:        break;//util::panicf("missing analyse function `%s`", node.node_type, file: $$FILE, line: $$LINE);
+        default: util::panicf("missing analyse function `%s`", node.node_type, file: $$FILE, line: $$LINE);
     }
 }
 
@@ -670,5 +673,16 @@ fn void SemanticAnalyser.analyse_struct(&self, ASTNode node_in)
             io::eprintfn("Error: unknown type `%s` for field `%s`", field.type, field.name);
             os::exit(1);
         }
+    }
+}
+
+fn void SemanticAnalyser.analyse_while(&self, ASTNode node_in)
+{
+    WhileNode node = node_in.node.while_node;
+    self.analyse_node(*node.condition);
+
+    foreach (child : node.children)
+    {
+        self.analyse_node(child);
     }
 }

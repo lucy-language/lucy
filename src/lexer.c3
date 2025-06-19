@@ -98,6 +98,7 @@ fn TokenList Lexer.tokenize(&self)
         if (self.current == '@') { tokens.push({ AT,        "@", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
         if (self.current == '=') { tokens.push({ EQUALS,    "=", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
         if (self.current == ':') { tokens.push({ COLON,     ":", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '!') { tokens.push({ BANG,      "!", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
 
         if (self.current == '+') { tokens.push({ PLUS,   "+", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
         if (self.current == '-') { tokens.push({ MINUS,  "-", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
@@ -297,6 +298,7 @@ fn Token Lexer.identifier(&self)
     if (str == "else")   return { KW_ELSE,   str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "const")  return { KW_CONST,  str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "macro")  return { KW_MACRO,  str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "while")  return { KW_WHILE,  str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "struct") return { KW_STRUCT, str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "return") return { KW_RETURN, str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "global") return { KW_GLOBAL, str, { start, self.column }, self.line, self.get_context_lines() };

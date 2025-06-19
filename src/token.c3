@@ -44,6 +44,7 @@ enum TokenType : (String str)
     EQUALS    = "`=`",
     COMMA     = "`,`",
     COLON     = "`:`",
+    BANG      = "`!`",
     AT        = "`@`",
 
     SLASH = "`/`",
@@ -63,6 +64,7 @@ enum TokenType : (String str)
     KW_STRUCT = "struct",
     KW_CONST  = "const",
     KW_MACRO  = "macro",
+    KW_WHILE  = "while",
     KW_ELSE   = "else",
     KW_PKG    = "pkg",
     KW_DEF    = "def",

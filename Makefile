@@ -4,7 +4,7 @@ run: build
 	./build/lucy compile test.lc --ast
 
 compile: run
-	clang *.ll -o program
+	clang test.ll -l raylib -lc -o program
 
 build: clean
 	c3c build -l LLVM

@@ -1,39 +1,35 @@
-%"c" @linux_x86 @macos_x64;
+%"raylib";
 
 pkg test;
 
-ext int printf(str fmt, var str args);
+ext void InitWindow(int width, int height, str title) as init_window;
+ext void CloseWindow() as close_window;
+ext void BeginDrawing() as begin_drawing;
+ext void EndDrawing() as end_drawing;
+ext void DrawRectangle(int x, int y, int width, int height, int color) as draw_rectangle;
+ext void ClearBackground(int color) as clear_background;
+ext bool WindowShouldClose() as window_should_close;
 
-struct Person
-{
-    Name name;
-    int age;
-}
+ext void SetTraceLogLevel(int level) as set_trace_log_level;
 
-struct Name
-{
-    str first_name;
-    str last_name;
-}
+const int WIDTH  = 800;
+const int HEIGHT = 500;
+
+const int LOG_NONE = 7;
 
 def int main(str[] args)
 {
-    var Person p1 =
-    {
-        {
-            "Kiana",
-            "Bennett"
-        },
-        22
-    };
-
-    printf("%s\n", p1.name.first_name);
+    set_trace_log_level(LOG_NONE);
+    init_window(WIDTH, HEIGHT, "Raylib Test");
     
+    while (!window_should_close())
+    {
+        begin_drawing();
+        clear_background(0xffffccff);
+        draw_rectangle(WIDTH / 2 - (200 / 2), HEIGHT / 2 - (100 / 2), 200, 100, 0xffff6600);
+        end_drawing();
+    }
+
+    close_window();
     return 0;
 }
-
-# TODO
-#macro void printn(x)
-#{
-#    printf("%s", x);
-#}
