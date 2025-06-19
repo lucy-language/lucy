@@ -6,19 +6,28 @@ ext int printf(str fmt, var str args);
 
 struct Person
 {
-    str name;
+    Name name;
     int age;
+}
+
+struct Name
+{
+    str first_name;
+    str last_name;
 }
 
 def int main(str[] args)
 {
     var Person p1 =
     {
-        "Kiana",
+        {
+            "Kiana",
+            "Bennett"
+        },
         22
     };
 
-    printf("%s\n", p1.name);
+    printf("%s\n", p1.name.first_name);
     
     return 0;
 }
