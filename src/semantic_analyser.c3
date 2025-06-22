@@ -212,6 +212,7 @@ fn void SemanticAnalyser.analyse_node(&self, ASTNode node)
         case STR:
         case INIT:
         case INT:
+        case FLOAT:
         case UNARY:
         case RETURN: break;
         default: util::panicf("missing analyse function `%s`", node.node_type, file: $$FILE, line: $$LINE);

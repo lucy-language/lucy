@@ -34,7 +34,9 @@ struct Def
 
 struct Struct
 {
+    String      name;
     LLVMTypeRef type;
+    FieldNode[] fields;
 }
 
 fn Compiler new(String file_path, ASTNode file, TypeTable* type_table)
@@ -133,8 +135,13 @@ fn void Compiler.add_def(&self, DefNode node)
 fn void Compiler.add_struct(&self, StructNode node)
 {
     LLVMTypeRef struct_type = llvm::struct_create_named(self.context, node.name);
+    FieldNode[] fields = mem::new_array(FieldNode, node.fields.len);
+    foreach (i, field : node.fields)
+    {
+        fields[i] = field.node.field_node;
+    }
 
-    self.structs.set(node.name, { struct_type });
+    self.structs.set(node.name, { node.name, struct_type, fields });
 }
 
 fn LLVMValueRef Compiler.compile_node(&self, ASTNode ast, LLVMValueRef fN = null, LLVMTypeRef type = null)
@@ -386,6 +393,7 @@ fn LLVMValueRef Compiler.compile_int(&self, IntNode node)
 
 fn LLVMValueRef Compiler.compile_bool(&self, BoolNode node)
 {
+    /*
     String value = node.value;
     if (value == "true")
     {
@@ -418,6 +426,8 @@ fn LLVMValueRef Compiler.compile_bool(&self, BoolNode node)
     }
 
     return global;
+    */
+    return llvm::const_int(llvm::int1_type(), node.value == "true" ? 1 : 0, 0);
 }
 
 fn LLVMValueRef Compiler.compile_char(&self, CharNode node)
@@ -623,7 +633,7 @@ fn LLVMValueRef Compiler.compile_bin(&self, BinNode node)
 
 fn LLVMValueRef Compiler.compile_float(&self, FloatNode node)
 {
-    return llvm::const_real(llvm::float_type(), node.value.to_float())!!;
+    return llvm::const_real(llvm::double_type(), node.value.to_float())!!;
 }
 
 fn LLVMValueRef Compiler.compile_double(&self, DoubleNode node)
@@ -638,8 +648,16 @@ fn LLVMValueRef Compiler.compile_init(&self, InitNode node, LLVMTypeRef type)
     {
         values[i] = self.compile_node(value);
     }
-
-    LLVMValueRef instance = llvm::const_struct(values, values.len, 0);
+    
+    LLVMTypeRef struct_type = self.get_struct_type(node);
+    LLVMValueRef instance;
+    if (struct_type != null)
+    {
+        instance = llvm::const_named_struct(struct_type, values, values.len, 0);
+    } else
+    {
+        instance = llvm::const_struct(values, values.len, 0);
+    }
 
     return instance;
 }
@@ -778,4 +796,39 @@ fn LLVMValueRef Compiler.compile_unary(&self, UnaryNode node)
         }
     }
     util::panic("Unreachable", $$FILE, $$LINE);
+}
+
+fn LLVMTypeRef Compiler.get_type_node(&self, ASTNode node)
+{
+    switch (node.node_type)
+    {
+        case INIT_VALUE: return self.get_type_node(*node.node.init_value_node.value);
+        case STR:        return self.get_type((String[]){"str"});
+        case INT:        return self.get_type((String[]){"int"});
+        case BOOL:       return self.get_type((String[]){"bool"});
+        case FLOAT:      return self.get_type((String[]){"float"});
+        case DOUBLE:     return self.get_type((String[]){"double"});
+        // TODO: do other types later
+        case INIT:       return self.get_struct_type(node.node.init_node);
+
+        default: util::panicf("Unimplemented type `%s`", node.node_type, file: $$FILE, line: $$LINE);
+    }
+}
+
+fn LLVMTypeRef Compiler.get_struct_type(&self, InitNode node)
+{
+    ASTNode[] values = node.values;
+    LLVMTypeRef[] possible_structs = mem::new_array(LLVMTypeRef, 0);
+
+    foreach STRUCTS: (i, str : self.structs.values(mem))
+    {
+        if (str.fields.len != values.len) continue;
+        foreach (j, field : str.fields)
+        {
+            if (((ZString)llvm::print_type_to_string(self.get_type((String[]){field.type}))) != ((ZString)llvm::print_type_to_string(self.get_type_node(values[j])))) continue STRUCTS;
+        }
+        util::array_insert(&possible_structs, str.type);
+    }
+
+    return possible_structs.len == 0 ? null : possible_structs[0];
 }

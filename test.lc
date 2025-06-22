@@ -1,35 +1,30 @@
-%"raylib";
-
 pkg test;
 
-ext void InitWindow(int width, int height, str title) as init_window;
-ext void CloseWindow() as close_window;
-ext void BeginDrawing() as begin_drawing;
-ext void EndDrawing() as end_drawing;
-ext void DrawRectangle(int x, int y, int width, int height, int color) as draw_rectangle;
-ext void ClearBackground(int color) as clear_background;
-ext bool WindowShouldClose() as window_should_close;
+ext void printf(str fmt, var str args);
 
-ext void SetTraceLogLevel(int level) as set_trace_log_level;
+struct Person
+{
+    Name name;
+    int  age;
+}
 
-const int WIDTH  = 800;
-const int HEIGHT = 500;
-
-const int LOG_NONE = 7;
+struct Name
+{
+    str first_name;
+    str last_name;
+}
 
 def int main(str[] args)
 {
-    set_trace_log_level(LOG_NONE);
-    init_window(WIDTH, HEIGHT, "Raylib Test");
-    
-    while (!window_should_close())
-    {
-        begin_drawing();
-        clear_background(0xffffccff);
-        draw_rectangle(WIDTH / 2 - (200 / 2), HEIGHT / 2 - (100 / 2), 200, 100, 0xffff6600);
-        end_drawing();
-    }
+    var Person p = test();
 
-    close_window();
+    printf("%s\n", p.name.first_name);
+    printf("%s\n", p.name.last_name);
+    printf("%d\n", p.age);
     return 0;
+}
+
+def Person test()
+{
+    return { { "Kiana", "Bennett" }, 22};
 }
