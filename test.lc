@@ -28,3 +28,8 @@ def Person test()
 {
     return { { "Kiana", "Bennett" }, 22};
 }
+
+def void test2()
+{
+    # no return should default to `ret void` for void functions
+}

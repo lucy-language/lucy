@@ -30,6 +30,7 @@ struct Def
 {
     LLVMValueRef function;
     LLVMTypeRef  type;
+    String       ret_type;
 }
 
 struct Struct
@@ -129,7 +130,7 @@ fn void Compiler.add_def(&self, DefNode node)
         llvm::set_value_name(llvm::get_param(fN, i), (node.parameters)[i].node.parameter_node.name);
     }
     
-    self.functions.set(node.name, { fN, fn_type });
+    self.functions.set(node.name, { fN, fn_type, node.types[0] });
 }
 
 fn void Compiler.add_struct(&self, StructNode node)
@@ -198,6 +199,12 @@ fn void Compiler.compile_def(&self, DefNode node)
     {
         self.compile_node(child, function);
     }
+
+    if (node.children.len == 0 || (node.children[node.children.len - 1].node_type != RETURN && def.ret_type == "void"))
+    {
+        llvm::build_ret_void(self.builder);
+    }
+
     self.scope = (*self.scope).parent;
 }
 
@@ -248,7 +255,7 @@ fn void Compiler.compile_ext(&self, ExtNode node)
     LLVMValueRef fN = llvm::add_function(self.mod, node.name, fn_type);
 
     String name = node.alias_name != "" ? node.alias_name : node.name;
-    self.functions.set(name, { fN, fn_type });
+    self.functions.set(name, { fN, fn_type, node.type });
 }
 
 fn void Compiler.compile_const(&self, ConstNode node, bool global = false)
