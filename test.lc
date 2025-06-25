@@ -1,8 +1,24 @@
 pkg test;
 
-ext void printf(str fmt, var str args);
+ext void  printf(str fmt, var str args);
 
 struct Test {}
+
+struct Example
+{
+    char   c;
+    int    i;
+    str    s;
+    Person p;
+}
+
+struct Person
+{
+    str  first_name;
+    str  last_name;
+    int  age;
+    bool dev;
+}
 
 def int main()
 {
@@ -13,6 +29,18 @@ def int main()
     printn(69);
     printn(t);
 
+    var int test = 420;
+    
+    printf("int size: ");
+    printn(test.$size);
+    printf("Example size: ");
+    printn(Example.$size);
+
+    printf("file name: ");
+    printn($$FILE);
+    printf("line: ");
+    printn($$LINE);
+    
     return 0;
 }
 

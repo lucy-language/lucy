@@ -433,6 +433,12 @@ fn String SemanticAnalyser.get_ident_type(&self, ASTNode node_in)
 {
     IdentNode node = node_in.node.ident_node;
     String name = node.name;
+
+    switch (name)
+    {
+        case "$$FILE": return "str";
+        case "$$LINE": return "int";
+    }
     
     if ((*self.scope).has_var(name))
     {
@@ -479,6 +485,13 @@ fn void SemanticAnalyser.analyse_ident(&self, ASTNode node_in)
     IdentNode node = node_in.node.ident_node;
 
     String name = node.name;
+
+    switch (name)
+    {
+        case "$$FILE":
+        case "$$LINE": return;
+    }
+
     if (!self.has_variable(name))
     {
         errors::print_node(self.file_path, node_in, string::tformat("Unable to find variable `%s`", name));
@@ -746,13 +759,13 @@ fn void SemanticAnalyser.analyse_struct(&self, ASTNode node_in)
 
     foreach (i, field : fields)
     {
-        ((Field[])type.fields[:node.fields.len])[i].name = field.name;
-        ((Field[])type.fields[:node.fields.len])[i].type = self.type_table.lookup(field.type);
-        if (!fields[i].type)
+        if (!self.type_table.lookup(field.type))
         {
-            io::eprintfn("Error: unknown type `%s` for field `%s`", field.type, field.name);
+            errors::print_node(self.file_path, node.fields[i], string::tformat("Unknown type `%s`", field.type));
             os::exit(1);
         }
+        ((Field[])type.fields[:node.fields.len])[i].name = field.name;
+        ((Field[])type.fields[:node.fields.len])[i].type = self.type_table.lookup(field.type);
     }
 
     ((Field[])type.fields[:node.fields.len + lookup_table::BUILTIN_TYPE_FIELD_COUNT])[node.fields.len + 0].name = "$typeid";
@@ -763,6 +776,9 @@ fn void SemanticAnalyser.analyse_struct(&self, ASTNode node_in)
     
     ((Field[])type.fields[:node.fields.len + lookup_table::BUILTIN_TYPE_FIELD_COUNT])[node.fields.len + 2].name = "$typename";
     ((Field[])type.fields[:node.fields.len + lookup_table::BUILTIN_TYPE_FIELD_COUNT])[node.fields.len + 2].type = self.type_table.lookup("str");
+
+    ((Field[])type.fields[:node.fields.len + lookup_table::BUILTIN_TYPE_FIELD_COUNT])[node.fields.len + 3].name = "$size";
+    ((Field[])type.fields[:node.fields.len + lookup_table::BUILTIN_TYPE_FIELD_COUNT])[node.fields.len + 3].type = self.type_table.lookup("int");
 }
 
 fn void SemanticAnalyser.analyse_while(&self, ASTNode node_in)

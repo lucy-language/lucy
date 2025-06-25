@@ -48,6 +48,7 @@ extern fn LLVMValueRef const_struct(LLVMValueRef * constant_vals, usz count, int
 extern fn LLVMValueRef const_string_in_context(LLVMContextRef context, char* str, usz len, LLVMBool dont_null_terminate) @extern("LLVMConstString");
 extern fn LLVMValueRef const_bit_cast(LLVMValueRef value, LLVMTypeRef type) @extern("LLVMConstBitCast");
 extern fn LLVMValueRef const_named_struct(LLVMTypeRef type, LLVMValueRef* values, int count, LLVMBool packed) @extern("LLVMConstNamedStruct");
+extern fn int          const_int_get_z_ext_value(LLVMValueRef value) @extern("LLVMConstIntGetZExtValue");
 
 extern fn LLVMValueRef build_call_2(LLVMBuilderRef builder, LLVMTypeRef fn_type, LLVMValueRef fN, LLVMValueRef* args, CUInt size, char* name) @extern("LLVMBuildCall2");
 extern fn LLVMValueRef build_extract_value(LLVMBuilderRef builder, LLVMValueRef val, CUInt index, char* name) @extern("LLVMBuildExtractValue");

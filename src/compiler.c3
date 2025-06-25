@@ -169,7 +169,7 @@ fn LLVMValueRef Compiler.compile_node(&self, ASTNode ast, LLVMValueRef fN = null
         case FLOAT:      return self.compile_float(ast.node.float_node);
         case DOUBLE:     return self.compile_double(ast.node.double_node);
         case CALL:       return self.compile_call(ast.node.call_node, parent_block);
-        case IDENT:      return self.compile_ident(ast.node.ident_node);
+        case IDENT:      return self.compile_ident(ast);
         case IF:                self.compile_if(ast.node.if_node, fN);
         case BIN:        return self.compile_bin(ast.node.bin_node);
         case INIT:       return self.compile_init(ast.node.init_node, type);
@@ -182,7 +182,7 @@ fn LLVMValueRef Compiler.compile_node(&self, ASTNode ast, LLVMValueRef fN = null
 
         case MACRO: break;
 
-        default:         util::panic(string::tformat("Missing compile function `%s`", ast.node_type), $$FILE, $$LINE);
+        default: util::panic(string::tformat("Missing compile function `%s`", ast.node_type), $$FILE, $$LINE);
     }
     return null;
 }
@@ -466,7 +466,7 @@ fn LLVMValueRef Compiler.compile_call(&self, CallNode node, LLVMBasicBlockRef pa
         ASTNode arg_node = node.arguments[i];
     
         LLVMValueRef arg_value = self.compile_node(arg_node);
-        
+
         arg_types[i] = self.get_type_from_llvm(arg_value);
         llvm_args[i] = arg_value;
     }
@@ -495,9 +495,17 @@ fn LLVMValueRef Compiler.compile_call(&self, CallNode node, LLVMBasicBlockRef pa
     return null;
 }
 
-fn LLVMValueRef Compiler.compile_ident(&self, IdentNode node)
+fn LLVMValueRef Compiler.compile_ident(&self, ASTNode node_in)
 {
-    String name = node.name;
+    IdentNode node = node_in.node.ident_node;
+    String    name = node.name;
+
+    switch (name)
+    {
+        case "$$FILE": return self.create_string(self.file_path);
+        case "$$LINE": return llvm::const_int(self.get_type((String[]){"int"}), node_in.line, llvm::FALSE);
+    }
+
     LLVMValueRef loaded;
     if ((self.scope).has_var(name))
     {
@@ -813,6 +821,8 @@ fn LLVMValueRef Compiler.resolve_builtin_field(&self, LLVMValueRef value, LLVMTy
         case "$typename":
             String typename = ((ZString)self.type_table.lookup(prev).name).str_view();
             return self.create_string(typename);
+        case "$size":
+            return self.calculate_type_size(type, prev);
     }
 
     return null;
@@ -1140,4 +1150,88 @@ fn void Compiler.build_strcmp(&self) {
 
     self.strcmp      = strcmp_func;
     self.strcmp_type = func_type;
+}
+
+fn LLVMValueRef create_int(int value) @private => llvm::const_int(llvm::int32_type(), value, llvm::FALSE);
+
+fn LLVMValueRef Compiler.calculate_type_size(&self, LLVMTypeRef type, char* type_name)
+{
+    Type* type_info = self.type_table.lookup(type_name);
+
+    switch (((ZString)type_name).str_view())
+    {
+        case "int":    return create_int(4);
+        case "str":    return create_int(8);
+        case "bool":   return create_int(1);
+        case "char":   return create_int(1);
+        case "float":  return create_int(4);
+        case "double": return create_int(8);
+    }
+
+    if (type_info.fields && type_info.num_fields > 0)
+    {
+        int max_alignment  = 1;
+        int current_offset = 0;
+
+        for (int i = 0; i < type_info.num_fields; i++)
+        {
+            Field* field    = &type_info.fields[i];
+            int field_align = self.get_type_alignment(field.type);
+            if (field_align > max_alignment)
+            {
+                max_alignment = field_align;
+            }
+        }
+
+        for (int i = 0; i < type_info.num_fields; i++)
+        {
+            Field* field    = &type_info.fields[i];
+            int field_align = self.get_type_alignment(field.type);
+
+            int padding    = (field_align - (current_offset % field_align)) % field_align;
+            current_offset += padding;
+
+            LLVMValueRef field_size = self.calculate_type_size(field.type.llvm_type, field.type.name);
+            current_offset += llvm::const_int_get_z_ext_value(field_size);
+        }
+
+        int final_padding = (max_alignment - (current_offset % max_alignment)) % max_alignment;
+        current_offset    += final_padding;
+
+        return create_int(current_offset);
+    }
+
+    return create_int(0);
+}
+
+fn int Compiler.get_type_alignment(&self, Type* type)
+{
+    if (!type) return 1;
+
+    switch (type.name)
+    {
+        case "int":    return 4;
+        case "str":    return 8;
+        case "bool":   return 1;
+        case "char":   return 1;
+        case "float":  return 4;
+        case "double": return 8;
+    }
+
+    if (type.fields && type.num_fields > 0)
+    {
+        int max_alignment = 1;
+        for (int i = 0; i < type.num_fields; i++)
+        {
+            Field* field    = &type.fields[i];
+            int field_align = self.get_type_alignment(field.type);
+            if (field_align > max_alignment)
+            {
+                max_alignment = field_align;
+            }
+        }
+        return max_alignment;
+    }
+
+    return 1;
 }

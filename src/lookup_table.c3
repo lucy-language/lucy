@@ -5,8 +5,8 @@ import llvm;
 
 extern fn CInt strcmp(char* s1, char* s2);
 
-const int TABLE_SIZE               = 10;
-const int BUILTIN_TYPE_FIELD_COUNT = 3; // $type
+const int TABLE_SIZE               = 256;
+const int BUILTIN_TYPE_FIELD_COUNT = 4; // $typeid, $typekind, $typename, $size
 
 struct Field
 {
@@ -104,12 +104,13 @@ fn void TypeTable.init_builtin_fields(&self)
 
 fn void TypeTable.init_int_type(&self)
 {
-    int num_fields = 3;
+    int num_fields = 4;
 
     Field* fields  = malloc(Field.sizeof * num_fields);
     ((Field[])fields[:num_fields])[0] = { "$typeid",   self.lookup("int") };
     ((Field[])fields[:num_fields])[1] = { "$typekind", self.lookup("str") };
     ((Field[])fields[:num_fields])[2] = { "$typename", self.lookup("str") };
+    ((Field[])fields[:num_fields])[3] = { "$size",     self.lookup("int") };
 
     Type* type = self.lookup("int");
     (*type).fields = fields;
@@ -117,12 +118,13 @@ fn void TypeTable.init_int_type(&self)
 
 fn void TypeTable.init_float_type(&self)
 {
-    int num_fields = 3;
+    int num_fields = 4;
 
     Field* fields  = malloc(Field.sizeof * num_fields);
     ((Field[])fields[:num_fields])[0] = { "$typeid",   self.lookup("int") };
     ((Field[])fields[:num_fields])[1] = { "$typekind", self.lookup("str") };
     ((Field[])fields[:num_fields])[2] = { "$typename", self.lookup("str") };
+    ((Field[])fields[:num_fields])[3] = { "$size",     self.lookup("int") };
 
     Type* type = self.lookup("float");
     (*type).fields = fields;
@@ -130,12 +132,13 @@ fn void TypeTable.init_float_type(&self)
 
 fn void TypeTable.init_str_type(&self)
 {
-    int num_fields = 3;
+    int num_fields = 4;
 
     Field* fields  = malloc(Field.sizeof * num_fields);
     ((Field[])fields[:num_fields])[0] = { "$typeid",   self.lookup("int") };
     ((Field[])fields[:num_fields])[1] = { "$typekind", self.lookup("str") };
     ((Field[])fields[:num_fields])[2] = { "$typename", self.lookup("str") };
+    ((Field[])fields[:num_fields])[3] = { "$size",     self.lookup("int") };
 
     Type* type = self.lookup("str");
     (*type).fields = fields;
@@ -143,12 +146,13 @@ fn void TypeTable.init_str_type(&self)
 
 fn void TypeTable.init_bool_type(&self)
 {
-    int num_fields = 3;
+    int num_fields = 4;
 
     Field* fields  = malloc(Field.sizeof * num_fields);
     ((Field[])fields[:num_fields])[0] = { "$typeid",   self.lookup("int") };
     ((Field[])fields[:num_fields])[1] = { "$typekind", self.lookup("str") };
     ((Field[])fields[:num_fields])[2] = { "$typename", self.lookup("str") };
+    ((Field[])fields[:num_fields])[3] = { "$size",     self.lookup("int") };
 
     Type* type = self.lookup("bool");
     (*type).fields = fields;
@@ -156,12 +160,13 @@ fn void TypeTable.init_bool_type(&self)
 
 fn void TypeTable.init_char_type(&self)
 {
-    int num_fields = 3;
+    int num_fields = 4;
 
     Field* fields  = malloc(Field.sizeof * num_fields);
     ((Field[])fields[:num_fields])[0] = { "$typeid",   self.lookup("int") };
     ((Field[])fields[:num_fields])[1] = { "$typekind", self.lookup("str") };
     ((Field[])fields[:num_fields])[2] = { "$typename", self.lookup("str") };
+    ((Field[])fields[:num_fields])[3] = { "$size",     self.lookup("int") };
 
     Type* type = self.lookup("char");
     (*type).fields = fields;
@@ -169,12 +174,13 @@ fn void TypeTable.init_char_type(&self)
 
 fn void TypeTable.init_double_type(&self)
 {
-    int num_fields = 3;
+    int num_fields = 4;
 
     Field* fields  = malloc(Field.sizeof * num_fields);
     ((Field[])fields[:num_fields])[0] = { "$typeid",   self.lookup("int") };
     ((Field[])fields[:num_fields])[1] = { "$typekind", self.lookup("str") };
     ((Field[])fields[:num_fields])[2] = { "$typename", self.lookup("str") };
+    ((Field[])fields[:num_fields])[3] = { "$size",     self.lookup("int") };
 
     Type* type = self.lookup("double");
     (*type).fields = fields;

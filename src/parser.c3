@@ -482,9 +482,7 @@ fn ASTNode Parser.ext(&self)
     int start = self.current.range.start;
     self.consume();
 
-    String type = self.current.value;
-    self.try_consume(IDENTIFIER);
-
+    String type = self.type();
     String name = self.current.value;
     self.try_consume(IDENTIFIER);
 
