@@ -460,6 +460,7 @@ fn ASTNode Parser.factor(&self)
             node = self.initializer();
         case PLUS:
         case MINUS:
+        case STAR:
         case BANG:
             String operator = self.current.value;
             int start = self.current.range.start;

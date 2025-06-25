@@ -1,0 +1,16 @@
+pkg io;
+
+macro void printn(x)
+{
+    switch (x.$typekind)
+    {
+        case "STRUCT": printf("%s {}\n", x.$typename);
+        case "BUILTIN":
+            switch (x.$typeid)
+            {
+                case str.$typeid:    printf("%s\n", x);
+                case int.$typeid:    printf("%d\n", x);
+                case double.$typeid: printf("%.2f\n", x);
+            }
+    }
+}

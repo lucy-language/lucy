@@ -1,60 +1,17 @@
 pkg test;
 
 ext void  printf(str fmt, var str args);
+ext void* malloc(int size);
 
-struct Test {}
-
-struct Example
+struct User
 {
-    char   c;
-    int    i;
-    str    s;
-    Person p;
-}
-
-struct Person
-{
-    str  first_name;
-    str  last_name;
-    int  age;
-    bool dev;
+    str username;
+    str email;
 }
 
 def int main()
 {
-    var Test t;
-
-    printn(69.69);
-    printn("Hello");
-    printn(69);
-    printn(t);
-
-    var int test = 420;
-    
-    printf("int size: ");
-    printn(test.$size);
-    printf("Example size: ");
-    printn(Example.$size);
-
-    printf("file name: ");
-    printn($$FILE);
-    printf("line: ");
-    printn($$LINE);
+    var User* user = malloc(User.$size);
     
     return 0;
-}
-
-macro void printn(x)
-{
-    switch (x.$typekind)
-    {
-        case "STRUCT": printf("%s {}\n", x.$typename);
-        case "BUILTIN":
-            switch (x.$typeid)
-            {
-                case str.$typeid:    printf("%s\n", x);
-                case int.$typeid:    printf("%d\n", x);
-                case double.$typeid: printf("%.2f\n", x);
-            }
-    }
 }

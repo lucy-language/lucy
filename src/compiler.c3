@@ -296,6 +296,11 @@ fn LLVMTypeRef Compiler.get_type(&self, String[] types)
     if (types.len == 1)
     {
         String type = types[0];
+        if (type[type.len - 1] == '*')
+        {
+            return llvm::pointer_type(self.get_type((String[]){type[..type.len - 2]}), 0);
+        }
+
         switch (type)
         {
             case "bool": return llvm::int1_type();
@@ -934,8 +939,17 @@ fn LLVMValueRef Compiler.compile_unary(&self, UnaryNode node)
             default:
                 util::panicf("Unsupported operator `%s` for type `bool`", node.operator, file: $$FILE, line: $$LINE);
         }
+    } else
+    {
+        switch (node.operator)
+        {
+            case "*":
+                return llvm::build_load_2(self.builder, llvm::type_of(expr), expr, "");
+                //io::printn((ZString)llvm::print_value_to_string(expr));
+            default:
+                util::panicf("Unsupported operator `%s` for type `other`", node.operator, file: $$FILE, line: $$LINE);
+        }
     }
-    util::panic("Unreachable", $$FILE, $$LINE);
 }
 
 fn LLVMTypeRef Compiler.get_type_node(&self, ASTNode node)

@@ -241,7 +241,7 @@ struct InitValueNode
 
 struct AccessNode
 {
-    String   id;
+    String   id; // TODO: change to ASTNode* for calls like `69.$size`
     ASTNode* node;
 }
 

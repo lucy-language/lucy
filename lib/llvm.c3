@@ -63,7 +63,6 @@ extern fn LLVMValueRef build_add(LLVMBuilderRef builder, LLVMValueRef lhs, LLVMV
 extern fn LLVMValueRef build_sub(LLVMBuilderRef builder, LLVMValueRef lhs, LLVMValueRef rhs, char* name) @extern("LLVMBuildSub");
 extern fn LLVMValueRef build_mul(LLVMBuilderRef builder, LLVMValueRef lhs, LLVMValueRef rhs, char* name) @extern("LLVMBuildMul");
 extern fn LLVMValueRef build_s_div(LLVMBuilderRef builder, LLVMValueRef lhs, LLVMValueRef rhs, char* name) @extern("LLVMBuildSDiv");
-extern fn LLVMValueRef build_load(LLVMBuilderRef builder, LLVMValueRef val, char* name) @extern("LLVMBuildLoad2");
 extern fn LLVMValueRef build_load_2(LLVMBuilderRef builder, LLVMTypeRef type, LLVMValueRef val, char* name) @extern("LLVMBuildLoad2");
 extern fn LLVMValueRef build_br(LLVMBuilderRef builder, LLVMBasicBlockRef dest) @extern("LLVMBuildBr");
 extern fn LLVMValueRef build_cond_br(LLVMBuilderRef builder, LLVMValueRef condition, LLVMBasicBlockRef then_block, LLVMBasicBlockRef else_block) @extern("LLVMBuildCondBr");

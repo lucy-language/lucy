@@ -391,13 +391,20 @@ fn void SemanticAnalyser.analyse_var(&self, ASTNode node_in)
     {
         String name = names[0];
         String type = types[0];
+
+        if (!self.resolve_type(type, node_in))
+        {
+            errors::print_node(self.file_path, node_in, string::tformat("Unknown type `%s`", type));
+            os::exit(1);
+        }
         
         if (node.value)
         {
             ASTNode value = *node.value;
             self.analyse_node(value);
- 
-            if (self.get_type(value) != type)
+            String value_type = self.get_type(value);
+
+            if (value_type != "void*" && value_type != type)
             {
                 errors::print_node(self.file_path, node_in, string::tformat("Expected type `%s`, got `%s`", type, self.get_type(value)));
                 os::exit(1);
@@ -439,6 +446,8 @@ fn String SemanticAnalyser.get_ident_type(&self, ASTNode node_in)
         case "$$FILE": return "str";
         case "$$LINE": return "int";
     }
+
+    io::printn(name);
     
     if ((*self.scope).has_var(name))
     {
@@ -846,4 +855,21 @@ fn void SemanticAnalyser.analyse_macro(&self, ASTNode node_in, ASTNode[] argumen
         self.analyse_node(child);
     }
     self.scope = self.scope.parent;
+}
+
+fn Type* SemanticAnalyser.resolve_type(&self, String name, ASTNode node)
+{
+    String current = name;
+    char   last    = name[name.len - 1];
+
+    while (last == '*')
+    {
+        current = current[..current.len - 2];
+        last    = current[current.len - 1];
+    }
+
+    char* type_name = (char*)current.zstr_copy(mem);
+    Type* type = self.type_table.lookup(type_name);
+
+    return type;
 }
