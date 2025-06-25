@@ -2,34 +2,31 @@ pkg test;
 
 ext void printf(str fmt, var str args);
 
-struct Person
-{
-    Name name;
-    int  age;
-}
+struct Test {}
 
-struct Name
+def int main()
 {
-    str first_name;
-    str last_name;
-}
+    var Test t;
 
-def int main(str[] args)
-{
-    var Person p = test();
+    printn(69.69);
+    printn("Hello");
+    printn(69);
+    printn(t);
 
-    printf("%s\n", p.name.first_name);
-    printf("%s\n", p.name.last_name);
-    printf("%d\n", p.age);
     return 0;
 }
 
-def Person test()
+macro void printn(x)
 {
-    return { { "Kiana", "Bennett" }, 22};
-}
-
-def void test2()
-{
-    # no return should default to `ret void` for void functions
+    switch (x.$typekind)
+    {
+        case "STRUCT": printf("%s {}\n", x.$typename);
+        case "BUILTIN":
+            switch (x.$typeid)
+            {
+                case str.$typeid:    printf("%s\n", x);
+                case int.$typeid:    printf("%d\n", x);
+                case double.$typeid: printf("%.2f\n", x);
+            }
+    }
 }

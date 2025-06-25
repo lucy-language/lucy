@@ -14,6 +14,7 @@ fn void? ASTNode.to_json(&self, DString* dest, bool pretty, int indent)
 		case RETURN:     serialize::add_json(self.node.return_node, dest, pretty, indent)!;
 		case DOUBLE:     serialize::add_json(self.node.double_node, dest, pretty, indent)!;
 		case GLOBAL:     serialize::add_json(self.node.global_node, dest, pretty, indent)!;
+        case SWITCH:     serialize::add_json(self.node.switch_node, dest, pretty, indent)!;
 		case FLOAT:      serialize::add_json(self.node.float_node, dest, pretty, indent)!;
 		case CONST:      serialize::add_json(self.node.const_node, dest, pretty, indent)!;
 		case IDENT:      serialize::add_json(self.node.ident_node, dest, pretty, indent)!;
@@ -27,6 +28,7 @@ fn void? ASTNode.to_json(&self, DString* dest, bool pretty, int indent)
 		case CALL:       serialize::add_json(self.node.call_node, dest, pretty, indent)!;
         case CHAR:       serialize::add_json(self.node.char_node, dest, pretty, indent)!;
         case INIT:       serialize::add_json(self.node.init_node, dest, pretty, indent)!;
+        case CASE:       serialize::add_json(self.node.case_node, dest, pretty, indent)!;
 		case USE:        serialize::add_json(self.node.use_node, dest, pretty, indent)!;
 		case DEF:        serialize::add_json(self.node.def_node, dest, pretty, indent)!;
 		case INT:        serialize::add_json(self.node.int_node, dest, pretty, indent)!;
@@ -253,6 +255,20 @@ struct WhileJson
     ASTNode[] children;
 }
 
+struct SwitchJson
+{
+    NodeType  node_type;
+    ASTNode   expr;
+    ASTNode[] cases;
+}
+
+struct CaseJson
+{
+    NodeType  node_type;
+    ASTNode   condition;
+    ASTNode[] children;
+}
+
 fn void? ParameterNode.to_json(&self, DString* dest, bool pretty, int indent)
 {
     serialize::add_json((ParameterJson){ PARAMETER, self.vararg, self.type, self.name }, dest, pretty, indent)!;
@@ -403,4 +419,14 @@ fn void? UnaryNode.to_json(&self, DString* dest, bool pretty, int indent)
 fn void? WhileNode.to_json(&self, DString* dest, bool pretty, int indent)
 {
     serialize::add_json((WhileJson){ WHILE, *self.condition, self.children }, dest, pretty, indent)!;
+}
+
+fn void? SwitchNode.to_json(&self, DString* dest, bool pretty, int indent)
+{
+    serialize::add_json((SwitchJson){ SWITCH, *self.expr, self.cases }, dest, pretty, indent)!;
+}
+
+fn void? CaseNode.to_json(&self, DString* dest, bool pretty, int indent)
+{
+    serialize::add_json((CaseJson){ CASE, *self.condition, self.children }, dest, pretty, indent)!;
 }

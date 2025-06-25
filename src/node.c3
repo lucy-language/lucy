@@ -16,6 +16,7 @@ enum NodeType
     RETURN,
     DOUBLE,
     GLOBAL,
+    SWITCH,
     FLOAT,
     CONST,
     IDENT,
@@ -29,6 +30,7 @@ enum NodeType
     CALL,
     CHAR,
     INIT,
+    CASE,
     USE,
     DEF,
     INT,
@@ -59,6 +61,7 @@ struct ASTNode
         ReturnNode       return_node;
         DoubleNode       double_node;
         GlobalNode       global_node;
+        SwitchNode       switch_node;
         FloatNode        float_node;
         ConstNode        const_node;
         IdentNode        ident_node;
@@ -71,6 +74,7 @@ struct ASTNode
         CallNode         call_node;
         CharNode         char_node;
         InitNode         init_node;
+        CaseNode         case_node;
         UseNode          use_node;
         DefNode          def_node;
         IntNode          int_node;
@@ -256,6 +260,18 @@ struct UnaryNode
 }
 
 struct WhileNode
+{
+    ASTNode*  condition;
+    ASTNode[] children;
+}
+
+struct SwitchNode
+{
+    ASTNode*  expr;
+    ASTNode[] cases;
+}
+
+struct CaseNode
 {
     ASTNode*  condition;
     ASTNode[] children;

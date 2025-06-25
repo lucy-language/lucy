@@ -73,6 +73,8 @@ extern fn LLVMValueRef build_gep(LLVMBuilderRef builder, LLVMValueRef pointer, L
 extern fn LLVMValueRef build_gep_2(LLVMBuilderRef builder, LLVMTypeRef type, LLVMValueRef pointer, LLVMValueRef* indices, CUInt num_indices, char* name) @extern("LLVMBuildGEP2");
 extern fn LLVMValueRef build_struct_gep_2(LLVMBuilderRef builder, LLVMTypeRef type, LLVMValueRef pointer, CUInt index, char* name) @extern("LLVMBuildStructGEP2");
 extern fn LLVMValueRef build_phi(LLVMBuilderRef builder, LLVMTypeRef type, char* name) @extern("LLVMBuildPhi");
+extern fn LLVMValueRef build_and(LLVMBuilderRef builder, LLVMValueRef val1, LLVMValueRef val2, char* name) @extern("LLVMBuildAnd");
+extern fn LLVMValueRef build_or(LLVMBuilderRef builder, LLVMValueRef val1, LLVMValueRef val2, char* name) @extern("LLVMBuildOr");
 
 extern fn LLVMTypeKind get_type_kind(LLVMTypeRef type) @extern("LLVMGetTypeKind");
 extern fn LLVMValueRef get_operand(LLVMValueRef val, CUInt index) @extern("LLVMGetOperand");
@@ -90,8 +92,6 @@ extern fn char*        get_as_string(LLVMValueRef initializer, CInt* len) @exter
 
 extern fn CUInt count_struct_element_types(LLVMTypeRef type) @extern("LLVMCountStructElementTypes");
 
-extern fn LLVMBasicBlockRef create_basic_block_in_context(LLVMContextRef ctx, char* name) @extern("LLVMCreateBasicBlockInContext");
-
 extern fn void add_incoming(LLVMValueRef phi_node, LLVMValueRef* incoming_values, LLVMBasicBlockRef* incoming_blocks, CUInt count) @extern("LLVMAddIncoming");
 
 extern fn LLVMTypeRef struct_create_named(LLVMContextRef context, char* name) @extern("LLVMStructCreateNamed");
@@ -108,6 +108,8 @@ extern fn bool is_constant(LLVMValueRef variable) @extern("LLVMIsConstant");
 extern fn bool is_a_constant_data_array(LLVMValueRef variable) @extern("LLVMIsAConstantDataArray");
 extern fn bool is_a_load_inst(LLVMValueRef variable) @extern("LLVMIsLoadInst");
 extern fn bool is_a_get_element_ptr_inst(LLVMValueRef variable) @extern("LLVMIsAGetElementPtrInst");
+
+extern fn void dump_type(LLVMTypeRef type) @extern("LLVMDumpType");
 
 const TRUE  = 1;
 const FALSE = 0;

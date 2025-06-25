@@ -56,17 +56,32 @@ fn void SemanticAnalyser.analyse(&self)
         switch (node.node_type)
         {
             case CONST: self.add_const(node);
-            case DEF: self.add_def(node);
             case EXT: self.add_ext(node);
             case STRUCT: self.add_struct(node);
             case GLOBAL:
-                switch ((*node.node.global_node.node).node_type)
+                switch INNER: ((*node.node.global_node.node).node_type)
                 {
                     case CONST: self.add_const(*node.node.global_node.node);
-                    case DEF: self.add_def(*node.node.global_node.node);
                     case EXT: self.add_ext(*node.node.global_node.node);
                     case STRUCT: self.add_struct(*node.node.global_node.node);
-                    default: break;
+                    default: break INNER;
+                }
+            default: break;
+        }
+    }
+
+    foreach (node : self.ast.node.file_node.children)
+    {
+        switch (node.node_type)
+        {
+            case DEF:   self.add_def(node);
+            case MACRO: self.add_macro(node);
+            case GLOBAL:
+                switch INNER: ((*node.node.global_node.node).node_type)
+                {
+                    case DEF:   self.add_def(*node.node.global_node.node);
+                    case MACRO: self.add_macro(*node.node.global_node.node);
+                    default:  break INNER;
                 }
             default: break;
         }
@@ -101,6 +116,34 @@ fn void SemanticAnalyser.add_def(&self, ASTNode node_in)
     DefNode node = node_in.node.def_node;
     String[] types = node.types;
     String name = node.name;
+
+    Def def;
+    bool found;
+    foreach (function : self.functions)
+    {
+        if (function.name == name)
+        {
+            found = true;
+            def = function;
+        }
+    }
+
+    if (found)
+    {
+        errors::print_node(self.file_path, def.node, "Previous definition was here");
+        errors::print_node(self.file_path, node_in, string::tformat("A function with the name `%s` is already defined", name));
+        os::exit(1);
+    } else
+    {
+        self.functions.push({ node_in, types, name });
+    }
+}
+
+fn void SemanticAnalyser.add_macro(&self, ASTNode node_in)
+{
+    MacroNode node  = node_in.node.macro_node;
+    String[]  types = {node.type};
+    String    name  = node.name;
 
     Def def;
     bool found;
@@ -164,7 +207,9 @@ fn void SemanticAnalyser.add_ext(&self, ASTNode node_in)
         }
     } else
     {
-        self.functions.push({ node_in, (String[]){ type }, alias_name != "" ? alias_name : name });
+        String[] types = mem::new_array(String, 1);
+        types[0] = type;
+        self.functions.push({ node_in, types, alias_name != "" ? alias_name : name });
     }
 }
 
@@ -180,12 +225,12 @@ fn void SemanticAnalyser.add_struct(&self, ASTNode node_in)
     }
 
     self.structs.push({ name, fields, node_in });
-
-    Field* type_fields = malloc(Field.sizeof * node.fields.len);
+    
+    Field* type_fields = malloc(Field.sizeof * (node.fields.len + lookup_table::BUILTIN_TYPE_FIELD_COUNT));
     Type* type = malloc(Type.sizeof);
     LLVMTypeRef* llvm_type = malloc(LLVMTypeRef.sizeof);
     *llvm_type = null;
-    (*type) = { name.zstr_copy(mem), type_fields, node.fields.len, llvm_type };
+    (*type) = { name.zstr_copy(mem), type_fields, node.fields.len, llvm_type, self.type_table.type_id++ };
     (*self.type_table).insert(type);
 }
 
@@ -209,11 +254,15 @@ fn void SemanticAnalyser.analyse_node(&self, ASTNode node)
         case ACCESS:    self.analyse_access(node);
         case WHILE:     self.analyse_while(node);
         
+        case MACRO:
         case STR:
         case INIT:
         case INT:
+        case BOOL:
         case FLOAT:
+        case DOUBLE:
         case UNARY:
+        case SWITCH:
         case RETURN: break;
         default: util::panicf("missing analyse function `%s`", node.node_type, file: $$FILE, line: $$LINE);
     }
@@ -304,6 +353,7 @@ fn String SemanticAnalyser.get_type(&self, ASTNode node)
         case BIN:    return self.get_type(*node.node.bin_node.left);
         case CALL:   return self.get_call_type(node);
         case INIT:   return self.get_struct_type(node);
+        case ACCESS: return self.get_access_type(node);
 
         default: util::panicf("Unable to match type `%s`", node.node_type, file: $$FILE, line: $$LINE);
     }
@@ -409,9 +459,12 @@ fn void SemanticAnalyser.analyse_bin(&self, ASTNode node_in)
     self.analyse_node(left);
     self.analyse_node(right);
 
-    if (self.get_type(left) != self.get_type(right))
+    String left_type  = self.get_type(left);
+    String right_type = self.get_type(right);
+
+    if (left_type != right_type)
     {
-        errors::print_node(self.file_path, node_in, "Type mismatch");
+        errors::print_node(self.file_path, node_in, string::tformat("Type mismatch: `%s` and `%s`", left_type, right_type));
         os::exit(1);
     }
 }
@@ -453,18 +506,17 @@ fn String SemanticAnalyser.get_call_type(&self, ASTNode node_in)
             break;
         }
     }
+    
 
     String[] types = def.types;
     if (types.len > 1)
     {
         // tuple
-
+        util::panic("sema -> Unimplemented", $$FILE, $$LINE);
     } else
     {
         return types[0];
     }
-
-    return "";
 }
 
 // TODO: analyse_call, check arg/param count and param types
@@ -479,10 +531,12 @@ fn void SemanticAnalyser.analyse_call(&self, ASTNode node_in)
     }
 
     bool found;
+    Def def;
     foreach (function : self.functions)
     {
         if (function.name == name)
         {
+            def = function;
             found = true;
             break;
         }
@@ -492,6 +546,12 @@ fn void SemanticAnalyser.analyse_call(&self, ASTNode node_in)
     {
         errors::print_node(self.file_path, node_in, string::tformat("Unable to find function `%s`", name));
         os::exit(1);
+    }
+
+    // figure out if function is macro
+    if (def.node.node_type == MACRO)
+    {
+        self.analyse_macro(def.node, node.arguments);
     }
 }
 
@@ -590,13 +650,33 @@ fn String SemanticAnalyser.get_struct_type(&self, ASTNode node_in)
 fn void SemanticAnalyser.analyse_access(&self, ASTNode node_in)
 {
     AccessNode node = node_in.node.access_node;
+
+    if (self.type_table.has((char*)node.id.zstr_copy(mem)))
+    {
+        Type* base_type = self.type_table.lookup(node.id);
+        Type* type = self.resolve_access(base_type, node.id, node.node);
+        
+        if (!type)
+        {
+            io::eprintfn("sema -> Unknown type `%s` (%s:%d)", node.id, $$FILE, $$LINE);
+            os::exit(1);
+        }
+        return;
+    }
+
+    if (!self.scope.has_var(node.id))
+    {
+        errors::print_node(self.file_path, node_in, string::tformat("Unable to find variable `%s`", node.id));
+        os::exit(1);
+    }
+
     SemVar variable = self.scope.get_var(node.id);
     Type* base_type = self.type_table.lookup(variable.type);
 
     Type* type = self.resolve_access(base_type, node.id, node.node);
     if (!type)
     {
-        io::eprintfn("sema -> Unknown type `%s`", node.id);
+        io::eprintfn("sema -> Unknown type `%s` (%s:%d)", node.id, $$FILE, $$LINE);
         os::exit(1);
     }
 }
@@ -642,7 +722,6 @@ fn Type* SemanticAnalyser.resolve_access(&self, Type* base_type, char* prev, AST
                         struct_node = str.node;
                     }
                 }
-                errors::print_node(self.file_path, struct_node, "Definition was here");
                 errors::print_node(self.file_path, *next, string::tformat("Type `%s` has no field `%s`", (ZString)base_type.name, (ZString)field_name));
                 os::exit(1);
             }
@@ -675,6 +754,15 @@ fn void SemanticAnalyser.analyse_struct(&self, ASTNode node_in)
             os::exit(1);
         }
     }
+
+    ((Field[])type.fields[:node.fields.len + lookup_table::BUILTIN_TYPE_FIELD_COUNT])[node.fields.len + 0].name = "$typeid";
+    ((Field[])type.fields[:node.fields.len + lookup_table::BUILTIN_TYPE_FIELD_COUNT])[node.fields.len + 0].type = self.type_table.lookup("int");
+
+    ((Field[])type.fields[:node.fields.len + lookup_table::BUILTIN_TYPE_FIELD_COUNT])[node.fields.len + 1].name = "$typekind";
+    ((Field[])type.fields[:node.fields.len + lookup_table::BUILTIN_TYPE_FIELD_COUNT])[node.fields.len + 1].type = self.type_table.lookup("str");
+    
+    ((Field[])type.fields[:node.fields.len + lookup_table::BUILTIN_TYPE_FIELD_COUNT])[node.fields.len + 2].name = "$typename";
+    ((Field[])type.fields[:node.fields.len + lookup_table::BUILTIN_TYPE_FIELD_COUNT])[node.fields.len + 2].type = self.type_table.lookup("str");
 }
 
 fn void SemanticAnalyser.analyse_while(&self, ASTNode node_in)
@@ -686,4 +774,60 @@ fn void SemanticAnalyser.analyse_while(&self, ASTNode node_in)
     {
         self.analyse_node(child);
     }
+}
+
+fn String SemanticAnalyser.get_access_type(&self, ASTNode node_in)
+{
+    AccessNode node = node_in.node.access_node;
+    
+    if (self.type_table.has((char*)node.id.zstr_copy(mem)))
+    {
+        Type* base_type = self.type_table.lookup(node.id);
+        Type* type = self.resolve_access(base_type, node.id, node.node);
+        
+        if (!type)
+        {
+            io::eprintfn("sema -> Unknown type `%s` (%s:%d)", node.id, $$FILE, $$LINE);
+            os::exit(1);
+        }
+        return ((ZString)type.name).str_view();
+    }
+
+    if (!self.scope.has_var(node.id))
+    {
+        errors::print_node(self.file_path, node_in, string::tformat("Unable to find variable `%s`", node.id));
+        os::exit(1);
+    }
+
+    SemVar variable = self.scope.get_var(node.id);
+    Type* base_type = self.type_table.lookup(variable.type);
+
+    Type* type = self.resolve_access(base_type, node.id, node.node);
+    if (!type)
+    {
+        io::eprintfn("sema -> Unknown type `%s` (%s:%d)", node.id, $$FILE, $$LINE);
+        os::exit(1);
+    }
+
+    return ((ZString)type.name).str_view();
+}
+
+// TODO: somehow pass param type from call 
+fn void SemanticAnalyser.analyse_macro(&self, ASTNode node_in, ASTNode[] arguments)
+{
+    MacroNode node = node_in.node.macro_node;
+    
+    self.scope = (*self.scope).new();
+    foreach (i, param : node.parameters)
+    {
+        Type* type = self.type_table.lookup(self.get_type(arguments[i]));
+        param.node.parameter_node.type = ((ZString)type.name).str_view();
+        self.analyse_parameter(param);
+    }
+
+    foreach (child : node.children)
+    {
+        self.analyse_node(child);
+    }
+    self.scope = self.scope.parent;
 }

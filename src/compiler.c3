@@ -10,24 +10,27 @@ faultdef INVALID_TYPE;
 
 struct Compiler
 {
-    FileNode                file_node;
-    String                  module_name;
-    String                  file_path;
-    LLVMModuleRef           mod;
-    LLVMBuilderRef          builder;
-    LLVMContextRef          context;
-    HashMap{String, Def}    functions;
-    HashMap{String, Struct} structs;
-    Scope*                  scope;
-    int                     index;
-    LLVMValueRef            true_ptr;
-    LLVMValueRef            false_ptr;
-    LLVMValueRef            strcmp;
-    TypeTable*              type_table;
+    FileNode                      file_node;
+    String                        module_name;
+    String                        file_path;
+    LLVMModuleRef                 mod;
+    LLVMBuilderRef                builder;
+    LLVMContextRef                context;
+    HashMap{String, Def}          functions;
+    HashMap{String, Struct}       structs;
+    Scope*                        scope;
+    int                           index;
+    LLVMValueRef                  true_ptr;
+    LLVMValueRef                  false_ptr;
+    LLVMValueRef                  strcmp;
+    LLVMTypeRef                   strcmp_type;
+    TypeTable*                    type_table;
+    HashMap{String, LLVMValueRef} strings;
 }
 
 struct Def
 {
+    MacroNode*   node;
     LLVMValueRef function;
     LLVMTypeRef  type;
     String       ret_type;
@@ -60,7 +63,9 @@ fn Compiler new(String file_path, ASTNode file, TypeTable* type_table)
         .builder     = builder,
         .context     = context,
         .scope       = scope,
-        .type_table  = type_table
+        .type_table  = type_table,
+        .strcmp      = null,
+        .strcmp_type = null
     };
 }
 
@@ -72,6 +77,7 @@ fn void Compiler.compile(&self)
         switch (child.node_type)
         {
             case DEF:    self.add_def(child.node.def_node);
+            case MACRO:  self.add_macro(child.node.macro_node);
             case STRUCT: self.add_struct(child.node.struct_node);
             default: break;
         }
@@ -84,7 +90,7 @@ fn void Compiler.compile(&self)
     }
 
     char* error;
-    if (llvm::print_module_to_file(self.mod, string::tformat("%s.ll", self.module_name), &error))
+    if (llvm::print_module_to_file(self.mod, string::format(mem, "%s.ll", self.module_name), &error))
     {
         util::panic(string::tformat("Failed to write IR: %s", *error), $$FILE, $$LINE);
     }
@@ -106,14 +112,7 @@ fn void Compiler.add_def(&self, DefNode node)
             vararg = true;
             break;
         }
-
-        switch (param.type)
-        {
-            case "str": param_list.push(llvm::pointer_type(llvm::int8_type(), 0));
-            case "str[]": param_list.push(llvm::pointer_type(llvm::pointer_type(llvm::int8_type(), 0), 0));
-            case "int": param_list.push(llvm::int32_type());
-            default: errors::print_node(self.file_path, parameter, string::format(mem, "Invalid type `%s`", param.type));
-        }
+        param_list.push(self.get_type((String[]){param.type}));
     }
 
     LLVMTypeRef[] parameters = mem::new_array(LLVMTypeRef, param_list.len());
@@ -130,7 +129,14 @@ fn void Compiler.add_def(&self, DefNode node)
         llvm::set_value_name(llvm::get_param(fN, i), (node.parameters)[i].node.parameter_node.name);
     }
     
-    self.functions.set(node.name, { fN, fn_type, node.types[0] });
+    self.functions.set(node.name, { null, fN, fn_type, node.types[0] });
+}
+
+fn void Compiler.add_macro(&self, MacroNode node)
+{
+    MacroNode* node_ptr = malloc(MacroNode.sizeof);
+    *node_ptr = node;
+    self.functions.set(node.name, { node_ptr, null, null, node.type });
 }
 
 fn void Compiler.add_struct(&self, StructNode node)
@@ -145,7 +151,7 @@ fn void Compiler.add_struct(&self, StructNode node)
     self.structs.set(node.name, { node.name, struct_type, fields });
 }
 
-fn LLVMValueRef Compiler.compile_node(&self, ASTNode ast, LLVMValueRef fN = null, LLVMTypeRef type = null)
+fn LLVMValueRef Compiler.compile_node(&self, ASTNode ast, LLVMValueRef fN = null, LLVMTypeRef type = null, LLVMBasicBlockRef parent_block = null)
 {
     switch (ast.node_type)
     {
@@ -162,7 +168,7 @@ fn LLVMValueRef Compiler.compile_node(&self, ASTNode ast, LLVMValueRef fN = null
         case BOOL:       return self.compile_bool(ast.node.bool_node);
         case FLOAT:      return self.compile_float(ast.node.float_node);
         case DOUBLE:     return self.compile_double(ast.node.double_node);
-        case CALL:       return self.compile_call(ast.node.call_node);
+        case CALL:       return self.compile_call(ast.node.call_node, parent_block);
         case IDENT:      return self.compile_ident(ast.node.ident_node);
         case IF:                self.compile_if(ast.node.if_node, fN);
         case BIN:        return self.compile_bin(ast.node.bin_node);
@@ -170,9 +176,11 @@ fn LLVMValueRef Compiler.compile_node(&self, ASTNode ast, LLVMValueRef fN = null
         case INIT_VALUE: return self.compile_node(*ast.node.init_value_node.value);
         case ACCESS:     return self.compile_access(ast.node.access_node);
         case STRUCT:            self.compile_struct(ast.node.struct_node);
-        case MACRO:             self.compile_macro(ast.node.macro_node);
         case WHILE:             self.compile_while(ast.node.while_node, fN);
         case UNARY:      return self.compile_unary(ast.node.unary_node);
+        case SWITCH:            self.compile_switch(ast.node.switch_node, fN, parent_block);
+
+        case MACRO: break;
 
         default:         util::panic(string::tformat("Missing compile function `%s`", ast.node_type), $$FILE, $$LINE);
     }
@@ -197,7 +205,7 @@ fn void Compiler.compile_def(&self, DefNode node)
 
     foreach (child : node.children)
     {
-        self.compile_node(child, function);
+        self.compile_node(child, function, parent_block: entry_block);
     }
 
     if (node.children.len == 0 || (node.children[node.children.len - 1].node_type != RETURN && def.ret_type == "void"))
@@ -255,7 +263,7 @@ fn void Compiler.compile_ext(&self, ExtNode node)
     LLVMValueRef fN = llvm::add_function(self.mod, node.name, fn_type);
 
     String name = node.alias_name != "" ? node.alias_name : node.name;
-    self.functions.set(name, { fN, fn_type, node.type });
+    self.functions.set(name, { null, fN, fn_type, node.type });
 }
 
 fn void Compiler.compile_const(&self, ConstNode node, bool global = false)
@@ -336,8 +344,11 @@ fn void Compiler.compile_var(&self, VarNode node)
         }
         
         LLVMValueRef variable = llvm::build_alloca(self.builder, type, node.names[0]);
-        LLVMValueRef value = self.compile_node(*node.value, type: type);
-        llvm::build_store(self.builder, value, variable);
+        if (node.value != null)
+        {
+            LLVMValueRef value = self.compile_node(*node.value, type: type);
+            llvm::build_store(self.builder, value, variable);
+        }
 
         self.scope.variables.set(node.names[0], { node.types[0], variable });
         return;
@@ -375,19 +386,9 @@ fn void Compiler.compile_reassign(&self, ReassignNode node)
 
 fn LLVMValueRef Compiler.compile_str(&self, StrNode node)
 {
-    String value     = node.value;
-    String processed = self.process_escape_sequences(value);
-    int    len       = processed.len;
-
-    LLVMValueRef str = llvm::const_string(processed, processed.len, llvm::FALSE);
-    LLVMTypeRef arr_type = llvm::array_type(llvm::int8_type(), processed.len + 1);
-    LLVMValueRef global_str = llvm::add_global(self.mod, arr_type, "");
-    llvm::set_initializer(global_str, str);
-    llvm::set_linkage(global_str, PRIVATE_LINKAGE);
-    llvm::set_unnamed_addr(global_str, llvm::TRUE);
-    llvm::set_global_constant(global_str, llvm::TRUE);
+    String value = node.value;
     
-    return global_str;
+    return self.create_string(value);
 }
 
 fn LLVMValueRef Compiler.compile_int(&self, IntNode node)
@@ -448,7 +449,7 @@ fn LLVMValueRef Compiler.compile_char(&self, CharNode node)
     return llvm::const_int(llvm::int8_type(), value, llvm::FALSE);
 }
 
-fn LLVMValueRef Compiler.compile_call(&self, CallNode node)
+fn LLVMValueRef Compiler.compile_call(&self, CallNode node, LLVMBasicBlockRef parent_block)
 {
     Def? def = self.functions.get(node.name);
     if (catch error = def)
@@ -456,26 +457,42 @@ fn LLVMValueRef Compiler.compile_call(&self, CallNode node)
         util::panic(string::tformat("Could not find function `%s`", node.name), $$FILE, $$LINE);
     }
 
-    LLVMValueRef function = def.function;
-    LLVMTypeRef function_type = def.type;
+    LLVMValueRef function      = def.function;
+    LLVMTypeRef  function_type = def.type;
+    String[]     arg_types     = mem::new_array(String, node.arguments.len);
 
     LLVMValueRef[] llvm_args = mem::new_array(LLVMValueRef, node.arguments.len);
     for (int i = 0; i < node.arguments.len; ++i) {
         ASTNode arg_node = node.arguments[i];
+    
         LLVMValueRef arg_value = self.compile_node(arg_node);
+        
+        arg_types[i] = self.get_type_from_llvm(arg_value);
         llvm_args[i] = arg_value;
     }
 
-    LLVMValueRef call = llvm::build_call_2(
-        self.builder,
-        function_type,
-        function,
-        llvm_args,
-        llvm_args.len,
-        ""
-    );
+    if (def.node != null)
+    {
+        if (parent_block == null)
+        {
+            util::panic("Missing parent block for call", $$FILE, $$LINE);
+        }
 
-    return call;
+        self.compile_macro(def.node, llvm_args, arg_types, parent_block);
+    }
+    else
+    {
+        LLVMValueRef call = llvm::build_call_2(
+            self.builder,
+            function_type,
+            function,
+            llvm_args,
+            llvm_args.len,
+            ""
+        );
+        return call;
+    }
+    return null;
 }
 
 fn LLVMValueRef Compiler.compile_ident(&self, IdentNode node)
@@ -526,14 +543,16 @@ fn String Compiler.process_escape_sequences(&self, String input)
     return output.copy_str(mem);
 }
 
-fn void Compiler.compile_if(&self, IfNode node, LLVMValueRef* fN)
+fn void Compiler.compile_if(&self, IfNode node, LLVMValueRef fN)
 {
     LLVMValueRef condition = self.compile_node(*node.condition);
 
+    int index = (*self).index++;
+
     // create first for reference to jump
-    LLVMBasicBlockRef then_block = llvm::append_basic_block(fN, "");
-    LLVMBasicBlockRef else_block = llvm::append_basic_block(fN, "");
-    LLVMBasicBlockRef end_block = llvm::append_basic_block(fN, "");
+    LLVMBasicBlockRef then_block = llvm::append_basic_block(fN, string::format(mem, "then.%d", index));
+    LLVMBasicBlockRef else_block = llvm::append_basic_block(fN, string::format(mem, "else.%d", index));
+    LLVMBasicBlockRef end_block  = llvm::append_basic_block(fN, string::format(mem, "end.%d", index));
 
     // evaluate condition
     llvm::build_cond_br(self.builder, condition, then_block, else_block);
@@ -548,16 +567,22 @@ fn void Compiler.compile_if(&self, IfNode node, LLVMValueRef* fN)
     llvm::build_br(self.builder, end_block);
     self.scope = (*self.scope).parent;
 
-    // evaluate else
-    self.scope = (*self.scope).new();
     llvm::position_builder_at_end(self.builder, else_block);
-    foreach (child : node.else_children)
+    if (node.else_if != null)
     {
-        self.compile_node(child);
+        self.compile_node(*node.else_if, fN);
+        llvm::build_br(self.builder, end_block);
+    } else
+    {
+        // evaluate else
+        self.scope = (*self.scope).new();
+        foreach (child : node.else_children)
+        {
+            self.compile_node(child, fN);
+        }
+        llvm::build_br(self.builder, end_block);
+        self.scope = (*self.scope).parent;
     }
-    llvm::build_br(self.builder, end_block);
-    self.scope = (*self.scope).parent;
-
     // continue code
     llvm::position_builder_at_end(self.builder, end_block);
 }
@@ -618,21 +643,16 @@ fn LLVMValueRef Compiler.compile_bin(&self, BinNode node)
     } else if (llvm::type_of(left) == llvm::pointer_type(llvm::int8_type(), 0))
     // strings
     {
-        util::panic("comparing strings. use libc->strcmp instead", $$FILE, $$LINE);
-        /*
-        if (self.strcmp == null)
+        //util::panic("comparing strings. use libc->strcmp instead", $$FILE, $$LINE);
+
+        if (!self.strcmp)
         {
             self.build_strcmp();
         }
 
-        LLVMValueRef[] args =
-        {
-            left,
-            right
-        };
+        LLVMValueRef[] args = { left, right };
 
-        return llvm::build_call_2(self.builder, llvm::int1_type(), self.strcmp, args, 2, "");
-        */
+        return llvm::build_call_2(self.builder, self.strcmp_type, self.strcmp, args, 2, "");
     }
 
     return null;
@@ -671,11 +691,36 @@ fn LLVMValueRef Compiler.compile_init(&self, InitNode node, LLVMTypeRef type)
 
 fn LLVMValueRef Compiler.compile_access(&self, AccessNode node)
 {
-    Var variable = self.scope.get_var(node.id);
-    LLVMValueRef struct_value = variable.value;
-    LLVMTypeRef struct_type = self.structs.get(variable.type)!!.type;
+    String name = node.id;
+
+    if (self.type_table.has((char*)name.zstr_copy(mem)))
+    {
+        Type* base_type = self.type_table.lookup(node.id);
+        return self.resolve_access(null, base_type.llvm_type, name, node.node);
+    }
+
+    LLVMValueRef struct_value;
+    String       type_name;
+    if ((self.scope).has_var(name))
+    {
+        Var variable = self.scope.get_var(name);
+        struct_value = variable.value;
+        type_name    = variable.type;
+    } else if ((*self.scope).has_const(name))
+    {
+        Const constant = self.scope.get_const(name);
+        struct_value   = constant.value;
+        type_name      = constant.type;
+    } else if ((*self.scope).has_param(name))
+    {
+        Param param  = self.scope.get_param(name);
+        struct_value = param.value;
+        type_name    = param.type;
+    }
     
-    return self.resolve_access(struct_value, struct_type, variable.type.zstr_copy(mem), node.node);
+    LLVMTypeRef struct_type = self.type_table.lookup(type_name).llvm_type;
+    
+    return self.resolve_access(struct_value, struct_type, type_name, node.node);
 }
 
 fn LLVMValueRef Compiler.resolve_access(&self, LLVMValueRef base_value, LLVMTypeRef base_type, char* prev_id, ASTNode* next_node)
@@ -750,16 +795,94 @@ fn void Compiler.compile_struct(&self, StructNode node)
 
 fn LLVMValueRef Compiler.resolve_builtin_field(&self, LLVMValueRef value, LLVMTypeRef type, char* prev, char* id)
 {
-    io::printn((ZString)self.type_table.lookup(prev).name);
+    switch (((ZString)id).str_view())
+    {
+        case "$typeid":
+            return llvm::const_int(/* to get i32/i64 based on system */ self.get_type((String[]){"int"}), self.type_table.lookup(self.type_table.lookup(prev).name).type_id, llvm::FALSE);
+        case "$typekind":
+            String typekind;
+            if (llvm::get_type_kind(type) == STRUCT_TYPE_KIND)
+            {
+                typekind = "STRUCT";
+            } else
+            {
+                typekind = "BUILTIN";
+            }
 
-    io::printn((ZString)llvm::print_value_to_string(value));
-    
+            return self.create_string(typekind);
+        case "$typename":
+            String typename = ((ZString)self.type_table.lookup(prev).name).str_view();
+            return self.create_string(typename);
+    }
+
     return null;
 }
 
-fn void Compiler.compile_macro(&self, MacroNode node)
+fn void Compiler.compile_macro(&self, MacroNode* node, LLVMValueRef[] args, String[] arg_types, LLVMBasicBlockRef parent_block)
 {
-    // TODO
+    String[] types = mem::new_array(String, 1);
+    types[0] = node.type;
+    LLVMTypeRef type = self.get_type(types);
+
+    LLVMTypeRef[] params = mem::new_array(LLVMTypeRef, 0);
+    bool vararg;
+
+    foreach (i, parameter : node.parameters)
+    {
+        ParameterNode param = parameter.node.parameter_node;
+
+        if (param.vararg)
+        {
+            vararg = true;
+            break;
+        }
+        util::array_insert(&params, llvm::type_of(args[i]));
+    }
+    
+    LLVMTypeRef fn_type = llvm::function_type(type, params, params.len, vararg ? llvm::TRUE : llvm::FALSE);
+    
+    LLVMValueRef fN = llvm::add_function(self.mod, node.name, fn_type);
+
+    for (int i = 0; i < params.len; i++) {
+        llvm::set_value_name(llvm::get_param(fN, i), (node.parameters)[i].node.parameter_node.name);
+    }
+
+    LLVMBasicBlockRef entry_block = llvm::append_basic_block(fN, "entry");
+    llvm::position_builder_at_end(self.builder, entry_block);
+
+    self.scope = (*self.scope).new();
+    foreach (index, parameter : node.parameters)
+    {
+        ParameterNode param = parameter.node.parameter_node;
+        LLVMValueRef llvm_param = llvm::get_param(fN, index);
+        (*self.scope).parameters.set(param.name, { arg_types[index].copy(mem), llvm_param });
+    }
+
+    LLVMBasicBlockRef current_block = entry_block;
+    foreach (child : node.children)
+    {
+        LLVMBasicBlockRef new_block = self.compile_node(child, fN, parent_block: current_block); // switch also gets this as parent rather than the end from if
+        if (new_block)
+        {
+            current_block = new_block;
+        }
+    }
+
+    if (node.children.len == 0 || (node.children[node.children.len - 1].node_type != RETURN && node.type == "void"))
+    {
+        llvm::build_ret_void(self.builder);
+    }
+
+    self.scope = (*self.scope).parent;
+    llvm::position_builder_at_end(self.builder, parent_block);
+    llvm::build_call_2(
+        self.builder,
+        fn_type,
+        fN,
+        args,
+        args.len,
+        ""
+    );
 }
 
 fn void Compiler.compile_while(&self, WhileNode node, LLVMValueRef fN)
@@ -838,4 +961,183 @@ fn LLVMTypeRef Compiler.get_struct_type(&self, InitNode node)
     }
 
     return possible_structs.len == 0 ? null : possible_structs[0];
+}
+
+fn String Compiler.get_type_from_llvm(&self, LLVMValueRef value)
+{
+    String llvm_type = ((ZString)llvm::print_type_to_string(llvm::type_of(value))).str_view();
+    if (llvm_type[0] == '%')
+    {
+        return llvm_type.tsplit("%")[1].tsplit(" ")[0];
+    }
+
+    switch (llvm_type)
+    {
+        case "ptr":    return "str"; // TODO: other types
+        case "i32":
+        case "i64":    return "int";
+        case "double": return "double";
+        case "i1":     return "bool";
+    }
+
+    util::panicf("Unreachable: `%s`", llvm_type, file: $$FILE, line: $$LINE);
+}
+
+fn LLVMValueRef Compiler.create_string(&self, String value)
+{
+    if (self.strings.has_key(value))
+    {
+        return self.strings.get(value)!!;
+    }
+
+    String processed = self.process_escape_sequences(value);
+    int    len       = processed.len;
+
+    LLVMValueRef str        = llvm::const_string(processed, processed.len, llvm::FALSE);
+    LLVMTypeRef  arr_type   = llvm::array_type(llvm::int8_type(), processed.len + 1);
+    LLVMValueRef global_str = llvm::add_global(self.mod, arr_type, "");
+
+    llvm::set_initializer(global_str, str);
+    llvm::set_linkage(global_str, PRIVATE_LINKAGE);
+    llvm::set_unnamed_addr(global_str, llvm::TRUE);
+    llvm::set_global_constant(global_str, llvm::TRUE);
+
+    self.strings.set(value, global_str);
+
+    return global_str;
+}
+
+fn void Compiler.compile_switch(&self, SwitchNode node, LLVMValueRef fN, LLVMValueRef parent_block)
+{
+    int      index = (*self).index++;
+    ASTNode* left  = node.expr;
+
+    LLVMBasicBlockRef start_block   = llvm::append_basic_block(fN, string::format(mem, "start.%d", index));
+    LLVMBasicBlockRef current_block = parent_block;
+
+    foreach (i, case_stmt : node.cases)
+    {
+        CaseNode case_node = case_stmt.node.case_node;
+        ASTNode* right     = case_node.condition;
+
+        LLVMValueRef      condition  = self.compile_bin({ "==", left, right });
+        LLVMBasicBlockRef then_block = llvm::append_basic_block(fN, string::format(mem, "then.%d", index + i));
+        LLVMBasicBlockRef next_block = llvm::append_basic_block(fN, string::format(mem, "next.%d", index + i));
+
+        // break
+        llvm::build_cond_br(self.builder, condition, then_block, next_block);
+        
+        // then
+        llvm::position_builder_at_end(self.builder, then_block);
+        
+        self.scope = (*self.scope).new();
+        foreach (child : case_node.children)
+        {
+            self.compile_node(child, fN, parent_block: then_block);
+        }
+        self.scope = self.scope.parent;
+
+        llvm::build_br(self.builder, start_block);
+
+        llvm::position_builder_at_end(self.builder, next_block);
+        current_block = next_block;
+
+        // only add break on last
+        if (i == node.cases.len - 1)
+        {
+            llvm::build_br(self.builder, start_block);
+        }
+    }
+
+    LLVMBasicBlockRef end_block = llvm::append_basic_block(fN, string::format(mem, "end.%d", index));
+    llvm::position_builder_at_end(self.builder, start_block);
+    llvm::build_br(self.builder, end_block);
+
+    llvm::position_builder_at_end(self.builder, end_block);
+}
+
+fn void Compiler.build_strcmp(&self) {
+    LLVMBuilderRef builder = llvm::create_builder();
+
+    LLVMTypeRef str_type = llvm::pointer_type(llvm::int8_type(), 0);
+    LLVMTypeRef char_type = llvm::int8_type();
+    LLVMTypeRef[] param_types = { str_type, str_type };
+    LLVMTypeRef func_type = llvm::function_type(llvm::int1_type(), param_types, 2, llvm::FALSE);
+    LLVMValueRef strcmp_func = llvm::add_function(self.mod, ".strcmp", func_type);
+
+    llvm::set_value_name(llvm::get_param(strcmp_func, 0), "str_1");
+    llvm::set_value_name(llvm::get_param(strcmp_func, 1), "str_2");
+
+    LLVMBasicBlockRef entry_block       = llvm::append_basic_block(strcmp_func, "entry");
+    LLVMBasicBlockRef loop_block        = llvm::append_basic_block(strcmp_func, "loop");
+    LLVMBasicBlockRef check_null_block  = llvm::append_basic_block(strcmp_func, "check_chars");
+    LLVMBasicBlockRef check_chars_block = llvm::append_basic_block(strcmp_func, "check_chars");
+    LLVMBasicBlockRef true_block        = llvm::append_basic_block(strcmp_func, "true");
+    LLVMBasicBlockRef false_block       = llvm::append_basic_block(strcmp_func, "false");
+    LLVMBasicBlockRef loop_cont_block   = llvm::append_basic_block(strcmp_func, "loop_cont");
+
+    llvm::position_builder_at_end(builder, entry_block);
+    LLVMValueRef str_1 = llvm::get_param(strcmp_func, 0);
+    LLVMValueRef str_2 = llvm::get_param(strcmp_func, 1);
+    llvm::build_br(builder, loop_block);
+    
+    // loop
+    llvm::position_builder_at_end(builder, loop_block);
+    
+    LLVMValueRef ptr1_phi = llvm::build_phi(builder, str_type, "ptr1");
+    LLVMValueRef ptr2_phi = llvm::build_phi(builder, str_type, "ptr2");
+    
+    llvm::add_incoming(ptr1_phi, &str_1, &entry_block, 1);
+    llvm::add_incoming(ptr2_phi, &str_2, &entry_block, 1);
+
+    LLVMValueRef zero = llvm::const_int(llvm::int64_type(), 0, 0);
+    LLVMValueRef[] indices = { zero };
+
+    LLVMValueRef gep_1 = llvm::build_gep_2(builder, char_type, ptr1_phi, indices, 1, "gep_1");
+    LLVMValueRef gep_2 = llvm::build_gep_2(builder, char_type, ptr2_phi, indices, 1, "gep_2");
+
+    LLVMValueRef char_1 = llvm::build_load_2(builder, char_type, gep_1, "char_1");
+    LLVMValueRef char_2 = llvm::build_load_2(builder, char_type, gep_2, "char_2");
+
+    LLVMValueRef chars_diff = llvm::build_i_cmp(builder, llvm::INT_NE, char_1, char_2, "chars_diff");
+    llvm::build_cond_br(builder, chars_diff, false_block, check_null_block);
+
+    // check null
+    llvm::position_builder_at_end(builder, check_null_block);
+
+    LLVMValueRef null_char = llvm::const_int(char_type, 0, 0);
+    LLVMValueRef end1 = llvm::build_i_cmp(builder, llvm::INT_EQ, char_1, null_char, "end1");
+    LLVMValueRef end2 = llvm::build_i_cmp(builder, llvm::INT_EQ, char_2, null_char, "end2");
+    LLVMValueRef both_end = llvm::build_and(builder, end1, end2, "both_end");
+    
+    llvm::build_cond_br(builder, both_end, true_block, check_chars_block);
+    
+    // check chars
+    llvm::position_builder_at_end(builder, check_chars_block);
+
+    LLVMValueRef either_end = llvm::build_or(builder, end1, end2, "either_end");
+    llvm::build_cond_br(builder, either_end, false_block, loop_cont_block);
+
+    // loop cont
+    llvm::position_builder_at_end(builder, loop_cont_block);
+    LLVMValueRef next_ptr1 = llvm::build_gep_2(builder, char_type, ptr1_phi, &&llvm::const_int(llvm::int64_type(), 1, 0), 1, "next_ptr1");
+    LLVMValueRef next_ptr2 = llvm::build_gep_2(builder, char_type, ptr2_phi, &&llvm::const_int(llvm::int64_type(), 1, 0), 1, "next_ptr2");
+    
+    llvm::add_incoming(ptr1_phi, &next_ptr1, &loop_cont_block, 1);
+    llvm::add_incoming(ptr2_phi, &next_ptr2, &loop_cont_block, 1);
+    
+    llvm::build_br(builder, loop_block);
+
+    // true
+    llvm::position_builder_at_end(builder, true_block);
+    llvm::build_ret(builder, llvm::const_int(llvm::int1_type(), 1, 0));
+
+    // false
+    llvm::position_builder_at_end(builder, false_block);
+    llvm::build_ret(builder, llvm::const_int(llvm::int1_type(), 0, 0));
+
+    llvm::dispose_builder(builder);
+
+    self.strcmp      = strcmp_func;
+    self.strcmp_type = func_type;
 }

@@ -296,12 +296,14 @@ fn Token Lexer.identifier(&self)
     if (str == "ext")    return { KW_EXT,    str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "var")    return { KW_VAR,    str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "else")   return { KW_ELSE,   str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "case")   return { KW_CASE,   str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "const")  return { KW_CONST,  str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "macro")  return { KW_MACRO,  str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "while")  return { KW_WHILE,  str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "struct") return { KW_STRUCT, str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "return") return { KW_RETURN, str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "global") return { KW_GLOBAL, str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "switch") return { KW_SWITCH, str, { start, self.column }, self.line, self.get_context_lines() };
 
     return { IDENTIFIER, str, { start, self.column }, self.line, self.get_context_lines() };
 }
