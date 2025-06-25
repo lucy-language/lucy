@@ -6,7 +6,7 @@ import llvm;
 extern fn CInt strcmp(char* s1, char* s2);
 
 const int TABLE_SIZE               = 256;
-const int BUILTIN_TYPE_FIELD_COUNT = 4; // $typeid, $typekind, $typename, $size
+const int BUILTIN_TYPE_FIELD_COUNT = 5; // $typeid, $typekind, $typename, $size, $numfields
 
 struct Field
 {

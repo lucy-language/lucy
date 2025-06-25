@@ -828,6 +828,9 @@ fn LLVMValueRef Compiler.resolve_builtin_field(&self, LLVMValueRef value, LLVMTy
             return self.create_string(typename);
         case "$size":
             return self.calculate_type_size(type, prev);
+        case "$numfields":
+            Type* type_ptr = self.type_table.lookup(prev);
+            return create_int(type_ptr.num_fields);
     }
 
     return null;

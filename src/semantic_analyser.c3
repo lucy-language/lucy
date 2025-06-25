@@ -788,6 +788,9 @@ fn void SemanticAnalyser.analyse_struct(&self, ASTNode node_in)
 
     ((Field[])type.fields[:node.fields.len + lookup_table::BUILTIN_TYPE_FIELD_COUNT])[node.fields.len + 3].name = "$size";
     ((Field[])type.fields[:node.fields.len + lookup_table::BUILTIN_TYPE_FIELD_COUNT])[node.fields.len + 3].type = self.type_table.lookup("int");
+
+    ((Field[])type.fields[:node.fields.len + lookup_table::BUILTIN_TYPE_FIELD_COUNT])[node.fields.len + 4].name = "$numfields";
+    ((Field[])type.fields[:node.fields.len + lookup_table::BUILTIN_TYPE_FIELD_COUNT])[node.fields.len + 4].type = self.type_table.lookup("int");
 }
 
 fn void SemanticAnalyser.analyse_while(&self, ASTNode node_in)

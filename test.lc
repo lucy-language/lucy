@@ -12,6 +12,7 @@ struct User
 def int main()
 {
     var User* user = malloc(User.$size);
-    
+    printf("%d\n", User.$numfields);
+
     return 0;
 }
