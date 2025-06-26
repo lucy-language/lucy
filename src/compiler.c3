@@ -24,6 +24,8 @@ struct Compiler
     LLVMValueRef                  false_ptr;
     LLVMValueRef                  strcmp;
     LLVMTypeRef                   strcmp_type;
+    LLVMValueRef                  strlen;
+    LLVMTypeRef                   strlen_type;
     TypeTable*                    type_table;
     HashMap{String, LLVMValueRef} strings;
 }
@@ -65,7 +67,9 @@ fn Compiler new(String file_path, ASTNode file, TypeTable* type_table)
         .scope       = scope,
         .type_table  = type_table,
         .strcmp      = null,
-        .strcmp_type = null
+        .strcmp_type = null,
+        .strlen      = null,
+        .strlen_type = null
     };
 }
 
@@ -854,6 +858,13 @@ fn LLVMValueRef Compiler.resolve_builtin_field(&self, LLVMValueRef value, LLVMTy
         case "$numfields":
             Type* type_ptr = self.type_table.lookup(prev);
             return create_int(type_ptr.num_fields);
+        case "$length":
+            if (!self.strlen)
+            {
+                self.build_strlen();
+            }
+            LLVMValueRef[] args = { value };
+            return llvm::build_call_2(self.builder, self.strlen_type, self.strlen, args, 1, "");
     }
 
     return null;
@@ -1120,7 +1131,7 @@ fn void Compiler.build_strcmp(&self) {
 
     LLVMBasicBlockRef entry_block       = llvm::append_basic_block(strcmp_func, "entry");
     LLVMBasicBlockRef loop_block        = llvm::append_basic_block(strcmp_func, "loop");
-    LLVMBasicBlockRef check_null_block  = llvm::append_basic_block(strcmp_func, "check_chars");
+    LLVMBasicBlockRef check_null_block  = llvm::append_basic_block(strcmp_func, "check_null");
     LLVMBasicBlockRef check_chars_block = llvm::append_basic_block(strcmp_func, "check_chars");
     LLVMBasicBlockRef true_block        = llvm::append_basic_block(strcmp_func, "true");
     LLVMBasicBlockRef false_block       = llvm::append_basic_block(strcmp_func, "false");
@@ -1274,4 +1285,68 @@ fn int Compiler.get_type_alignment(&self, Type* type)
     }
 
     return 1;
+}
+
+fn void Compiler.build_strlen(&self) {
+    LLVMBuilderRef builder = llvm::create_builder();
+
+    LLVMTypeRef str_ptr_type = llvm::pointer_type(llvm::int8_type(), 0);
+    LLVMTypeRef str_ptr_ptr_type = llvm::pointer_type(str_ptr_type, 0);
+    LLVMTypeRef[] param_types = { str_ptr_ptr_type };
+    LLVMTypeRef func_type = llvm::function_type(llvm::int64_type(), param_types, 1, llvm::FALSE);
+    LLVMValueRef strlen_func = llvm::add_function(self.mod, ".strlen", func_type);
+
+    llvm::set_value_name(llvm::get_param(strlen_func, 0), "str_ptr");
+
+    LLVMBasicBlockRef entry_block = llvm::append_basic_block(strlen_func, "entry");
+    LLVMBasicBlockRef loop_block = llvm::append_basic_block(strlen_func, "loop");
+    LLVMBasicBlockRef loop_cont_block = llvm::append_basic_block(strlen_func, "loop_cont");
+    LLVMBasicBlockRef exit_block = llvm::append_basic_block(strlen_func, "exit");
+
+    // entry
+    llvm::position_builder_at_end(builder, entry_block);
+    LLVMValueRef str_ptr = llvm::get_param(strlen_func, 0);
+    
+    LLVMValueRef str = llvm::build_load_2(builder, str_ptr_type, str_ptr, "str");
+    
+    llvm::build_br(builder, loop_block);
+
+    // loop
+    llvm::position_builder_at_end(builder, loop_block);
+    
+    LLVMValueRef ptr_phi = llvm::build_phi(builder, str_ptr_type, "ptr");
+    LLVMValueRef length_phi = llvm::build_phi(builder, llvm::int64_type(), "length");
+
+    llvm::add_incoming(ptr_phi, &str, &entry_block, 1);
+    LLVMValueRef length_init = llvm::const_int(llvm::int64_type(), 0, 0);
+    llvm::add_incoming(length_phi, &length_init, &entry_block, 1);
+
+    LLVMValueRef zero = llvm::const_int(llvm::int64_type(), 0, 0);
+    LLVMValueRef gep = llvm::build_gep_2(builder, llvm::int8_type(), ptr_phi, &zero, 1, "gep");
+    LLVMValueRef char_val = llvm::build_load_2(builder, llvm::int8_type(), gep, "char");
+
+    LLVMValueRef null_char = llvm::const_int(llvm::int8_type(), 0, 0);
+    LLVMValueRef is_null = llvm::build_i_cmp(builder, llvm::INT_EQ, char_val, null_char, "is_null");
+    llvm::build_cond_br(builder, is_null, exit_block, loop_cont_block);
+
+    // loop cont
+    llvm::position_builder_at_end(builder, loop_cont_block);
+    
+    LLVMValueRef one = llvm::const_int(llvm::int64_type(), 1, 0);
+    LLVMValueRef next_ptr = llvm::build_gep_2(builder, llvm::int8_type(), ptr_phi, &one, 1, "next_ptr");
+    LLVMValueRef next_length = llvm::build_add(builder, length_phi, one, "next_length");
+    
+    llvm::add_incoming(ptr_phi, &next_ptr, &loop_cont_block, 1);
+    llvm::add_incoming(length_phi, &next_length, &loop_cont_block, 1);
+    
+    llvm::build_br(builder, loop_block);
+
+    // exit
+    llvm::position_builder_at_end(builder, exit_block);
+    llvm::build_ret(builder, length_phi);
+
+    llvm::dispose_builder(builder);
+
+    self.strlen = strlen_func;
+    self.strlen_type = func_type;
 }

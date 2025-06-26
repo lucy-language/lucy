@@ -1,8 +1,12 @@
 pkg test;
 
+ext void printf(str fmt, var str args);
+
 def int main()
 {
-    var int[]   test;
-    var int[10] test2;
+    var str test = "Hello, World!";
+
+    printf("%d\n", test.$length);
+
     return 0;
 }

@@ -132,13 +132,14 @@ fn void TypeTable.init_float_type(&self)
 
 fn void TypeTable.init_str_type(&self)
 {
-    int num_fields = 4;
+    int num_fields = 5;
 
     Field* fields  = malloc(Field.sizeof * num_fields);
     ((Field[])fields[:num_fields])[0] = { "$typeid",   self.lookup("int") };
     ((Field[])fields[:num_fields])[1] = { "$typekind", self.lookup("str") };
     ((Field[])fields[:num_fields])[2] = { "$typename", self.lookup("str") };
     ((Field[])fields[:num_fields])[3] = { "$size",     self.lookup("int") };
+    ((Field[])fields[:num_fields])[3] = { "$length",   self.lookup("int") };
 
     Type* type = self.lookup("str");
     (*type).fields = fields;
