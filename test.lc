@@ -1,18 +1,8 @@
 pkg test;
 
-ext void  printf(str fmt, var str args);
-ext void* malloc(int size);
-
-struct User
-{
-    str username;
-    str email;
-}
-
 def int main()
 {
-    var User* user = malloc(User.$size);
-    printf("%d\n", User.$numfields);
-
+    var int[]   test;
+    var int[10] test2;
     return 0;
 }

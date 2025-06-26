@@ -790,9 +790,15 @@ fn String Parser.type(&self)
     {
         if (self.current.type == LBRACKET)
         {
+            type.append_chars("[");
             self.consume();
+            if (self.current.type == INTEGER)
+            {
+                type.append_chars(self.current.value);
+                self.consume();
+            }
+            type.append_chars("]");
             self.try_consume(RBRACKET);
-            type.append_chars("[]");
         } else
         {
             self.consume();

@@ -300,6 +300,29 @@ fn LLVMTypeRef Compiler.get_type(&self, String[] types)
         {
             return llvm::pointer_type(self.get_type((String[]){type[..type.len - 2]}), 0);
         }
+        // TODO: return array_type/ptr
+//        String type = types[0];
+//        char   last = type[type.len - 1];
+//        while (util::in((char[]){'*', ']'}, last))
+//        {
+//            while (last == '*')
+//            {
+//                type = type[..type.len - 2];
+//                last    = type[type.len - 1];
+//            }
+//
+//            while (last == ']')
+//            {
+//                type = type[..type.len - 2];
+//                last    = type[type.len - 1];
+//                while (last != '[')
+//                {
+//                    type = type[..type.len - 2];
+//                    last    = type[type.len - 1];
+//                }
+//                type = type[..type.len - 2];
+//            }
+//        }
 
         switch (type)
         {

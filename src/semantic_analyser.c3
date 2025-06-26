@@ -865,10 +865,25 @@ fn Type* SemanticAnalyser.resolve_type(&self, String name, ASTNode node)
     String current = name;
     char   last    = name[name.len - 1];
 
-    while (last == '*')
+    while (util::in((char[]){'*', ']'}, last))
     {
-        current = current[..current.len - 2];
-        last    = current[current.len - 1];
+        while (last == '*')
+        {
+            current = current[..current.len - 2];
+            last    = current[current.len - 1];
+        }
+
+        while (last == ']')
+        {
+            current = current[..current.len - 2];
+            last    = current[current.len - 1];
+            while (last != '[')
+            {
+                current = current[..current.len - 2];
+                last    = current[current.len - 1];
+            }
+            current = current[..current.len - 2];
+        }
     }
 
     char* type_name = (char*)current.zstr_copy(mem);
