@@ -14,11 +14,11 @@ macro from_str($Type, Allocator alloc, String s) {
 	return deserialize::parse($Type, alloc, &lex);
 }
 
-macro String? to_json(expr, Allocator alloc, bool pretty = false) {
+macro String? to_json(expr, Allocator alloc, int indent = 4) {
 	@pool() {
 		DString s;
 		s.tinit();
-		serialize::add_json(expr, &s, pretty)!;
+		serialize::add_json(expr, &s, indent)!;
 		return s.copy_str(alloc);
 	};
 }

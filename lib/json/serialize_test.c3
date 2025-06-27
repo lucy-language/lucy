@@ -2,7 +2,6 @@ module serialize_test;
 import std::collections;
 import std::core::test;
 import json;
-import std::io;
 
 fn void test_basic() @test {
 	test::eq(json::to_json(true, allocator::temp())!!, "true");
@@ -17,14 +16,7 @@ struct Foo {
 
 fn void test_struct() @test {
 	Foo foo = { .is_bar = true, .baz = 1 };
-	test::eq(json::to_json(foo, allocator::temp())!!, `{"is_bar":true,"baz":1}`);
-}
-
-struct Complex
-{
-    String   s;
-    String[] s1;
-    Foo[]    f;
+    test::eq(json::to_json(foo, allocator::temp())!!, `{"is_bar":true,"baz":1}`);
 }
 
 fn void test_array() @test {
@@ -102,9 +94,9 @@ struct StructWithUnionCustom {
 		Foo foo;
 	}
 }
-fn void? StructWithUnionCustom.to_json(self, DString* dest, bool pretty, int indent) {
+fn void? StructWithUnionCustom.to_json(self, DString* dest, int indent, int indent_level) {
 	// Unions not supported, must handle each variant manually
-	serialize::add_json(self.foo, dest, pretty, indent)!;
+	serialize::add_json(self.foo, dest, indent, indent_level)!;
 }
 fn void test_struct_with_union_custom() @test {
 	StructWithUnionCustom s = { .foo = { .is_bar = true} };

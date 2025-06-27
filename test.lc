@@ -1,12 +1,11 @@
 pkg test;
 
+const str NAME = "Raylib example";
+
 ext void printf(str fmt, var str args);
 
 def int main()
 {
-    var str test = "Hello, World!";
-
-    printf("%d\n", test.$length);
-
+    printf(NAME);
     return 0;
 }

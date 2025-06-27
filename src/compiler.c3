@@ -282,7 +282,7 @@ fn void Compiler.compile_const(&self, ConstNode node, bool global = false)
         case "int": value = llvm::const_int(llvm::int32_type(), node.value.node.int_node.value.to_int(), llvm::TRUE)!!; // TODO: return llvm::int64_type() if on 64 bit system
         case "float": value = llvm::const_real(llvm::float_type(), node.value.node.float_node.value.to_float())!!;
         case "double": value = llvm::const_real(llvm::double_type(), node.value.node.double_node.value.to_double())!!;
-        case "str": value = llvm::const_string(node.value.node.str_node.value, node.value.node.str_node.value.len, llvm::TRUE);
+        case "str": value = llvm::const_string(node.value.node.str_node.value, node.value.node.str_node.value.len, llvm::FALSE);
         default: util::panic("A constant can only be a builtin type", $$FILE, $$LINE);
     }
     LLVMValueRef constant = llvm::add_global(self.mod, llvm::type_of(value), node.name);
@@ -539,6 +539,7 @@ fn LLVMValueRef Compiler.compile_ident(&self, ASTNode node_in)
     }
 
     LLVMValueRef loaded;
+    // TODO: replace with Scope.has and switch
     if ((self.scope).has_var(name))
     {
         Var variable = (*self.scope).get_var(name);
@@ -547,8 +548,9 @@ fn LLVMValueRef Compiler.compile_ident(&self, ASTNode node_in)
     } else if ((*self.scope).has_const(name))
     {
         Const constant = (*self.scope).get_const(name);
-        LLVMTypeRef type = self.get_type((String[]){ constant.type });
-        loaded = llvm::build_load_2(self.builder, type, constant.value, "");
+        //LLVMTypeRef type = self.get_type((String[]){ constant.type });
+        //loaded = llvm::build_load_2(self.builder, type, constant.value, "");
+        return constant.value;
     } else if ((*self.scope).has_param(name))
     {
         loaded = (*self.scope).get_param(name).value;
@@ -711,22 +713,39 @@ fn LLVMValueRef Compiler.compile_double(&self, DoubleNode node)
 fn LLVMValueRef Compiler.compile_init(&self, InitNode node, LLVMTypeRef type)
 {
     LLVMValueRef[] values = mem::new_array(LLVMValueRef, node.values.len);
+    bool all_const = true;
+
     foreach (i, value : node.values)
     {
         values[i] = self.compile_node(value);
+        if (!llvm::is_constant(values[i]))
+        {
+            all_const = false;
+        }
     }
     
     LLVMTypeRef struct_type = self.get_struct_type(node);
-    LLVMValueRef instance;
-    if (struct_type != null)
+
+    if (all_const)
     {
-        instance = llvm::const_named_struct(struct_type, values, values.len, 0);
+        if (struct_type != null)
+        {
+            return llvm::const_named_struct(struct_type, values, values.len, 0);
+        } else
+        {
+            return llvm::const_struct(values, values.len, 0);
+        }
     } else
     {
-        instance = llvm::const_struct(values, values.len, 0);
-    }
+        LLVMValueRef instance = llvm::build_alloca(self.builder, struct_type, "");
+        foreach (i, value : values)
+        {
+            LLVMValueRef field_ptr = llvm::build_struct_gep_2(self.builder, struct_type, instance, (int)i, "");
+            llvm::build_store(self.builder, value, field_ptr);
+        }
 
-    return instance;
+        return instance;
+    }
 }
 
 fn LLVMValueRef Compiler.compile_access(&self, AccessNode node)
@@ -1001,6 +1020,19 @@ fn LLVMTypeRef Compiler.get_type_node(&self, ASTNode node)
         case DOUBLE:     return self.get_type((String[]){"double"});
         // TODO: do other types later
         case INIT:       return self.get_struct_type(node.node.init_node);
+        case BIN:        return self.get_type_node(*node.node.bin_node.left);
+        case IDENT:
+            ScopeResult res = self.scope.get(node.node.ident_node.name);
+            String type_name;
+            switch (res.type)
+            {
+                case VAR:   type_name = res.variable.type;
+                case CONST: type_name = res.constant.type;
+                case PARAM: type_name = res.parameter.type;
+            }
+            Type* type = self.type_table.lookup((char*)type_name.zstr_copy(mem));
+            String type_str = ((ZString)type.name).str_view();
+            return self.get_type((String[]){type_str});
 
         default: util::panicf("Unimplemented type `%s`", node.node_type, file: $$FILE, line: $$LINE);
     }
@@ -1039,6 +1071,7 @@ fn String Compiler.get_type_from_llvm(&self, LLVMValueRef value)
         case "i64":    return "int";
         case "double": return "double";
         case "i1":     return "bool";
+        case "i8":     return "char";
     }
 
     util::panicf("Unreachable: `%s`", llvm_type, file: $$FILE, line: $$LINE);

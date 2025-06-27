@@ -87,12 +87,12 @@ fn int main(String[] args)
     
         if (arg_parser.has_arg("tree"))
         {
-            io::printn(json::to_json(ast, mem, true)!!);
+            io::printn(json::to_json(ast, mem)!!);
         }
 
         if (arg_parser.has_arg("ast"))
         {
-            file::save("ast.json", json::to_json(ast, mem, true))!!;
+            file::save("ast.json", json::to_json(ast, mem))!!;
         }
 
         if (arg_parser.has_arg("parser"))

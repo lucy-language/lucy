@@ -1,7 +1,5 @@
 module lucy::scope;
 
-import lucy::node;
-
 const FMT = "Could not find variable `%s` in current scope (%s:%s)";
 
 
@@ -9,7 +7,7 @@ module lucy::scope::comp;
 
 import std::io, std::os, std::collections::map;
 import llvm;
-import lucy::node;
+import lucy::node, lucy::util;
 
 struct Scope
 {
@@ -45,6 +43,44 @@ fn Scope* Scope.new(&self)
     (*scope).constants  = {};
     (*scope).parameters = {};
     return scope;
+}
+
+enum ResultType
+{
+    VAR,
+    CONST,
+    PARAM
+}
+
+struct ScopeResult
+{
+    ResultType type;
+    Var        variable;
+    Const      constant;
+    Param      parameter;
+}
+
+fn bool Scope.has(&self, String name)
+{
+    return self.has_var(name) || self.has_const(name) || self.has_param(name);
+}
+
+fn ScopeResult Scope.get(&self, String name)
+{
+    if (self.has_var(name))
+    {
+        return { .type = VAR, .variable = self.get_var(name) };
+    }
+    if (self.has_const(name))
+    {
+        return { .type = CONST, .constant = self.get_const(name) };
+    }
+    if (self.has_param(name))
+    {
+        return { .type = PARAM, .parameter = self.get_param(name) };
+    }
+
+    util::panic("Unreachable", $$FILE, $$LINE);
 }
 
 fn Var Scope.get_var(&self, String name)
