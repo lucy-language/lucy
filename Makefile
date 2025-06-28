@@ -1,10 +1,10 @@
-all: clean build run compile exec
+all: clean build run exec
 
 run: build
-	./build/lucy compile test.lc --ast
+	./build/lucy compile main.lc --ast
 
-compile: run
-	clang test.ll -l raylib -lc -o program
+#compile: run
+#	clang test.ll -l raylib -lc -o program
 
 build: clean
 	c3c build -l LLVM
@@ -12,7 +12,8 @@ build: clean
 clean:
 	rm -rf ./build
 	rm -f *.ll
-	rm -f program
+	rm -f main
+	rm -f *.o
 
-exec: compile
-	./program
+exec:
+	./main

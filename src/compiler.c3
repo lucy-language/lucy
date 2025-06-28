@@ -1,7 +1,7 @@
 module lucy::compiler;
 
 import std::collections::map, std::collections::list, std::os, std::io;
-import lucy::node, lucy::errors, lucy::scope::comp, lucy::util, lucy::lookup_table;
+import lucy::node, lucy::errors, lucy::scope::comp, lucy::util, lucy::lookup_table, lucy::linker;
 import llvm;
 
 extern fn int strcmp(char* s1, char* s2);
@@ -93,11 +93,22 @@ fn void Compiler.compile(&self)
         self.compile_node(ast);
     }
 
+    /*
     char* error;
     if (llvm::print_module_to_file(self.mod, string::format(mem, "%s.ll", self.module_name), &error))
     {
         util::panic(string::tformat("Failed to write IR: %s", *error), $$FILE, $$LINE);
     }
+    */
+
+    String[] linker_options = mem::new_array(String, 0);
+
+    foreach (child : self.file_node.linker_options)
+    {
+        util::array_insert(&linker_options, string::format(mem, "-l%s", child.node.linker_option_node.value));
+    }
+    
+    linker::link(self.mod, self.module_name, linker_options);
 }
 
 fn void Compiler.add_def(&self, DefNode node)
@@ -214,6 +225,17 @@ fn void Compiler.compile_def(&self, DefNode node)
     foreach (child : node.children)
     {
         self.compile_node(child, function, parent_block: entry_block);
+    }
+
+    // add exit call
+    if (node.name == "main")
+    {
+        LLVMTypeRef[] exit_param_types = { self.get_type((String[]){"int"}) };
+        LLVMTypeRef exit_func_type = llvm::function_type(llvm::void_type(), exit_param_types, 1, 0);
+        LLVMValueRef exit_func = llvm::add_function(self.mod, "exit", exit_func_type);
+
+        LLVMValueRef[] exit_args = { create_int(0) };
+        llvm::build_call_2(self.builder, exit_func_type, exit_func, exit_args, 1, "");
     }
 
     if (node.children.len == 0 || (node.children[node.children.len - 1].node_type != RETURN && def.ret_type == "void"))

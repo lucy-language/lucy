@@ -1,0 +1,8 @@
+pkg main;
+
+ext void printf(str fmt, var str args);
+
+def void main()
+{
+    printf("Hello, World!\n");
+}

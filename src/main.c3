@@ -11,6 +11,7 @@ import lucy::node;
 import argparser;
 import color_util;
 import json;
+import llvm;
 
 fn int main(String[] args)
 {
@@ -61,8 +62,14 @@ fn int main(String[] args)
 
     if (arg_parser.has_arg("version"))
     {
-        io::printfn("Compiler Version:     %s", VERSION);
-        io::printfn("Backends:             %s", BACKENDS);
+        io::printfn("%-*s%s", 30, "Compiler Version:", VERSION);
+        io::printfn("%-*s%s", 30, "Backends:", BACKENDS);
+        for (int i = 0; i < 30 + VERSION.len; i++)
+        {
+            io::print("─");
+        }
+        io::printn();
+        io::printfn("%-*s%s", 30, "LLVM Default Target:", (ZString)llvm::get_default_target_triple());
         return 0;
     }
 

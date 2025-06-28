@@ -54,3 +54,23 @@ fn void panic(String message, String file, int line) @noreturn
     io::eprintn (color_util::COLOR_RESET);
     os::exit(1);
 }
+
+<*
+ @require @typekind(arr) == SLICE
+*>
+macro String join_to_string(arr, String separator, Allocator alloc = mem)
+{
+    DString result;
+    result.init(alloc);
+    defer result.free();
+
+    bool first = true;
+    foreach (x : arr)
+    {
+        if (!first) result.append_chars(separator);
+        if (first) first = false;
+
+        result.append_chars(x);
+    }
+    return result.copy_str(alloc);
+}

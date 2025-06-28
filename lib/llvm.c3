@@ -111,6 +111,57 @@ extern fn bool is_a_get_element_ptr_inst(LLVMValueRef variable) @extern("LLVMIsA
 
 extern fn void dump_type(LLVMTypeRef type) @extern("LLVMDumpType");
 
+// Targets
+extern fn void initialize_x86_target() @extern("LLVMInitializeX86Target");
+extern fn void initialize_x86_target_info() @extern("LLVMInitializeX86TargetInfo");
+extern fn void initialize_x86_target_mc() @extern("LLVMInitializeX86TargetMC");
+extern fn void initialize_x86_asm_parser() @extern("LLVMInitializeX86AsmParser");
+extern fn void initialize_x86_asm_printer() @extern("LLVMInitializeX86AsmPrinter");
+
+extern fn void initialize_aarch64_target() @extern("LLVMInitializeAArch64Target");
+extern fn void initialize_aarch64_target_info() @extern("LLVMInitializeAArch64TargetInfo");
+extern fn void initialize_aarch64_target_mc() @extern("LLVMInitializeAArch64TargetMC");
+extern fn void initialize_aarch64_asm_parser() @extern("LLVMInitializeAArch64AsmParser");
+extern fn void initialize_aarch64_asm_printer() @extern("LLVMInitializeAArch64AsmPrinter");
+
+extern fn void initialize_arm_target() @extern("LLVMInitializeARMTarget");
+extern fn void initialize_arm_target_info() @extern("LLVMInitializeARMTargetInfo");
+extern fn void initialize_arm_target_mc() @extern("LLVMInitializeARMTargetMC");
+extern fn void initialize_arm_asm_parser() @extern("LLVMInitializeARMAsmParser");
+extern fn void initialize_arm_asm_printer() @extern("LLVMInitializeARMAsmPrinter");
+
+extern fn void initialize_riscv_target() @extern("LLVMInitializeRISCVTarget");
+extern fn void initialize_riscv_target_info() @extern("LLVMInitializeRISCVTargetInfo");
+extern fn void initialize_riscv_target_mc() @extern("LLVMInitializeRISCVTargetMC");
+extern fn void initialize_riscv_asm_parser() @extern("LLVMInitializeRISCVAsmParser");
+extern fn void initialize_riscv_asm_printer() @extern("LLVMInitializeRISCVAsmPrinter");
+
+extern fn void initialize_x_core_target() @extern("LLVMInitializeXCoreTarget");
+extern fn void initialize_x_core_target_info() @extern("LLVMInitializeXCoreTargetInfo");
+extern fn void initialize_x_core_target_mc() @extern("LLVMInitializeXCoreTargetMC");
+extern fn void initialize_x_core_asm_parser() @extern("LLVMInitializeXCoreAsmParser");
+extern fn void initialize_x_core_asm_printer() @extern("LLVMInitializeXCoreAsmPrinter");
+
+extern fn LLVMTargetRef get_target_from_name(char* name) @extern("LLVMGetTargetFromName");
+extern fn char*         get_default_target_triple() @extern("LLVMGetDefaultTargetTriple");
+extern fn bool          get_target_from_triple(char* name, LLVMTargetRef* target, char** error) @extern("LLVMGetTargetFromTriple");
+extern fn char*         get_target_name(LLVMTargetRef target) @extern("LLVMGetTargetName");
+
+extern fn LLVMTargetMachineRef create_target_machine(LLVMTargetRef target, char* triple, char* cpu, char* features, LLVMCodeGenOptLevel code_gen_opt_level, LLVMRelocMode reloc_mode, LLVMCodeModel code_model) @extern("LLVMCreateTargetMachine");
+extern fn LLVMBool target_machine_emit_to_file(LLVMTargetMachineRef target_machine, LLVMModuleRef mod, char* file_name, LLVMCodeGenFileType codegen, char** error) @extern("LLVMTargetMachineEmitToFile");
+
+extern fn void            dispose_pass_manager(LLVMPassManager pass_manager) @extern("LLVMDisposePassManager");
+extern fn LLVMPassManager create_pass_manager() @extern("LLVMCreatePassManager");
+
+extern fn void  set_target(LLVMModuleRef mod, char* target_triple) @extern("LLVMSetTarget");
+extern fn void  set_data_layout(LLVMModuleRef mod, char* data_layout) @extern("LLVMSetDataLayout");
+extern fn LLVMTargetDataRef create_target_data_layout(LLVMTargetMachineRef target_machine) @extern("LLVMCreateTargetDataLayout");
+
+extern fn void run_pass_manager(LLVMPassManagerRef pass_manager, LLVMModuleRef mod) @extern("LLVMRunPassManager");
+
+extern fn char* get_host_cpu_features() @extern("LLVMGetHostCPUFeatures");
+extern fn char* copy_string_rep_of_target_data(LLVMTargetDataRef target_data_ref) @extern("LLVMCopyStringRepOfTargetData");
+
 const TRUE  = 1;
 const FALSE = 0;
 
@@ -144,6 +195,7 @@ alias LLVMAttributeRef             = void*;
 alias LLVMIntPredicate             = int;
 alias LLVMRealPredicate            = int;
 alias LLVMGlobalVariableRef        = void*;
+alias LLVMPassManager              = void*;
 
 enum LLVMTypeKind
 {
@@ -215,3 +267,39 @@ const LLVMRealPredicate REAL_ULT             = 12;
 const LLVMRealPredicate REAL_ULE             = 13;
 const LLVMRealPredicate REAL_UNE             = 14;
 const LLVMRealPredicate REAL_PREDICATE_TRUE  = 15;
+
+enum LLVMCodeGenOptLevel
+{
+    CODE_GEN_LEVEL_NONE,
+    CODE_GEN_LEVEL_LESS,
+    CODE_GEN_LEVEL_DEFAULT,
+    CODE_GEN_LEVEL_AGGRESSIVE
+}
+
+enum LLVMRelocMode
+{
+    RELOC_DEFAULT,
+    RELOC_STATIC,
+    RELOC_PIC,
+    RELOC_DYNAMIC_NO_PIC
+}
+
+enum LLVMCodeModel
+{
+    CODE_MODEL_DEFAULT,
+    CODE_MODEL_JIT_DEFAULT,
+    CODE_MODEL_SMALL,
+    CODE_MODEL_KERNEL,
+    CODE_MODEL_MEDIUM,
+    CODE_MODEL_LARGE
+}
+
+enum LLVMCodeGenFileType
+{
+    ASSEMBLY_FILE,
+    OBJECT_FILE,
+    NULL,
+    BITCODE_FILE,
+    LINKED_FILE,
+    DWO_FILE
+}
