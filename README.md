@@ -1,8 +1,7 @@
 # Lucy Compiler
 
-# ⚠️ DISCLAIMER ⚠️
-
-### this project is unfinished
+> [!CAUTION]
+> Unfinished project
 
 ## Description
 
@@ -47,6 +46,22 @@ def void main()
     printf("Hello, %s!", p.name.first_name);
 }
 ```
+
+## Supported systems
+| Name       | Tested                                                             |
+|------------|--------------------------------------------------------------------|
+| aarch64    | ![False](https://img.shields.io/badge/false-red?style=flat-square) |
+| aarch64_be | ![False](https://img.shields.io/badge/false-red?style=flat-square) |
+| aarch64_32 | ![False](https://img.shields.io/badge/false-red?style=flat-square) |
+| arm        | ![False](https://img.shields.io/badge/false-red?style=flat-square) |
+| armb       | ![False](https://img.shields.io/badge/false-red?style=flat-square) |
+| thumb      | ![False](https://img.shields.io/badge/false-red?style=flat-square) |
+| thumbeb    | ![False](https://img.shields.io/badge/false-red?style=flat-square) |
+| riscv32    | ![False](https://img.shields.io/badge/false-red?style=flat-square) |
+| riscv64    | ![False](https://img.shields.io/badge/false-red?style=flat-square) |
+| x86        | ![False](https://img.shields.io/badge/false-red?style=flat-square) |
+| x86_64     | ![True](https://img.shields.io/badge/true-green?style=flat-square) |
+| xcore      | ![False](https://img.shields.io/badge/false-red?style=flat-square) |
 
 ## Building and Running
 
