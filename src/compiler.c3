@@ -103,6 +103,10 @@ fn void Compiler.compile(&self)
 fn void Compiler.add_def(&self, DefNode node)
 {
     LLVMTypeRef type = self.get_type(node.types);
+    if (node.name == "main" && node.types[0] == "void")
+    {
+        type = self.get_type((String[]){"int"});
+    }
 
     List{LLVMTypeRef} param_list;
     bool vararg;
@@ -214,7 +218,13 @@ fn void Compiler.compile_def(&self, DefNode node)
 
     if (node.children.len == 0 || (node.children[node.children.len - 1].node_type != RETURN && def.ret_type == "void"))
     {
-        llvm::build_ret_void(self.builder);
+        if (node.name == "main")
+        {
+            llvm::build_ret(self.builder, create_int(0));
+        } else
+        {
+            llvm::build_ret_void(self.builder);
+        }
     }
 
     self.scope = (*self.scope).parent;

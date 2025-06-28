@@ -63,7 +63,7 @@ fn int main(String[] args)
     {
         io::printfn("Compiler Version:     %s", VERSION);
         io::printfn("Backends:             %s", BACKENDS);
-        os::exit(0);
+        return 0;
     }
 
     if (arg_parser.has_arg("compile"))
@@ -79,7 +79,7 @@ fn int main(String[] args)
             {
                 io::printn(token.type);
             }
-            os::exit(0);
+            return 0;
         }
 
         Parser parser = parser::new(lexer, path);
@@ -97,7 +97,7 @@ fn int main(String[] args)
 
         if (arg_parser.has_arg("parser"))
         {
-            os::exit(0);
+            return 0;
         }
 
         TypeTable* type_table = malloc(TypeTable.sizeof);
@@ -107,7 +107,7 @@ fn int main(String[] args)
 
         if (arg_parser.has_arg("analyser"))
         {
-            os::exit(0);
+            return 0;
         }
     
         // Need to reinstantiate because json fucks it up somehow

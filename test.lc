@@ -2,10 +2,9 @@ pkg test;
 
 ext void printf(str fmt, var str args);
 
-def int main()
+def void main()
 {
     printf("%s\n", $FILE);
     printf("%s\n", $PATH);
     printf("%d\n", $LINE);
-    return 0;
 }
