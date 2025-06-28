@@ -443,8 +443,9 @@ fn String SemanticAnalyser.get_ident_type(&self, ASTNode node_in)
 
     switch (name)
     {
-        case "$$FILE": return "str";
-        case "$$LINE": return "int";
+        case "$FILE": return "str";
+        case "$LINE": return "int";
+        case "$PATH": return "str";
     }
 
     io::printn(name);
@@ -497,8 +498,9 @@ fn void SemanticAnalyser.analyse_ident(&self, ASTNode node_in)
 
     switch (name)
     {
-        case "$$FILE":
-        case "$$LINE": return;
+        case "$FILE":
+        case "$PATH":
+        case "$LINE": return;
     }
 
     if (!self.has_variable(name))

@@ -534,8 +534,9 @@ fn LLVMValueRef Compiler.compile_ident(&self, ASTNode node_in)
 
     switch (name)
     {
-        case "$$FILE": return self.create_string(self.file_path);
-        case "$$LINE": return llvm::const_int(self.get_type((String[]){"int"}), node_in.line, llvm::FALSE);
+        case "$FILE": return self.create_string(self.file_path);
+        case "$PATH": return self.create_string(self.file_path.to_absolute_path(mem)!!.str_view());
+        case "$LINE": return llvm::const_int(self.get_type((String[]){"int"}), node_in.line, llvm::FALSE);
     }
 
     LLVMValueRef loaded;
