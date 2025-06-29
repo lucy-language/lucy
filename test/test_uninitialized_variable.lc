@@ -1,0 +1,7 @@
+pkg test;
+
+def int main()
+{
+    var int i;
+    return 0;
+}

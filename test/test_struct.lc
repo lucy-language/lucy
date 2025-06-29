@@ -1,0 +1,17 @@
+pkg test;
+
+struct Person
+{
+    str name;
+    int age;
+}
+
+def int main()
+{
+    var Person person =
+    {
+        "Kiana",
+        22
+    };
+    return 0;
+}

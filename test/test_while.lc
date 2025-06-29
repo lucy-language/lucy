@@ -1,0 +1,10 @@
+pkg test;
+
+def int main()
+{
+    while (true)
+    {
+
+    }
+    return 0;
+}

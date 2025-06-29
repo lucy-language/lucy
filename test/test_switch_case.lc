@@ -1,0 +1,12 @@
+pkg test;
+
+def int main()
+{
+    switch (true)
+    {
+        case true:
+
+        case false:
+    }
+    return 0;
+}

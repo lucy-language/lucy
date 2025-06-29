@@ -1,0 +1,8 @@
+pkg test;
+
+def int main()
+{
+    var bool b = true;
+    b!!;
+    return 0;
+}

@@ -1,0 +1,12 @@
+pkg test;
+
+def int main()
+{
+    test("Hello", "World");
+    return 0;
+}
+
+macro test(str a, str b)
+{
+
+}

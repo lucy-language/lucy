@@ -1,0 +1,12 @@
+pkg test;
+
+def int main()
+{
+    var (str, int) name, age = test();
+    return 0;
+}
+
+def (str, int) test()
+{
+    return "Kiana", 22;
+}

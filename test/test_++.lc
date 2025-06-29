@@ -1,0 +1,8 @@
+pkg test;
+
+def int main()
+{
+    var int i = 0;
+    i++;
+    return 0;
+}

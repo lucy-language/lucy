@@ -1,0 +1,9 @@
+pkg test;
+
+ext void printf(str fmt, var str args);
+
+def int main()
+{
+    printf("Hello, World!\n");
+    return 0;
+}

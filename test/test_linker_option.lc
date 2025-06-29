@@ -1,0 +1,8 @@
+%"raylib";
+
+pkg test;
+
+def int main()
+{
+    return 0;
+}
