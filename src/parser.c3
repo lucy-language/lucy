@@ -656,13 +656,13 @@ fn ASTNode Parser.identifier(&self)
 
         if (self.current.type != RPAREN)
         {
-            util::array_insert(&arguments, self.expr());
+            util::array_insert(&arguments, self.condition());
         }
 
         while (self.current.type == COMMA)
         {
             self.consume();
-            util::array_insert(&arguments, self.expr());
+            util::array_insert(&arguments, self.condition());
         }
 
         int end = self.current.range.end;
@@ -678,6 +678,17 @@ fn ASTNode Parser.identifier(&self)
         *node = self.identifier();
         int end = node.range.end;
         return { ACCESS, { .access_node = { id, node } }, { start, end }, line, context_lines };
+    }
+
+    if (util::in((TokenType[]){BANG, PLUS, MINUS}, self.current.type))
+    {
+        String operator = self.current.value;
+        TokenType type = self.current.type;
+        self.consume();
+
+        int end = self.current.range.end;
+        self.try_consume(type);
+        return { INC, { .inc_node = { id, operator } }, { start, end }, line, context_lines };
     }
 
     int end = self.tokens[(usz)self.pos - 1].range.end;
@@ -891,12 +902,12 @@ fn ASTNode[] Parser.macro_parameters(&self)
             String other_type_or_name = self.type();
             if (self.current.type == IDENTIFIER)
             {
-                other_type = type_or_name;
+                other_type = other_type_or_name;
                 other_name = self.current.value;
                 self.consume();
             } else
             {
-                other_name = type_or_name;
+                other_name = other_type_or_name;
             }
             int other_end = self.tokens[(usz)self.pos - 1].range.end;
 

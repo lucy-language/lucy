@@ -75,6 +75,8 @@ extern fn LLVMValueRef build_struct_gep_2(LLVMBuilderRef builder, LLVMTypeRef ty
 extern fn LLVMValueRef build_phi(LLVMBuilderRef builder, LLVMTypeRef type, char* name) @extern("LLVMBuildPhi");
 extern fn LLVMValueRef build_and(LLVMBuilderRef builder, LLVMValueRef val1, LLVMValueRef val2, char* name) @extern("LLVMBuildAnd");
 extern fn LLVMValueRef build_or(LLVMBuilderRef builder, LLVMValueRef val1, LLVMValueRef val2, char* name) @extern("LLVMBuildOr");
+extern fn LLVMValueRef build_not(LLVMBuilderRef builder, LLVMValueRef ptr, char* name) @extern("LLVMBuildNot");
+extern fn LLVMValueRef build_select(LLVMBuilderRef builder, LLVMValueRef cond, LLVMValueRef _true, LLVMValueRef _false, char* name) @extern("LLVMBuildSelect");
 
 extern fn LLVMTypeKind get_type_kind(LLVMTypeRef type) @extern("LLVMGetTypeKind");
 extern fn LLVMValueRef get_operand(LLVMValueRef val, CUInt index) @extern("LLVMGetOperand");

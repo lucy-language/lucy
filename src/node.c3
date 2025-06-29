@@ -38,6 +38,7 @@ enum NodeType
     BIN,
     EXT,
     VAR,
+    INC,
     IF,
 }
 
@@ -82,6 +83,7 @@ struct ASTNode
         BinNode          bin_node;
         ExtNode          ext_node;
         VarNode          var_node;
+        IncNode          inc_node;
         IfNode           if_node;
     }
     Range        range;
@@ -275,4 +277,10 @@ struct CaseNode
 {
     ASTNode*  condition;
     ASTNode[] children;
+}
+
+struct IncNode
+{
+    String name;
+    String operator;
 }

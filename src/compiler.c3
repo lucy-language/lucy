@@ -198,6 +198,7 @@ fn LLVMValueRef Compiler.compile_node(&self, ASTNode ast, LLVMValueRef fN = null
         case WHILE:             self.compile_while(ast.node.while_node, fN);
         case UNARY:      return self.compile_unary(ast.node.unary_node);
         case SWITCH:            self.compile_switch(ast.node.switch_node, fN, parent_block);
+        case INC:        return self.compile_inc(ast.node.inc_node);
 
         case MACRO: break;
 
@@ -332,7 +333,7 @@ fn LLVMTypeRef Compiler.get_type(&self, String[] types)
     if (types.len == 1)
     {
         String type = types[0];
-        if (type[type.len - 1] == '*')
+        if (type != "" && type[type.len - 1] == '*')
         {
             return llvm::pointer_type(self.get_type((String[]){type[..type.len - 2]}), 0);
         }
@@ -606,6 +607,13 @@ fn String Compiler.process_escape_sequences(&self, String input)
                 case 'r':  output.append_char('\r'); break;
                 case '\\': output.append_char('\\'); break;
                 case '"':  output.append_char('"'); break;
+                case 'u':
+                    if (i + 5 < input.len && input[i+2] == '0' && input[i+3] == '0' && input[i+4] == '1' && input[i+5] == 'B')
+                    {
+                        output.append_char('\x1B');
+                        i += 6;
+                        continue;
+                    }
                 default:   output.append_char(input[i+1]); break;
             }
             i += 2;
@@ -926,7 +934,14 @@ fn void Compiler.compile_macro(&self, MacroNode* node, LLVMValueRef[] args, Stri
 {
     String[] types = mem::new_array(String, 1);
     types[0] = node.type;
-    LLVMTypeRef type = self.get_type(types);
+    LLVMTypeRef type;
+    if (node.type == "")
+    {
+        type = llvm::void_type();
+    } else
+    {
+        type = self.get_type(types);
+    }
 
     LLVMTypeRef[] params = mem::new_array(LLVMTypeRef, 0);
     bool vararg;
@@ -972,7 +987,8 @@ fn void Compiler.compile_macro(&self, MacroNode* node, LLVMValueRef[] args, Stri
         }
     }
 
-    if (node.children.len == 0 || (node.children[node.children.len - 1].node_type != RETURN && node.type == "void"))
+    NodeType last_child_type = node.children[node.children.len - 1].node_type;
+    if (node.children.len == 0 || (last_child_type != RETURN && node.type == "void") || (node.type == "" && last_child_type != RETURN))
     {
         llvm::build_ret_void(self.builder);
     }
@@ -1019,26 +1035,23 @@ fn LLVMValueRef Compiler.compile_unary(&self, UnaryNode node)
 {
     LLVMValueRef expr = self.compile_node(*node.expr);
     
-    if (llvm::type_of(expr) == llvm::int1_type())
-    {
         switch (node.operator)
         {
             case "!":
                 return llvm::build_i_cmp(self.builder, llvm::INT_EQ, expr, llvm::const_int(llvm::int1_type(), llvm::FALSE, llvm::FALSE), "");
-            default:
-                util::panicf("Unsupported operator `%s` for type `bool`", node.operator, file: $$FILE, line: $$LINE);
-        }
-    } else
-    {
-        switch (node.operator)
-        {
+            case "-":
+                return llvm::build_mul(self.builder, expr, create_int(-1), "");
+            case "+":
+                LLVMValueRef condition = llvm::build_i_cmp(self.builder, llvm::INT_SLT, expr, create_int(0), "");
+                LLVMValueRef negated   = llvm::build_mul(self.builder, expr, create_int(-1), "");
+                return llvm::build_select(self.builder, condition, negated, expr, "");
             case "*":
                 return llvm::build_load_2(self.builder, llvm::type_of(expr), expr, "");
                 //io::printn((ZString)llvm::print_value_to_string(expr));
+
             default:
-                util::panicf("Unsupported operator `%s` for type `other`", node.operator, file: $$FILE, line: $$LINE);
+                util::panic("Unreachable", $$FILE, $$LINE);
         }
-    }
 }
 
 fn LLVMTypeRef Compiler.get_type_node(&self, ASTNode node)
@@ -1415,4 +1428,29 @@ fn void Compiler.build_strlen(&self) {
 
     self.strlen = strlen_func;
     self.strlen_type = func_type;
+}
+
+fn LLVMValueRef Compiler.compile_inc(&self, IncNode node)
+{
+    Var variable = self.scope.get_var(node.name);
+    
+    switch (node.operator)
+    {
+        case "+":
+            LLVMValueRef ptr   = llvm::build_load_2(self.builder, self.get_type((String[]){"int"}), variable.value, "");
+            LLVMValueRef value = llvm::build_add(self.builder, ptr, create_int(1), "");
+            llvm::build_store(self.builder, value, variable.value);
+            return ptr;
+        case "-":
+            LLVMValueRef ptr   = llvm::build_load_2(self.builder, self.get_type((String[]){"int"}), variable.value, "");
+            LLVMValueRef value = llvm::build_sub(self.builder, ptr, create_int(1), "");
+            llvm::build_store(self.builder, value, variable.value);
+            return ptr;
+        case "!":
+            LLVMValueRef ptr   = llvm::build_load_2(self.builder, self.get_type((String[]){"bool"}), variable.value, "");
+            LLVMValueRef value = llvm::build_not(self.builder, ptr, "");
+            llvm::build_store(self.builder, value, variable.value);
+            return ptr;
+    }
+    util::panic("Unreachable", $$FILE, $$LINE);
 }

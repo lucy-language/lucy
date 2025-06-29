@@ -253,6 +253,8 @@ fn void SemanticAnalyser.analyse_node(&self, ASTNode node)
         case STRUCT:    self.analyse_struct(node);
         case ACCESS:    self.analyse_access(node);
         case WHILE:     self.analyse_while(node);
+        case INC:       self.analyse_inc(node);
+        case UNARY:     self.analyse_unary(node);
         
         case MACRO:
         case STR:
@@ -261,7 +263,6 @@ fn void SemanticAnalyser.analyse_node(&self, ASTNode node)
         case BOOL:
         case FLOAT:
         case DOUBLE:
-        case UNARY:
         case SWITCH:
         case RETURN: break;
         default: util::panicf("missing analyse function `%s`", node.node_type, file: $$FILE, line: $$LINE);
@@ -350,10 +351,12 @@ fn String SemanticAnalyser.get_type(&self, ASTNode node)
         case CHAR:   return "char";
         case FLOAT:  return "float";
         case IDENT:  return self.get_ident_type(node);
-        case BIN:    return self.get_type(*node.node.bin_node.left);
+        case BIN:    return self.get_bin_type(node);
         case CALL:   return self.get_call_type(node);
         case INIT:   return self.get_struct_type(node);
         case ACCESS: return self.get_access_type(node);
+        case INC:    return self.get_inc_type(node);
+        case UNARY:  return self.get_type(*node.node.unary_node.expr);
 
         default: util::panicf("Unable to match type `%s`", node.node_type, file: $$FILE, line: $$LINE);
     }
@@ -448,8 +451,6 @@ fn String SemanticAnalyser.get_ident_type(&self, ASTNode node_in)
         case "$PATH": return "str";
     }
 
-    io::printn(name);
-    
     if ((*self.scope).has_var(name))
     {
         SemVar variable = (*self.scope).get_var(name);
@@ -892,4 +893,73 @@ fn Type* SemanticAnalyser.resolve_type(&self, String name, ASTNode node)
     Type* type = self.type_table.lookup(type_name);
 
     return type;
+}
+
+fn void SemanticAnalyser.analyse_inc(&self, ASTNode node_in)
+{
+    IncNode node      = node_in.node.inc_node;
+    String  type_name = self.get_type(node_in);
+
+    bool error;
+    switch (node.operator)
+    {
+        case "+":
+        case "-":
+            if (type_name != "int") error = true;
+        case "!":
+            if (type_name != "bool") error = true;
+    }
+
+    if (error)
+    {
+        errors::print_node(self.file_path, node_in, string::format(mem, "Cannot use operator `%s%s` on type `%s`", node.operator, node.operator, type_name));
+        os::exit(1);
+    }
+}
+
+fn String SemanticAnalyser.get_inc_type(&self, ASTNode node_in)
+{
+    IncNode node     = node_in.node.inc_node;
+    SemVar  variable = self.scope.get_var(node.name);
+    return variable.type;
+}
+
+fn void SemanticAnalyser.analyse_unary(&self, ASTNode node_in)
+{
+    UnaryNode node      = node_in.node.unary_node;
+    String    type_name = self.get_type(node_in);
+
+    bool error;
+    switch (node.operator)
+    {
+        case "+":
+        case "-":
+            if (type_name != "int") error = true;
+        case "!":
+            if (type_name != "bool") error = true;
+    }
+
+    if (error)
+    {
+        errors::print_node(self.file_path, node_in, string::format(mem, "Cannot use operator `%s` on type `%s`", node.operator, type_name));
+        os::exit(1);
+    }
+}
+
+fn String SemanticAnalyser.get_bin_type(&self, ASTNode node_in)
+{
+    BinNode node = node_in.node.bin_node;
+
+    switch (node.op)
+    {
+        case "==":
+        case "!=":
+        case "<=":
+        case ">=":
+        case "<":
+        case ">":
+            return "bool";
+        default:
+            return self.get_type(*node.left);
+    }
 }

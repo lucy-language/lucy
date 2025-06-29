@@ -36,6 +36,7 @@ fn void? ASTNode.to_json(&self, DString* dest, int indent, int indent_level)
 		case BIN:        serialize::add_json(self.node.bin_node, dest, indent, indent_level)!;
 		case EXT:        serialize::add_json(self.node.ext_node, dest, indent, indent_level)!;
 		case VAR:        serialize::add_json(self.node.var_node, dest, indent, indent_level)!;
+		case INC:        serialize::add_json(self.node.inc_node, dest, indent, indent_level)!;
 		case IF:         serialize::add_json(self.node.if_node, dest, indent, indent_level)!;
 	}
 }
@@ -269,6 +270,13 @@ struct CaseJson
     ASTNode[] children;
 }
 
+struct IncJson
+{
+    NodeType node_type;
+    String   name;
+    String   operator;
+}
+
 fn void? ParameterNode.to_json(&self, DString* dest, int indent, int indent_level)
 {
     serialize::add_json((ParameterJson){ PARAMETER, self.vararg, self.type, self.name }, dest, indent, indent_level)!;
@@ -429,4 +437,9 @@ fn void? SwitchNode.to_json(&self, DString* dest, int indent, int indent_level)
 fn void? CaseNode.to_json(&self, DString* dest, int indent, int indent_level)
 {
     serialize::add_json((CaseJson){ CASE, *self.condition, self.children }, dest, indent, indent_level)!;
+}
+
+fn void? IncNode.to_json(&self, DString* dest, int indent, int indent_level)
+{
+    serialize::add_json((IncJson){ INC, self.name, self.operator }, dest, indent, indent_level)!;
 }

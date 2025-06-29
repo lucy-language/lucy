@@ -14,3 +14,13 @@ macro void printn(x)
             }
     }
 }
+
+macro assert(x, str msg)
+{
+    var str color_red   = "\u001B[91m";
+    var str color_reset = "\u001B[0m";
+    if (!x)
+    {
+        printf("%sAssert violated: `%s`%s\n", color_red, msg, color_reset);
+    }
+}

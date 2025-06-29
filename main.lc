@@ -5,4 +5,8 @@ ext void printf(str fmt, var str args);
 def void main()
 {
     printf("Hello, World!\n");
+
+    var int i = 0;
+    i++;
+    printf("%d\n", i);
 }
