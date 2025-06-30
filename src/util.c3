@@ -51,7 +51,7 @@ fn void panic(String message, String file, int line) @noreturn
     io::eprintn ("│ Please create an issue on github at https://github.com/lucy-language/lucy/issues │");
     io::eprintn ("│ and include your compiler version you can get by running `lucy --version`        │");
     io::eprintn ("╰──────────────────────────────────────────────────────────────────────────────────╯");
-    io::eprintn (color_util::COLOR_RESET);
+    io::eprint (color_util::COLOR_RESET);
     os::exit(1);
 }
 

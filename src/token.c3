@@ -73,6 +73,7 @@ enum TokenType : (String str)
     KW_USE    = "use",
     KW_EXT    = "ext",
     KW_VAR    = "var",
+    KW_FOR    = "for",
     KW_AS     = "as",
     KW_IF     = "if",
 

@@ -215,18 +215,7 @@ fn ASTNode[] Parser.body(&self, bool include_braces = true, TokenType[] delimite
 
     while (!util::in(delimiters, self.current.type))
     {
-        switch (self.current.type)
-        {
-            case KW_VAR:   util::array_insert(&body, self.var_stmt());
-            case KW_IF:    util::array_insert(&body, self.if_stmt());
-            case KW_WHILE: util::array_insert(&body, self.while_stmt());
-            case IDENTIFIER:
-                util::array_insert(&body, self.identifier());
-                self.try_consume(SEMICOLON);
-            case KW_SWITCH: util::array_insert(&body, self.switch_stmt());
-            case KW_RETURN: util::array_insert(&body, self.return_stmt());
-            default: errors::print(self.file_path, self.current, string::tformat("statement expected, got %s", self.current.type.str));
-        }
+        util::array_insert(&body, self.statement());
     }
 
     if (include_braces)
@@ -235,6 +224,25 @@ fn ASTNode[] Parser.body(&self, bool include_braces = true, TokenType[] delimite
     }
 
     return body;
+}
+
+fn ASTNode Parser.statement(&self)
+{
+    switch (self.current.type)
+    {
+        case KW_VAR:     return self.var_stmt();
+        case KW_IF:      return self.if_stmt();
+        case KW_WHILE:   return self.while_stmt();
+        case IDENTIFIER:
+            ASTNode node = self.identifier();
+            self.try_consume(SEMICOLON);
+            return node;
+        case KW_SWITCH: return self.switch_stmt();
+        case KW_RETURN: return self.return_stmt();
+        case KW_FOR:    return self.for_stmt();
+        default: errors::print(self.file_path, self.current, string::tformat("statement expected, got %s", self.current.type.str));
+    }
+    return {};
 }
 
 fn ASTNode Parser.if_stmt(&self)
@@ -970,4 +978,61 @@ fn ASTNode Parser.switch_stmt(&self)
     }
     self.try_consume(RBRACE);
     return { SWITCH, { .switch_node = { expr, cases } }, { start, end }, line, context_lines };
+}
+
+fn ASTNode Parser.for_stmt(&self)
+{
+    int        line          = self.current.line;
+    int        start         = self.current.range.start;
+    int        end           = self.current.range.end;
+    StringList context_lines = self.current.context_lines;
+
+    self.consume();
+    self.try_consume(LPAREN);
+
+    int        statement_line          = self.current.line;
+    int        statement_start         = self.current.range.start;
+    StringList statement_context_lines = self.current.context_lines;
+
+    ASTNode* statement = malloc(ASTNode.sizeof);
+    String   type      = self.type();
+    String   name      = self.current.value;
+    self.try_consume(IDENTIFIER);
+    self.try_consume(EQUALS);
+    ASTNode* value = malloc(ASTNode.sizeof);
+    *value         = self.condition();
+
+    int statement_end = self.current.range.end;
+    self.try_consume(SEMICOLON);
+
+    String[] types = mem::new_array(String, 1);
+    types[0] = type;
+    String[] names = mem::new_array(String, 1);
+    names[0] = name;
+    *statement = { VAR, { .var_node = { types, names, value } }, { statement_start, statement_end }, statement_line, statement_context_lines };
+
+    int        condition_line          = self.current.line;
+    int        condition_start         = self.current.range.start;
+    StringList condition_context_lines = self.current.context_lines;
+    
+    ASTNode* condition = malloc(ASTNode.sizeof);
+    *condition         = self.condition();
+
+    int condition_end = self.current.range.end;
+    self.try_consume(SEMICOLON);
+
+    int        expression_line          = self.current.line;
+    int        expression_start         = self.current.range.start;
+    StringList expression_context_lines = self.current.context_lines;
+    
+    ASTNode* expression = malloc(ASTNode.sizeof);
+    *expression         = self.expr();
+
+    int expression_end = expression.range.end;
+
+    self.try_consume(RPAREN);
+
+    ASTNode[] children = self.body();
+
+    return { FOR, { .for_node = { statement, condition, expression, children } }, { start, end }, line, context_lines };
 }

@@ -199,6 +199,7 @@ fn LLVMValueRef Compiler.compile_node(&self, ASTNode ast, LLVMValueRef fN = null
         case UNARY:      return self.compile_unary(ast.node.unary_node);
         case SWITCH:            self.compile_switch(ast.node.switch_node, fN, parent_block);
         case INC:        return self.compile_inc(ast.node.inc_node);
+        case FOR:               self.compile_for(ast.node.for_node, fN);
 
         case MACRO: break;
 
@@ -1453,4 +1454,32 @@ fn LLVMValueRef Compiler.compile_inc(&self, IncNode node)
             return ptr;
     }
     util::panic("Unreachable", $$FILE, $$LINE);
+}
+
+fn void Compiler.compile_for(&self, ForNode node, LLVMValueRef fN)
+{
+    int index = self.index++;
+    LLVMBasicBlockRef loop_block = llvm::append_basic_block(fN, string::format(mem, "loop.%d", index));
+    LLVMBasicBlockRef end_block  = llvm::append_basic_block(fN, string::format(mem, "end.%d", index));
+
+    self.scope = self.scope.new();
+
+    self.compile_node(*node.statement);
+    
+    LLVMValueRef condition = self.compile_node(*node.condition);
+    llvm::build_cond_br(self.builder, condition, loop_block, end_block);
+
+    llvm::position_builder_at_end(self.builder, loop_block);
+    foreach (child : node.children)
+    {
+        self.compile_node(child);
+    }
+    self.compile_node(*node.expression);
+
+    LLVMValueRef new_condition = self.compile_node(*node.condition);
+    llvm::build_cond_br(self.builder, new_condition, loop_block, end_block);
+
+    self.scope = self.scope.parent;
+
+    llvm::position_builder_at_end(self.builder, end_block);
 }

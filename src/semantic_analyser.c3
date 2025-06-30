@@ -255,6 +255,7 @@ fn void SemanticAnalyser.analyse_node(&self, ASTNode node)
         case WHILE:     self.analyse_while(node);
         case INC:       self.analyse_inc(node);
         case UNARY:     self.analyse_unary(node);
+        case FOR:       self.analyse_for(node);
         
         case MACRO:
         case STR:
@@ -900,6 +901,12 @@ fn void SemanticAnalyser.analyse_inc(&self, ASTNode node_in)
     IncNode node      = node_in.node.inc_node;
     String  type_name = self.get_type(node_in);
 
+    if (!self.scope.has_var(node.name))
+    {
+        errors::print_node(self.file_path, node_in, string::tformat("Unable to find variable `%s`", node.name));
+        os::exit(1);
+    }
+
     bool error;
     switch (node.operator)
     {
@@ -962,4 +969,22 @@ fn String SemanticAnalyser.get_bin_type(&self, ASTNode node_in)
         default:
             return self.get_type(*node.left);
     }
+}
+
+fn void SemanticAnalyser.analyse_for(&self, ASTNode node_in)
+{
+    ForNode node = node_in.node.for_node;
+
+    self.scope = self.scope.new();
+
+    self.analyse_node(*node.statement);
+    self.analyse_node(*node.condition);
+    self.analyse_node(*node.expression);
+
+    foreach (child : node.children)
+    {
+        self.analyse_node(child);
+    }
+
+    self.scope = self.scope.parent;
 }

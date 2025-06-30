@@ -10,6 +10,7 @@ import color_util;
 
 fn void print(String file_path, Token token, String message)
 {
+    String path = file_path.to_absolute_path(mem).str_view()!!;
     io::printn(color_util::COLOR_BRIGHT_RED);
     io::eprintfn("Something went wrong: %s", message);
 
@@ -34,7 +35,7 @@ fn void print(String file_path, Token token, String message)
             io::print("^");
         }
         io::printn();
-        io::printfn("Error in file (%s) %d:%d", file_path, token.line, token.range.start);
+        io::printfn("Error in file (%s) %d:%d", path, token.line, token.range.start);
     }
     io::printn(color_util::COLOR_RESET);
     os::exit(1); // TODO: remove
@@ -42,6 +43,7 @@ fn void print(String file_path, Token token, String message)
 
 fn void print_node(String file_path, ASTNode node, String message)
 {
+    String path = file_path.to_absolute_path(mem).str_view()!!;
     io::printn(color_util::COLOR_BRIGHT_RED);
     io::eprintfn("Something went wrong: %s", message);
 
@@ -68,7 +70,7 @@ fn void print_node(String file_path, ASTNode node, String message)
             io::print("^");
         }
         io::printn();
-        io::printfn("Error in file (%s) %d:%d", file_path, node.line, node.range.start);
+        io::printfn("Error in file (%s) %d:%d", path, node.line, node.range.start);
     }
     io::printn(color_util::COLOR_RESET);
 }

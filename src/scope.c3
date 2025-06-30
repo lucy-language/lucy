@@ -222,9 +222,8 @@ fn SemVar SemScope.get_var(&self, String name)
     {
         return (*self.parent).get_var(name);
     }
-
-    io::eprintfn(scope::FMT, name, $$FILE, $$LINE);
-    os::exit(1);
+    
+    return {};
 }
 
 fn SemConst SemScope.get_const(&self, String name)
@@ -239,8 +238,7 @@ fn SemConst SemScope.get_const(&self, String name)
         return (*self.parent).get_const(name);
     }
 
-    io::eprintfn(scope::FMT, name, $$FILE, $$LINE);
-    os::exit(1);
+    return {};
 }
 
 fn bool SemScope.has_var(&self, String name)

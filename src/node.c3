@@ -39,6 +39,7 @@ enum NodeType
     EXT,
     VAR,
     INC,
+    FOR,
     IF,
 }
 
@@ -84,6 +85,7 @@ struct ASTNode
         ExtNode          ext_node;
         VarNode          var_node;
         IncNode          inc_node;
+        ForNode          for_node;
         IfNode           if_node;
     }
     Range        range;
@@ -283,4 +285,12 @@ struct IncNode
 {
     String name;
     String operator;
+}
+
+struct ForNode
+{
+    ASTNode*  statement;
+    ASTNode*  condition;
+    ASTNode*  expression;
+    ASTNode[] children;
 }
