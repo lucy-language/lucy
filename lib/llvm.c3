@@ -77,6 +77,11 @@ extern fn LLVMValueRef build_and(LLVMBuilderRef builder, LLVMValueRef val1, LLVM
 extern fn LLVMValueRef build_or(LLVMBuilderRef builder, LLVMValueRef val1, LLVMValueRef val2, char* name) @extern("LLVMBuildOr");
 extern fn LLVMValueRef build_not(LLVMBuilderRef builder, LLVMValueRef ptr, char* name) @extern("LLVMBuildNot");
 extern fn LLVMValueRef build_select(LLVMBuilderRef builder, LLVMValueRef cond, LLVMValueRef _true, LLVMValueRef _false, char* name) @extern("LLVMBuildSelect");
+extern fn LLVMValueRef build_xor(LLVMBuilderRef builder, LLVMValueRef value_1, LLVMValueRef value_2, char* name) @extern("LLVMBuildXor");
+extern fn void         build_memcpy(LLVMBuilderRef builder, LLVMValueRef dest, int dst_align, LLVMValueRef src, int src_align, LLVMValueRef size, LLVMBool is_volatile) @extern("LLVMBuildMemCpy");
+extern fn LLVMValueRef build_malloc(LLVMBuilderRef builder, LLVMTypeRef type, LLVMValueRef size, char*name) @extern("LLVMBuildMalloc");
+extern fn LLVMValueRef build_array_malloc(LLVMBuilderRef builder, LLVMTypeRef type, LLVMValueRef size, char*name) @extern("LLVMBuildArrayMalloc");
+extern fn LLVMValueRef build_zext(LLVMBuilderRef builder, LLVMValueRef value, LLVMTypeRef dest_type, char* name) @extern("LLVMBuildZExt");
 
 extern fn LLVMTypeKind get_type_kind(LLVMTypeRef type) @extern("LLVMGetTypeKind");
 extern fn LLVMValueRef get_operand(LLVMValueRef val, CUInt index) @extern("LLVMGetOperand");

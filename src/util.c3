@@ -55,13 +55,10 @@ fn void panic(String message, String file, int line) @noreturn
     os::exit(1);
 }
 
-<*
- @require @typekind(arr) == SLICE
-*>
-macro String join_to_string(arr, String separator, Allocator alloc = mem)
+fn String join_to_string(String[] arr, String separator)
 {
     DString result;
-    result.init(alloc);
+    result.init(mem);
     defer result.free();
 
     bool first = true;
@@ -72,5 +69,6 @@ macro String join_to_string(arr, String separator, Allocator alloc = mem)
 
         result.append_chars(x);
     }
-    return result.copy_str(alloc);
+
+    return result.copy_str(mem);
 }

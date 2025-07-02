@@ -26,6 +26,8 @@ struct Compiler
     LLVMTypeRef                   strcmp_type;
     LLVMValueRef                  strlen;
     LLVMTypeRef                   strlen_type;
+    LLVMValueRef                  strcon;
+    LLVMTypeRef                   strcon_type;
     TypeTable*                    type_table;
     HashMap{String, LLVMValueRef} strings;
 }
@@ -673,6 +675,19 @@ fn void Compiler.compile_if(&self, IfNode node, LLVMValueRef fN)
 
 fn LLVMValueRef Compiler.compile_bin(&self, BinNode node)
 {
+    if (node.op == "+" && node.left.node_type == STR && node.right.node_type == STR)
+    {
+        String  left_value  = node.left.node.str_node.value;
+        String  right_value = node.right.node.str_node.value;
+        DString result;
+        result.init(mem);
+        defer result.free();
+        result.append_chars(left_value);
+        result.append_chars(right_value);
+
+        return self.create_string(result.copy_str(mem));
+    }
+
     LLVMValueRef left  = self.compile_node(*node.left);
     LLVMValueRef right = self.compile_node(*node.right);
     
@@ -725,18 +740,22 @@ fn LLVMValueRef Compiler.compile_bin(&self, BinNode node)
             case "/": return llvm::build_f_div(self.builder, left, right, "");
         }
     } else if (llvm::type_of(left) == llvm::pointer_type(llvm::int8_type(), 0))
-    // strings
-    {
-        //util::panic("comparing strings. use libc->strcmp instead", $$FILE, $$LINE);
-
-        if (!self.strcmp)
+    { // strings
+        switch (node.op)
         {
-            self.build_strcmp();
+            case "==":
+                if (!self.strcmp) self.build_strcmp();
+                LLVMValueRef[] args = { left, right, llvm::const_int(llvm::int1_type(), llvm::TRUE, llvm::FALSE) };
+                return llvm::build_call_2(self.builder, self.strcmp_type, self.strcmp, args, 3, "");
+            case "!=":
+                if (!self.strcmp) self.build_strcmp();
+                LLVMValueRef[] args = { left, right, llvm::const_int(llvm::int1_type(), llvm::FALSE, llvm::FALSE) };
+                return llvm::build_call_2(self.builder, self.strcmp_type, self.strcmp, args, 3, "");
+            case "+":
+                if (!self.strcon) self.build_strcon();
+                LLVMValueRef[] args = { left, right };
+                return llvm::build_call_2(self.builder, self.strcon_type, self.strcon, args, 2, "");
         }
-
-        LLVMValueRef[] args = { left, right };
-
-        return llvm::build_call_2(self.builder, self.strcmp_type, self.strcmp, args, 2, "");
     }
 
     return null;
@@ -873,10 +892,44 @@ fn LLVMValueRef Compiler.resolve_access(&self, LLVMValueRef base_value, LLVMType
                 }
             }
             util::panic("Unreachable", $$FILE, $$LINE);
+        case INC:
+            IncNode inc      = next_node.node.inc_node;
+            char* field_name = inc.name.zstr_copy(mem);
+            int num_fields   = llvm::count_struct_element_types(base_type);
+            Type* type       = self.type_table.lookup(prev_id); // lookup type name
+
+            for (int i = 0; i < num_fields; i++)
+            {
+                Field field = ((Field[])(*type).fields[:num_fields])[i];
+                if (strcmp(field.name, field_name) == 0)
+                {
+                    LLVMValueRef field_ptr = llvm::build_struct_gep_2(self.builder, base_type, base_value, i, "");
+                    LLVMValueRef loaded_value = llvm::build_load_2(self.builder, field.type.llvm_type, field_ptr, "");
+                    
+                    switch (inc.operator)
+                    {
+                        case "+":
+                            LLVMValueRef value = llvm::build_add(self.builder, loaded_value, create_int(1), "");
+                            llvm::build_store(self.builder, value, field_ptr);
+                            return loaded_value;
+                        case "-":
+                            LLVMValueRef value = llvm::build_sub(self.builder, loaded_value, create_int(1), "");
+                            llvm::build_store(self.builder, value, field_ptr);
+                            return loaded_value;
+                        case "!":
+                            LLVMValueRef value = llvm::build_not(self.builder, loaded_value, "");
+                            llvm::build_store(self.builder, value, field_ptr);
+                            return loaded_value;
+                    }
+
+                    return loaded_value;
+                }
+            }
+            util::panic("Unreachable", $$FILE, $$LINE);
         default:
-            util::panic("Unsupported node type in access chain", $$FILE, $$LINE);
+            break;
     }
-    util::panic("Unreachable", $$FILE, $$LINE);
+    return null;
 }
 
 fn void Compiler.compile_struct(&self, StructNode node)
@@ -920,10 +973,7 @@ fn LLVMValueRef Compiler.resolve_builtin_field(&self, LLVMValueRef value, LLVMTy
             Type* type_ptr = self.type_table.lookup(prev);
             return create_int(type_ptr.num_fields);
         case "$length":
-            if (!self.strlen)
-            {
-                self.build_strlen();
-            }
+            if (!self.strlen) self.build_strlen();
             LLVMValueRef[] args = { value };
             return llvm::build_call_2(self.builder, self.strlen_type, self.strlen, args, 1, "");
     }
@@ -1046,8 +1096,8 @@ fn LLVMValueRef Compiler.compile_unary(&self, UnaryNode node)
                 LLVMValueRef condition = llvm::build_i_cmp(self.builder, llvm::INT_SLT, expr, create_int(0), "");
                 LLVMValueRef negated   = llvm::build_mul(self.builder, expr, create_int(-1), "");
                 return llvm::build_select(self.builder, condition, negated, expr, "");
-            case "*":
-                return llvm::build_load_2(self.builder, llvm::type_of(expr), expr, "");
+            //case "*":
+                //return llvm::build_load_2(self.builder, llvm::type_of(expr), expr, "");
                 //io::printn((ZString)llvm::print_value_to_string(expr));
 
             default:
@@ -1202,15 +1252,17 @@ fn void Compiler.build_strcmp(&self) {
 
     LLVMTypeRef str_type = llvm::pointer_type(llvm::int8_type(), 0);
     LLVMTypeRef char_type = llvm::int8_type();
-    LLVMTypeRef[] param_types = { str_type, str_type };
-    LLVMTypeRef func_type = llvm::function_type(llvm::int1_type(), param_types, 2, llvm::FALSE);
+    LLVMTypeRef[] param_types = { str_type, str_type, llvm::int1_type() };
+    LLVMTypeRef func_type = llvm::function_type(llvm::int1_type(), param_types, 3, llvm::FALSE);
     LLVMValueRef strcmp_func = llvm::add_function(self.mod, ".strcmp", func_type);
 
     llvm::set_value_name(llvm::get_param(strcmp_func, 0), "str_1");
     llvm::set_value_name(llvm::get_param(strcmp_func, 1), "str_2");
+    llvm::set_value_name(llvm::get_param(strcmp_func, 2), "op_eq");
 
     LLVMBasicBlockRef entry_block       = llvm::append_basic_block(strcmp_func, "entry");
     LLVMBasicBlockRef loop_block        = llvm::append_basic_block(strcmp_func, "loop");
+    LLVMBasicBlockRef neq_cond_block    = llvm::append_basic_block(strcmp_func, "neq");
     LLVMBasicBlockRef check_null_block  = llvm::append_basic_block(strcmp_func, "check_null");
     LLVMBasicBlockRef check_chars_block = llvm::append_basic_block(strcmp_func, "check_chars");
     LLVMBasicBlockRef true_block        = llvm::append_basic_block(strcmp_func, "true");
@@ -1220,6 +1272,7 @@ fn void Compiler.build_strcmp(&self) {
     llvm::position_builder_at_end(builder, entry_block);
     LLVMValueRef str_1 = llvm::get_param(strcmp_func, 0);
     LLVMValueRef str_2 = llvm::get_param(strcmp_func, 1);
+    LLVMValueRef op_eq = llvm::get_param(strcmp_func, 2);
     llvm::build_br(builder, loop_block);
     
     // loop
@@ -1241,6 +1294,7 @@ fn void Compiler.build_strcmp(&self) {
     LLVMValueRef char_2 = llvm::build_load_2(builder, char_type, gep_2, "char_2");
 
     LLVMValueRef chars_diff = llvm::build_i_cmp(builder, llvm::INT_NE, char_1, char_2, "chars_diff");
+    
     llvm::build_cond_br(builder, chars_diff, false_block, check_null_block);
 
     // check null
@@ -1271,11 +1325,13 @@ fn void Compiler.build_strcmp(&self) {
 
     // true
     llvm::position_builder_at_end(builder, true_block);
-    llvm::build_ret(builder, llvm::const_int(llvm::int1_type(), 1, 0));
+    LLVMValueRef true_result = llvm::build_xor(builder, llvm::const_int(llvm::int1_type(), 0, 0), op_eq, "true_result");
+    llvm::build_ret(builder, true_result);
 
     // false
     llvm::position_builder_at_end(builder, false_block);
-    llvm::build_ret(builder, llvm::const_int(llvm::int1_type(), 0, 0));
+    LLVMValueRef false_result = llvm::build_xor(builder, llvm::const_int(llvm::int1_type(), 1, 0), op_eq, "false_result");
+    llvm::build_ret(builder, false_result);
 
     llvm::dispose_builder(builder);
 
@@ -1372,8 +1428,9 @@ fn void Compiler.build_strlen(&self) {
 
     LLVMTypeRef str_ptr_type = llvm::pointer_type(llvm::int8_type(), 0);
     LLVMTypeRef str_ptr_ptr_type = llvm::pointer_type(str_ptr_type, 0);
+    LLVMTypeRef int_type = self.get_type((String[]){"int"});
     LLVMTypeRef[] param_types = { str_ptr_ptr_type };
-    LLVMTypeRef func_type = llvm::function_type(llvm::int64_type(), param_types, 1, llvm::FALSE);
+    LLVMTypeRef func_type = llvm::function_type(int_type, param_types, 1, llvm::FALSE);
     LLVMValueRef strlen_func = llvm::add_function(self.mod, ".strlen", func_type);
 
     llvm::set_value_name(llvm::get_param(strlen_func, 0), "str_ptr");
@@ -1395,13 +1452,13 @@ fn void Compiler.build_strlen(&self) {
     llvm::position_builder_at_end(builder, loop_block);
     
     LLVMValueRef ptr_phi = llvm::build_phi(builder, str_ptr_type, "ptr");
-    LLVMValueRef length_phi = llvm::build_phi(builder, llvm::int64_type(), "length");
+    LLVMValueRef length_phi = llvm::build_phi(builder, int_type, "length");
 
     llvm::add_incoming(ptr_phi, &str, &entry_block, 1);
-    LLVMValueRef length_init = llvm::const_int(llvm::int64_type(), 0, 0);
+    LLVMValueRef length_init = llvm::const_int(int_type, 0, 0);
     llvm::add_incoming(length_phi, &length_init, &entry_block, 1);
 
-    LLVMValueRef zero = llvm::const_int(llvm::int64_type(), 0, 0);
+    LLVMValueRef zero = llvm::const_int(int_type, 0, 0);
     LLVMValueRef gep = llvm::build_gep_2(builder, llvm::int8_type(), ptr_phi, &zero, 1, "gep");
     LLVMValueRef char_val = llvm::build_load_2(builder, llvm::int8_type(), gep, "char");
 
@@ -1412,7 +1469,7 @@ fn void Compiler.build_strlen(&self) {
     // loop cont
     llvm::position_builder_at_end(builder, loop_cont_block);
     
-    LLVMValueRef one = llvm::const_int(llvm::int64_type(), 1, 0);
+    LLVMValueRef one = llvm::const_int(int_type, 1, 0);
     LLVMValueRef next_ptr = llvm::build_gep_2(builder, llvm::int8_type(), ptr_phi, &one, 1, "next_ptr");
     LLVMValueRef next_length = llvm::build_add(builder, length_phi, one, "next_length");
     
@@ -1482,4 +1539,54 @@ fn void Compiler.compile_for(&self, ForNode node, LLVMValueRef fN)
     self.scope = self.scope.parent;
 
     llvm::position_builder_at_end(self.builder, end_block);
+}
+
+fn void Compiler.build_strcon(&self) {
+    if (!self.strlen) self.build_strlen();
+
+    LLVMBuilderRef builder = llvm::create_builder();
+
+    LLVMTypeRef str_type = llvm::pointer_type(llvm::int8_type(), 0);
+
+    LLVMTypeRef[] param_types = { str_type, str_type };
+    LLVMTypeRef func_type = llvm::function_type(str_type, param_types, 2, llvm::FALSE);
+    LLVMValueRef strcon_func = llvm::add_function(self.mod, ".strcon", func_type);
+
+    llvm::set_value_name(llvm::get_param(strcon_func, 0), "str_1");
+    llvm::set_value_name(llvm::get_param(strcon_func, 1), "str_2");
+
+    LLVMBasicBlockRef entry_block = llvm::append_basic_block(strcon_func, "entry");
+    llvm::position_builder_at_end(builder, entry_block);
+
+    LLVMValueRef str_1 = llvm::get_param(strcon_func, 0);
+    LLVMValueRef str_2 = llvm::get_param(strcon_func, 1);
+    LLVMValueRef ptr_1 = llvm::build_alloca(builder, str_type, "ptr_1");
+    LLVMValueRef ptr_2 = llvm::build_alloca(builder, str_type, "ptr_2");
+
+    llvm::build_store(builder, str_1, ptr_1);
+    llvm::build_store(builder, str_2, ptr_2);
+
+    LLVMValueRef len_1 = llvm::build_call_2(builder, self.strlen_type, self.strlen, (LLVMValueRef[]){ptr_1}, 1, "len_1");
+    LLVMValueRef len_2 = llvm::build_call_2(builder, self.strlen_type, self.strlen, (LLVMValueRef[]){ptr_2}, 1, "len_2");
+
+    LLVMValueRef total = llvm::build_add(builder, len_1, len_2, "total");
+    LLVMValueRef size = llvm::build_add(builder, total, create_int(1), "size");
+
+    LLVMValueRef size64 = llvm::build_zext(builder, size, self.get_type((String[]){"int"}), "size64");
+    
+    LLVMValueRef buf = llvm::build_array_malloc(builder, llvm::int8_type(), size64, "buf");
+
+    llvm::build_memcpy(builder, buf, 1, str_1, 1, len_1, llvm::FALSE);
+    
+    LLVMValueRef dest = llvm::build_gep_2(builder, llvm::int8_type(), buf, (LLVMValueRef[]){len_1}, 1, "dest");
+    llvm::build_memcpy(builder, dest, 1, str_2, 1, len_2, llvm::FALSE);
+    
+    LLVMValueRef end = llvm::build_gep_2(builder, llvm::int8_type(), buf, (LLVMValueRef[]){total}, 1, "end");
+    llvm::build_store(builder, llvm::const_int(llvm::int8_type(), 0, 0), end);
+
+    llvm::build_ret(builder, buf);
+    llvm::dispose_builder(builder);
+
+    self.strcon      = strcon_func;
+    self.strcon_type = func_type;
 }

@@ -234,7 +234,7 @@ fn void SemanticAnalyser.add_struct(&self, ASTNode node_in)
     (*self.type_table).insert(type);
 }
 
-fn void SemanticAnalyser.analyse_node(&self, ASTNode node)
+fn void SemanticAnalyser.analyse_node(&self, ASTNode node, ASTNode* def = null)
 {
     switch (node.node_type)
     {
@@ -247,15 +247,17 @@ fn void SemanticAnalyser.analyse_node(&self, ASTNode node)
         case IDENT:     self.analyse_ident(node);
         case GLOBAL:    self.analyse_global(node);
         case CALL:      self.analyse_call(node);
-        case IF:        self.analyse_if(node);
+        case IF:        self.analyse_if(node, def);
         case PARAMETER: self.analyse_parameter(node);
         //case INIT:      util::panic("Init analyser not implemented", $$FILE, $$LINE);
         case STRUCT:    self.analyse_struct(node);
         case ACCESS:    self.analyse_access(node);
-        case WHILE:     self.analyse_while(node);
+        case WHILE:     self.analyse_while(node, def);
         case INC:       self.analyse_inc(node);
         case UNARY:     self.analyse_unary(node);
-        case FOR:       self.analyse_for(node);
+        case FOR:       self.analyse_for(node, def);
+        case RETURN:    self.analyse_return(node, def);
+        case SWITCH:    self.analyse_switch(node, def);
         
         case MACRO:
         case STR:
@@ -263,9 +265,7 @@ fn void SemanticAnalyser.analyse_node(&self, ASTNode node)
         case INT:
         case BOOL:
         case FLOAT:
-        case DOUBLE:
-        case SWITCH:
-        case RETURN: break;
+        case DOUBLE: break;
         default: util::panicf("missing analyse function `%s`", node.node_type, file: $$FILE, line: $$LINE);
     }
 }
@@ -336,7 +336,7 @@ fn void SemanticAnalyser.analyse_def(&self, ASTNode node_in)
 
     foreach (child : node.children)
     {
-        self.analyse_node(child);
+        self.analyse_node(child, &node_in);
     }
     self.scope = (*self.scope).parent;
 }
@@ -358,6 +358,8 @@ fn String SemanticAnalyser.get_type(&self, ASTNode node)
         case ACCESS: return self.get_access_type(node);
         case INC:    return self.get_inc_type(node);
         case UNARY:  return self.get_type(*node.node.unary_node.expr);
+        case RETURN: return self.get_return_type(node);
+        case DEF:    return self.get_def_type(node);
 
         default: util::panicf("Unable to match type `%s`", node.node_type, file: $$FILE, line: $$LINE);
     }
@@ -581,7 +583,7 @@ fn void SemanticAnalyser.analyse_call(&self, ASTNode node_in)
     }
 }
 
-fn void SemanticAnalyser.analyse_if(&self, ASTNode node_in)
+fn void SemanticAnalyser.analyse_if(&self, ASTNode node_in, ASTNode* def)
 {
     IfNode node = node_in.node.if_node;
     ASTNode condition = *node.condition;
@@ -591,19 +593,19 @@ fn void SemanticAnalyser.analyse_if(&self, ASTNode node_in)
     self.scope = (*self.scope).new();
     foreach (child : node.children)
     {
-        self.analyse_node(child);
+        self.analyse_node(child, def);
     }
     self.scope = (*self.scope).parent;
 
     if (node.else_if != null)
     {
-        self.analyse_node(*node.else_if);
+        self.analyse_node(*node.else_if, def);
     }
     
     self.scope = (*self.scope).new();
     foreach(child : node.else_children)
     {
-        self.analyse_node(child);
+        self.analyse_node(child, def);
     }
     self.scope = (*self.scope).parent;
 }
@@ -752,8 +754,26 @@ fn Type* SemanticAnalyser.resolve_access(&self, Type* base_type, char* prev, AST
                 os::exit(1);
             }
             return (*field).type;
+        case INC:
+            char*  field_name = next.node.inc_node.name.zstr_copy(mem);
+            Field* field      = base_type.get_field(field_name);
+            if (!field)
+            {
+                ASTNode struct_node;
+                foreach (str : self.structs)
+                {
+                    if (str.name == ((ZString)base_type.name).str_view())
+                    {
+                        struct_node = str.node;
+                    }
+                }
+                errors::print_node(self.file_path, *next, string::tformat("Type `%s` has no field `%s`", (ZString)base_type.name, (ZString)field_name));
+                os::exit(1);
+            }
+
+            return (*field).type;
         default:
-            util::panic("Unreachable", $$FILE, $$LINE);
+            util::panic("Unsupported node type in access chain", $$FILE, $$LINE);
     }
 }
 
@@ -797,14 +817,14 @@ fn void SemanticAnalyser.analyse_struct(&self, ASTNode node_in)
     ((Field[])type.fields[:node.fields.len + lookup_table::BUILTIN_TYPE_FIELD_COUNT])[node.fields.len + 4].type = self.type_table.lookup("int");
 }
 
-fn void SemanticAnalyser.analyse_while(&self, ASTNode node_in)
+fn void SemanticAnalyser.analyse_while(&self, ASTNode node_in, ASTNode* def)
 {
     WhileNode node = node_in.node.while_node;
     self.analyse_node(*node.condition);
 
     foreach (child : node.children)
     {
-        self.analyse_node(child);
+        self.analyse_node(child, def);
     }
 }
 
@@ -971,7 +991,7 @@ fn String SemanticAnalyser.get_bin_type(&self, ASTNode node_in)
     }
 }
 
-fn void SemanticAnalyser.analyse_for(&self, ASTNode node_in)
+fn void SemanticAnalyser.analyse_for(&self, ASTNode node_in, ASTNode* def)
 {
     ForNode node = node_in.node.for_node;
 
@@ -983,8 +1003,80 @@ fn void SemanticAnalyser.analyse_for(&self, ASTNode node_in)
 
     foreach (child : node.children)
     {
-        self.analyse_node(child);
+        self.analyse_node(child, def);
     }
 
     self.scope = self.scope.parent;
+}
+
+fn void SemanticAnalyser.analyse_return(&self, ASTNode node_in, ASTNode* def)
+{
+    ReturnNode node              = node_in.node.return_node;
+    String     return_value_type = self.get_type(node_in);
+    String     def_return_type   = self.get_type(*def);
+
+    if (return_value_type != def_return_type)
+    {
+        errors::print_node(self.file_path, *def, "Definition was here");
+        errors::print_node(self.file_path, node_in, string::format(mem, "Return Type mismatch: wanted `%s` got `%s`", def_return_type, return_value_type));
+        os::exit(0);
+    }
+}
+
+fn String SemanticAnalyser.get_return_type(&self, ASTNode node_in)
+{
+    ReturnNode node = node_in.node.return_node;
+    
+    if (node.values.len == 0)
+    {
+        return "void";
+    }
+
+    if (node.values.len == 1)
+    {
+        return self.get_type(node.values[0]);
+    }
+    
+    return self.get_tuple_type(node.values);
+}
+
+fn String SemanticAnalyser.get_tuple_type(&self, ASTNode[] nodes)
+{
+    String[] result = mem::new_array(String, nodes.len);
+    
+    foreach (i, node : nodes)
+    {
+        result[i] = self.get_type(node);
+    }
+
+    return util::join_to_string(result, ", ");
+}
+
+fn String SemanticAnalyser.get_def_type(&self, ASTNode node_in)
+{
+    DefNode node = node_in.node.def_node;
+
+    if (node.types.len == 1)
+    {
+        return node.types[0];
+    }
+
+    return util::join_to_string(node.types, ", ");
+}
+
+fn void SemanticAnalyser.analyse_switch(&self, ASTNode node_in, ASTNode* def)
+{
+    SwitchNode node = node_in.node.switch_node;
+
+    self.analyse_node(*node.expr);
+
+    foreach (_case : node.cases)
+    {
+        CaseNode case_node = _case.node.case_node;
+        self.analyse_node(*case_node.condition);
+        foreach (child : case_node.children)
+        {
+            self.analyse_node(child, def);
+        }
+    }
 }

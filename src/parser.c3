@@ -602,7 +602,7 @@ fn ASTNode Parser.var_stmt(&self)
     {
         self.consume();
         ASTNode* value = malloc(ASTNode.sizeof);
-        *value = self.expr();
+        *value = self.condition();
         self.try_consume(SEMICOLON);
         return { VAR, { .var_node = { types, names, value } }, { start, end }, line, context_lines };
     }
@@ -688,7 +688,7 @@ fn ASTNode Parser.identifier(&self)
         return { ACCESS, { .access_node = { id, node } }, { start, end }, line, context_lines };
     }
 
-    if (util::in((TokenType[]){BANG, PLUS, MINUS}, self.current.type))
+    if (util::in((TokenType[]){BANG, PLUS, MINUS}, self.current.type) && util::in((TokenType[]){BANG, PLUS, MINUS}, self.tokens[(usz)self.pos + 1].type))
     {
         String operator = self.current.value;
         TokenType type = self.current.type;

@@ -37,7 +37,7 @@ fn void print(String file_path, Token token, String message)
         io::printn();
         io::printfn("Error in file (%s) %d:%d", path, token.line, token.range.start);
     }
-    io::printn(color_util::COLOR_RESET);
+    io::print(color_util::COLOR_RESET);
     os::exit(1); // TODO: remove
 }
 
@@ -72,5 +72,5 @@ fn void print_node(String file_path, ASTNode node, String message)
         io::printn();
         io::printfn("Error in file (%s) %d:%d", path, node.line, node.range.start);
     }
-    io::printn(color_util::COLOR_RESET);
+    io::print(color_util::COLOR_RESET);
 }
