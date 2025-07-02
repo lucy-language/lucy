@@ -1,0 +1,17 @@
+pkg test;
+
+struct Test
+{
+    int i;
+}
+
+def int main()
+{
+    var Test test =
+    {
+        42
+    };
+    test.i++;
+
+    return 0;
+}

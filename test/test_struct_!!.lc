@@ -1,0 +1,17 @@
+pkg test;
+
+struct Test
+{
+    bool b;
+}
+
+def int main()
+{
+    var Test test =
+    {
+        true
+    };
+    test.b!!;
+
+    return 0;
+}
