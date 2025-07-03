@@ -84,18 +84,18 @@ fn ASTNode[] Parser.linker_options(&self)
 {
     ASTNode[] linker_options = mem::new_array(ASTNode, 0);
 
-    while (self.current.type == PERCENT)
+    while (self.current.type == KW_LINK)
     {
         int line = self.current.line;
         int start = self.current.range.start;
         StringList context_lines = self.current.context_lines;
         self.consume();
+        self.try_consume(LT);
 
-        DString value;
-        defer value.free();
-        value.append_chars(self.current.value);
+        String value = self.current.value;
 
-        self.try_consume(STRING);
+        self.try_consume(IDENTIFIER);
+        self.try_consume(GT);
 
         String[] platforms;
 
@@ -109,7 +109,7 @@ fn ASTNode[] Parser.linker_options(&self)
         int end = self.current.range.end;
         self.try_consume(SEMICOLON);
 
-        util::array_insert(&linker_options, (ASTNode){ LINK, { .linker_option_node = { value.copy_str(mem), platforms } }, { start, end }, line, context_lines });
+        util::array_insert(&linker_options, (ASTNode){ LINK, { .linker_option_node = { value, platforms } }, { start, end }, line, context_lines });
     }
 
     return linker_options;

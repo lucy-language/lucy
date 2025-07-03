@@ -68,6 +68,7 @@ enum TokenType : (String str)
     KW_WHILE  = "while",
     KW_ELSE   = "else",
     KW_CASE   = "case",
+    KW_LINK   = "link",
     KW_PKG    = "pkg",
     KW_DEF    = "def",
     KW_USE    = "use",

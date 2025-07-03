@@ -298,6 +298,7 @@ fn Token Lexer.identifier(&self)
     if (str == "for")    return { KW_FOR,    str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "else")   return { KW_ELSE,   str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "case")   return { KW_CASE,   str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "link")   return { KW_LINK,   str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "const")  return { KW_CONST,  str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "macro")  return { KW_MACRO,  str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "while")  return { KW_WHILE,  str, { start, self.column }, self.line, self.get_context_lines() };
