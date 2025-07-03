@@ -232,14 +232,17 @@ fn void Compiler.compile_def(&self, DefNode node)
     }
 
     // add exit call
+    
     if (node.name == "main")
     {
+        /*
         LLVMTypeRef[] exit_param_types = { self.get_type((String[]){"int"}) };
         LLVMTypeRef exit_func_type = llvm::function_type(llvm::void_type(), exit_param_types, 1, 0);
         LLVMValueRef exit_func = llvm::add_function(self.mod, "exit", exit_func_type);
 
         LLVMValueRef[] exit_args = { create_int(0) };
         llvm::build_call_2(self.builder, exit_func_type, exit_func, exit_args, 1, "");
+        */
     }
 
     if (node.children.len == 0 || (node.children[node.children.len - 1].node_type != RETURN && def.ret_type == "void"))
