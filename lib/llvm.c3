@@ -82,6 +82,7 @@ extern fn void         build_memcpy(LLVMBuilderRef builder, LLVMValueRef dest, i
 extern fn LLVMValueRef build_malloc(LLVMBuilderRef builder, LLVMTypeRef type, LLVMValueRef size, char*name) @extern("LLVMBuildMalloc");
 extern fn LLVMValueRef build_array_malloc(LLVMBuilderRef builder, LLVMTypeRef type, LLVMValueRef size, char*name) @extern("LLVMBuildArrayMalloc");
 extern fn LLVMValueRef build_zext(LLVMBuilderRef builder, LLVMValueRef value, LLVMTypeRef dest_type, char* name) @extern("LLVMBuildZExt");
+extern fn void         build_unreachable(LLVMBuilderRef builder) @extern("LLVMBuildUnreachable");
 
 extern fn LLVMTypeKind get_type_kind(LLVMTypeRef type) @extern("LLVMGetTypeKind");
 extern fn LLVMValueRef get_operand(LLVMValueRef val, CUInt index) @extern("LLVMGetOperand");
@@ -96,6 +97,7 @@ extern fn LLVMTypeRef  get_type_by_name(LLVMModuleRef mod, char* name) @extern("
 extern fn char*        get_value_name(LLVMValueRef value) @extern("LLVMGetValueName");
 extern fn LLVMValueRef get_initializer(LLVMValueRef value) @extern("LLVMGetInitializer");
 extern fn char*        get_as_string(LLVMValueRef initializer, CInt* len) @extern("LLVMGetAsString");
+extern fn LLVMValueRef get_inline_asm(LLVMTypeRef type, char* asm_string, int asm_string_size, char* constraints, int constraints_size, LLVMBool has_side_effects, LLVMBool is_align_stack, LLVMInlineAsmDialect dialect, LLVMBool can_throw) @extern("LLVMGetInlineAsm");
 
 extern fn CUInt count_struct_element_types(LLVMTypeRef type) @extern("LLVMCountStructElementTypes");
 
@@ -197,7 +199,6 @@ alias LLVMComdatRef                = void*;
 alias LLVMMetadataRef              = void*;
 alias LLVMNamedMDNodeRef           = void*;
 alias LLVMValueMetadataEntry       = void*;
-alias LLVMInlineAsmDialect         = CUInt;
 alias LLVMAttributeRef             = void*;
 alias LLVMIntPredicate             = int;
 alias LLVMRealPredicate            = int;
@@ -309,4 +310,10 @@ enum LLVMCodeGenFileType
     BITCODE_FILE,
     LINKED_FILE,
     DWO_FILE
+}
+
+enum LLVMInlineAsmDialect
+{
+    INLINE_ASM_DIALECT_ATT,
+    INLINE_ASM_DIALECT_INTEL
 }

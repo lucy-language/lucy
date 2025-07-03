@@ -1,3 +1,5 @@
+%"c";
+
 pkg main;
 
 ext void printf(str fmt, var str args);
@@ -29,9 +31,9 @@ def void main()
     printf("%d\n", d);
 
     var T t = { true, 69 };
-    printf("T.b: %d\n", t.b);
-    printf("T.b: %d\n", t.b!!);
-    printf("T.b: %d\n", t.b);
+    printf("T.b: %hhd\n", t.b);
+    printf("T.b: %hhd\n", t.b!!);
+    printf("T.b: %hhd\n", t.b);
 
     t.a++;
     printf("%d\n", t.a);

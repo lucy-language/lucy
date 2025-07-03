@@ -4,23 +4,19 @@ macro void printn(x)
 {
     switch (x.$typekind)
     {
-        case "STRUCT": printf("%s {}\n", x.$typename);
+        case "STRUCT": printf("<%s>\n", x.$typename);
         case "BUILTIN":
             switch (x.$typeid)
             {
                 case str.$typeid:    printf("%s\n", x);
                 case int.$typeid:    printf("%d\n", x);
                 case double.$typeid: printf("%.2f\n", x);
+                case bool.$typeid:
+                    switch (x)
+                    {
+                        case true:  printf("true\n");
+                        case false: printf("false\n");
+                    }
             }
-    }
-}
-
-macro assert(x, str msg)
-{
-    var str color_red   = "\u001B[91m";
-    var str color_reset = "\u001B[0m";
-    if (!x)
-    {
-        printf("%sAssert violated: `%s`%s\n", color_red, msg, color_reset);
     }
 }
