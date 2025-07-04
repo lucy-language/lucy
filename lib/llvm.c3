@@ -171,6 +171,9 @@ extern fn void run_pass_manager(LLVMPassManagerRef pass_manager, LLVMModuleRef m
 extern fn char* get_host_cpu_features() @extern("LLVMGetHostCPUFeatures");
 extern fn char* copy_string_rep_of_target_data(LLVMTargetDataRef target_data_ref) @extern("LLVMCopyStringRepOfTargetData");
 
+extern fn LLVMBool link_modules(LLVMValueRef dest, LLVMValueRef src, LLVMLinkerMode mode, char** error) @extern("LLVMLinkModules");
+extern fn LLVMBool link_modules_2(LLVMValueRef dest, LLVMValueRef src) @extern("LLVMLinkModules2");
+
 const TRUE  = 1;
 const FALSE = 0;
 
@@ -316,4 +319,10 @@ enum LLVMInlineAsmDialect
 {
     INLINE_ASM_DIALECT_ATT,
     INLINE_ASM_DIALECT_INTEL
+}
+
+enum LLVMLinkerMode
+{
+    LINKER_DESTROY_SOURCE,
+    LINKER_PRESERVE_SOURCE
 }

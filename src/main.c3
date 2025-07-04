@@ -18,7 +18,6 @@ fn int main(String[] args)
     Option[] options =
     {
         {
-            .short_name  = 'l',
             .long_name   = "lexer",
             .description = "Stops after the lexing stage"
         },
@@ -54,6 +53,12 @@ fn int main(String[] args)
             .short_name  = 'v',
             .long_name   = "version",
             .description = "prints version info to stdout"
+        },
+        {
+            .short_name  = 'l',
+            .long_name   = "link",
+            .description = "Links the set library",
+            .has_arg     = true
         }
     };
 
@@ -107,10 +112,12 @@ fn int main(String[] args)
             return 0;
         }
 
+        String[] links = {"io.lc"}; // TODO: take from argparser
+
         TypeTable* type_table = malloc(TypeTable.sizeof);
         (*type_table).init();
         SemanticAnalyser semantic_analyser = semantic_analyser::new(path, ast, type_table);
-        semantic_analyser.analyse();
+        semantic_analyser.analyse(links);
 
         if (arg_parser.has_arg("analyser"))
         {
@@ -121,7 +128,9 @@ fn int main(String[] args)
         // TODO: fix
         parser = parser::new(lexer, path);
         Compiler compiler = compiler::new(path, parser.parse(), type_table);
-        compiler.compile();
+        compiler.compile(links);
+
+        linker::link(compiler.mod, compiler.module_name, compiler.linker_options);
     }
 
     return 0;

@@ -1,10 +1,13 @@
-link<c>;
+link<raylib>;
 
 pkg main;
 
-ext void printf(str fmt, var str args);
+use std.io;
+
+ext void InitWindow(int width, int height, str title);
+ext void CloseWindow();
 
 def void main()
 {
-    printf("Hello, World!\n");
+    io.greet("Kiana");
 }

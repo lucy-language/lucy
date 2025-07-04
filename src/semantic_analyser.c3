@@ -1,7 +1,7 @@
 module lucy::semantic_analyser;
 
 import std::collections::list, std::collections::map, std::os, std::io;
-import lucy::node, lucy::errors, lucy::scope::sema, lucy::util, lucy::lookup_table;
+import lucy::node, lucy::errors, lucy::scope::sema, lucy::util, lucy::lookup_table, lucy::lexer, lucy::parser;
 import llvm;
 
 struct Def
@@ -32,6 +32,8 @@ struct SemanticAnalyser
     List{Struct}  structs;
     SemScope*     scope;
     TypeTable*    type_table;
+    String[]      imports;
+    String[]      links;
 }
 
 fn SemanticAnalyser new(String file_path, ASTNode ast, TypeTable* type_table)
@@ -49,8 +51,18 @@ fn SemanticAnalyser new(String file_path, ASTNode ast, TypeTable* type_table)
 }
 
 // TODO: scopes
-fn void SemanticAnalyser.analyse(&self)
+fn void SemanticAnalyser.analyse(&self, String[] links = {})
 {
+    foreach (link_path : links)
+    {
+        String   content  = (String)file::load(mem, link_path)!!;
+        Lexer    lexer    = lexer::new(content);
+        Parser   parser   = parser::new(lexer, link_path);
+
+        ASTNode ast = parser.parse();
+        util::array_insert(&self.links, ast.node.file_node.module_name);
+    }
+
     foreach (node : self.ast.node.file_node.children)
     {
         switch (node.node_type)
@@ -258,6 +270,7 @@ fn void SemanticAnalyser.analyse_node(&self, ASTNode node, ASTNode* def = null)
         case FOR:       self.analyse_for(node, def);
         case RETURN:    self.analyse_return(node, def);
         case SWITCH:    self.analyse_switch(node, def);
+        case USE:       self.analyse_use(node);
         
         case MACRO:
         case STR:
@@ -692,7 +705,22 @@ fn void SemanticAnalyser.analyse_access(&self, ASTNode node_in)
         return;
     }
 
-    if (!self.scope.has_var(node.id))
+    bool use_flag = false;
+    String[] all_ends = util::all_ends(self.imports, node.id);
+    if (all_ends.len == 0)
+    {
+        use_flag = true;
+    } else if (all_ends.len >= 2)
+    {
+        errors::print_node(self.file_path, node_in, string::tformat("Multiple imports found that end in `%s`. please specify the full module name", node.id));
+        os::exit(1);
+    } else
+    { // import found
+        // TODO: figure out if function exists in other module --- look at compile function 
+        return;
+    }
+
+    if (!self.scope.has_var(node.id) && use_flag)
     {
         errors::print_node(self.file_path, node_in, string::tformat("Unable to find variable `%s`", node.id));
         os::exit(1);
@@ -709,6 +737,7 @@ fn void SemanticAnalyser.analyse_access(&self, ASTNode node_in)
     }
 }
 
+// TODO: fix recursive call for module name e.g. `io.lol.alexa`
 // TODO: recursive function for resolving full path
 fn Type* SemanticAnalyser.resolve_access(&self, Type* base_type, char* prev, ASTNode* next)
 {
@@ -1079,4 +1108,18 @@ fn void SemanticAnalyser.analyse_switch(&self, ASTNode node_in, ASTNode* def)
             self.analyse_node(child, def);
         }
     }
+}
+
+fn void SemanticAnalyser.analyse_use(&self, ASTNode node_in)
+{
+    UseNode node = node_in.node.use_node;
+    String  path = node.path;
+
+    if (!util::in((String[])self.links, path))
+    {
+        errors::print_node(self.file_path, node_in, string::format(mem, "Could not find module `%s`", path));
+        os::exit(1);
+    }
+
+    util::array_insert(&self.imports, path);
 }
