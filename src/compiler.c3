@@ -37,6 +37,7 @@ struct Compiler
 
 struct Def
 {
+    ExtNode*     ext_node;
     MacroNode*   node;
     LLVMValueRef function;
     LLVMTypeRef  type;
@@ -97,15 +98,19 @@ fn void Compiler.compile(&self, String[] links = {})
         Compiler compiler = compiler::new(link_path, parser.parse(), type_table);
         compiler.compile();
 
+        
         foreach (name : compiler.functions.keys(mem))
         {
-            self.functions.set(name, compiler.functions.get(name)!!);
+            Def def = compiler.functions.get(name)!!;
+            if (def.ext_node)
+            {
+                self.compile_ext(*def.ext_node);
+            }
         }
+        
 
         self.linked_modules.set(compiler.module_name, compiler);
         self.linker_options = array::concat(mem, self.linker_options, compiler.linker_options);
-
-        llvm::link_modules_2(self.mod, compiler.mod);
     }
 
     // register functions first so they can be found even if declared later than call
@@ -125,6 +130,11 @@ fn void Compiler.compile(&self, String[] links = {})
     foreach (ast : self.file_node.children)
     {
         self.compile_node(ast);
+    }
+
+    foreach (mod : self.linked_modules.values(mem))
+    {
+        llvm::link_modules_2(self.mod, mod.mod);
     }
 
     foreach (child : self.file_node.linker_options)
@@ -172,14 +182,14 @@ fn void Compiler.add_def(&self, DefNode node)
         llvm::set_value_name(llvm::get_param(fN, i), (node.parameters)[i].node.parameter_node.name);
     }
 
-    self.functions.set(node.name, { null, fN, fn_type, node.types[0] });
+    self.functions.set(node.name, { null, null, fN, fn_type, node.types[0] });
 }
 
 fn void Compiler.add_macro(&self, MacroNode node)
 {
     MacroNode* node_ptr = malloc(MacroNode.sizeof);
     *node_ptr = node;
-    self.functions.set(node.name, { node_ptr, null, null, node.type });
+    self.functions.set(node.name, { null, node_ptr, null, null, node.type });
 }
 
 fn void Compiler.add_struct(&self, StructNode node)
@@ -316,7 +326,10 @@ fn void Compiler.compile_ext(&self, ExtNode node)
     LLVMValueRef fN = llvm::add_function(self.mod, node.name, fn_type);
 
     String name = node.alias_name != "" ? node.alias_name : node.name;
-    self.functions.set(name, { null, fN, fn_type, node.type });
+    ExtNode* ext_node = malloc(ExtNode.sizeof);
+    *ext_node = node;
+
+    self.functions.set(name, { ext_node, null, fN, fn_type, node.type });
 }
 
 fn void Compiler.compile_const(&self, ConstNode node, bool global = false)
@@ -532,9 +545,7 @@ fn LLVMValueRef Compiler.compile_char(&self, CharNode node)
 
 fn LLVMValueRef Compiler.compile_call(&self, CallNode node, LLVMBasicBlockRef parent_block)
 {
-    io::printn(node.name);
     Def def = self.functions.get(node.name)!!;
-    io::printn((ZString)llvm::print_value_to_string(def.function));
 
     LLVMValueRef function      = def.function;
     LLVMTypeRef  function_type = def.type;

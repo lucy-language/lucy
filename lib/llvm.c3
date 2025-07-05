@@ -29,6 +29,9 @@ extern fn void set_unnamed_addr(LLVMValueRef global, LLVMBool has_unnamed_addr) 
 extern fn LLVMTypeRef type_of(LLVMValueRef val) @extern("LLVMTypeOf");
 extern fn LLVMContextRef get_global_context() @extern("LLVMGetGlobalContext");
 
+extern fn void set_alignment(LLVMValueRef value, int alignment) @extern("LLVMSetAlignment");
+extern fn void set_section(LLVMValueRef value, char* section) @extern("LLVMSetSection");
+
 extern fn LLVMTypeRef int1_type() @extern("LLVMInt1Type");
 extern fn LLVMTypeRef int8_type() @extern("LLVMInt8Type");
 extern fn LLVMTypeRef int32_type() @extern("LLVMInt32Type");

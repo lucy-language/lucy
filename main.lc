@@ -1,13 +1,11 @@
-link<raylib>;
-
 pkg main;
 
 use std.io;
 
-ext void InitWindow(int width, int height, str title);
-ext void CloseWindow();
-
 def void main()
 {
-    io.greet("Kiana");
+    io.printn("Kiana");
+    io.printn(22);
+    io.printn(true);
+    io.printn(false);
 }

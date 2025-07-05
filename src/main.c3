@@ -30,7 +30,6 @@ fn int main(String[] args)
 
             .long_name   = "compile",
             .description = "The file to compile",
-            .value       = "FILE",
             .has_arg     = true,
             .subcommand  = true
         },
@@ -112,7 +111,7 @@ fn int main(String[] args)
             return 0;
         }
 
-        String[] links = {"io.lc"}; // TODO: take from argparser
+        String[] links = {"lucy/stdlib/io.lc"}; // TODO: take from argparser
 
         TypeTable* type_table = malloc(TypeTable.sizeof);
         (*type_table).init();

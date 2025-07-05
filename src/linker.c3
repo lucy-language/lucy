@@ -7,7 +7,7 @@ import llvm;
 fn void link(LLVMModuleRef mod, String module_name, String[] linker_option_arr)
 {
     LLVMModuleRef[] link_mods;
-    
+
     create_entrypoint(mod, module_name);
 
     LLVMTargetRef target        = initialize("");
@@ -47,7 +47,7 @@ fn void link(LLVMModuleRef mod, String module_name, String[] linker_option_arr)
         os::exit(1);
     }
 
-    llvm::print_module_to_file(mod, string::format(mem, "%s.ll", module_name), null);
+    // llvm::print_module_to_file(mod, string::format(mem, "%s.ll", module_name), null);
 
     // TODO: make system specific options work
     String linker_option_str = util::join_to_string(linker_option_arr, " ");
