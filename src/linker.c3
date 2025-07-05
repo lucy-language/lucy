@@ -1,12 +1,14 @@
 module lucy::linker;
 
-import lucy::util;
+import lucy::util, lucy::lexer, lucy::parser, lucy::lookup_table, lucy::compiler, lucy::semantic_analyser, lucy::node;
 import std::io, std::os, libc;
 import llvm;
 
 fn void link(LLVMModuleRef mod, String module_name, String[] linker_option_arr)
 {
-    create_entrypoint(mod);
+    LLVMModuleRef[] link_mods;
+
+    create_entrypoint(mod, module_name);
 
     LLVMTargetRef target        = initialize("");
     char*         target_name   = llvm::get_target_name(target);
@@ -164,13 +166,13 @@ fn void add_option(String[]* options, String option)
     util::array_insert(options, option);
 }
 
-fn void create_entrypoint(LLVMModuleRef mod)
+fn void create_entrypoint(LLVMModuleRef mod, String module_name)
 {
     // create builder
     LLVMBuilderRef builder = llvm::create_builder();
 
     // find main fn
-    LLVMValueRef main_func = llvm::get_named_function(mod, "main");
+    LLVMValueRef main_func = llvm::get_named_function(mod, string::format(mem, "%s.main", module_name));
     LLVMTypeRef  func_type = llvm::function_type(llvm::int32_type(), (LLVMTypeRef[]){}, 0, llvm::FALSE);
 
     // create entrypoint

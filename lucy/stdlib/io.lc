@@ -1,4 +1,8 @@
-pkg io;
+link<c>;
+
+pkg std.io;
+
+ext int printf(str fmt, var str args);
 
 macro void printn(x)
 {
@@ -10,7 +14,6 @@ macro void printn(x)
             {
                 case str.$typeid:    printf("%s\n", x);
                 case int.$typeid:    printf("%d\n", x);
-                case double.$typeid: printf("%.2f\n", x);
                 case bool.$typeid:
                     switch (x)
                     {

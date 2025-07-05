@@ -1,10 +1,11 @@
-link<c>;
-
 pkg main;
 
-ext void printf(str fmt, var str args);
+use std.io;
 
 def void main()
 {
-    printf("Hello, World!\n");
+    io.printn("Kiana");
+    io.printn(22);
+    io.printn(true);
+    io.printn(false);
 }

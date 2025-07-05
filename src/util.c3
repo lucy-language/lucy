@@ -72,3 +72,17 @@ fn String join_to_string(String[] arr, String separator)
 
     return result.copy_str(mem);
 }
+
+fn String[] all_ends(String[] arr, String el)
+{
+    String[] ends;
+    foreach (a : arr)
+    {
+        if (a.ends_with(el))
+        {
+            array_insert(&ends, a);
+        }
+    }
+
+    return ends;
+}

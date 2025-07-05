@@ -29,6 +29,9 @@ extern fn void set_unnamed_addr(LLVMValueRef global, LLVMBool has_unnamed_addr) 
 extern fn LLVMTypeRef type_of(LLVMValueRef val) @extern("LLVMTypeOf");
 extern fn LLVMContextRef get_global_context() @extern("LLVMGetGlobalContext");
 
+extern fn void set_alignment(LLVMValueRef value, int alignment) @extern("LLVMSetAlignment");
+extern fn void set_section(LLVMValueRef value, char* section) @extern("LLVMSetSection");
+
 extern fn LLVMTypeRef int1_type() @extern("LLVMInt1Type");
 extern fn LLVMTypeRef int8_type() @extern("LLVMInt8Type");
 extern fn LLVMTypeRef int32_type() @extern("LLVMInt32Type");
@@ -170,6 +173,9 @@ extern fn void run_pass_manager(LLVMPassManagerRef pass_manager, LLVMModuleRef m
 
 extern fn char* get_host_cpu_features() @extern("LLVMGetHostCPUFeatures");
 extern fn char* copy_string_rep_of_target_data(LLVMTargetDataRef target_data_ref) @extern("LLVMCopyStringRepOfTargetData");
+
+extern fn LLVMBool link_modules(LLVMValueRef dest, LLVMValueRef src, LLVMLinkerMode mode, char** error) @extern("LLVMLinkModules");
+extern fn LLVMBool link_modules_2(LLVMValueRef dest, LLVMValueRef src) @extern("LLVMLinkModules2");
 
 const TRUE  = 1;
 const FALSE = 0;
@@ -316,4 +322,10 @@ enum LLVMInlineAsmDialect
 {
     INLINE_ASM_DIALECT_ATT,
     INLINE_ASM_DIALECT_INTEL
+}
+
+enum LLVMLinkerMode
+{
+    LINKER_DESTROY_SOURCE,
+    LINKER_PRESERVE_SOURCE
 }
