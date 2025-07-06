@@ -47,7 +47,7 @@ fn int main(String[] args)
                 .is_value_required   = false
             },
             {
-                .short_name  = "el",
+                .short_name  = "e",
                 .long_name   = "emit-llvm",
                 .description = "prints the module to a llvm IR file"
             },
@@ -63,6 +63,10 @@ fn int main(String[] args)
                 .long_name         = "link",
                 .description       = "link with this library",
                 .is_value_required = true
+            },
+            {
+                .long_name   = "no-stdlib",
+                .description = "compiles without including the stdlib"
             }
         }
     );
@@ -95,7 +99,8 @@ fn int main(String[] args)
             return 1;
         }
 
-        String content = (String)file::load(mem, compile_option)!!;
+        String path    = compile_option.to_absolute_path(mem).str_view()!!;
+        String content = (String)file::load(mem, path)!!;
 
         lucy::lexer::Lexer lexer = lexer::new(content);
 
@@ -108,8 +113,8 @@ fn int main(String[] args)
             return 0;
         }
 
-        Parser parser = parser::new(lexer, compile_option);
-        ASTNode ast   = parser.parse();
+        Parser  parser = parser::new(lexer, path);
+        ASTNode ast    = parser.parse();
     
         if (args::has_arg_long(options, "tree")!!)
         {
@@ -132,11 +137,21 @@ fn int main(String[] args)
             return 0;
         }
 
-        String[] links = {"lucy/stdlib/io.lc"}; // TODO: take from argparser
+        String[] links;
+        if (!args::has_arg_long(options, "no-stdlib")!!)
+        {
+            Path? stdlib_path = "stdlib".to_absolute_path(mem);
+            if (catch stdlib_path)
+            {
+                io::eprintn("Unable to make out stdlib path");
+                return 1;
+            }
+            (void)path::traverse(stdlib_path, &path_callback, &links);
+        }
 
         TypeTable* type_table = malloc(TypeTable.sizeof);
         (*type_table).init();
-        SemanticAnalyser semantic_analyser = semantic_analyser::new(compile_option, ast, type_table);
+        SemanticAnalyser semantic_analyser = semantic_analyser::new(path, ast, type_table);
         semantic_analyser.analyse(links);
 
         if (args::has_arg_long(options, "analyser")!!)
@@ -146,8 +161,8 @@ fn int main(String[] args)
     
         // Need to reinstantiate because json fucks it up somehow
         // TODO: fix
-        parser = parser::new(lexer, compile_option);
-        Compiler compiler = compiler::new(compile_option, parser.parse(), type_table);
+        parser = parser::new(lexer, path);
+        Compiler compiler = compiler::new(path, parser.parse(), type_table);
         compiler.compile(links);
 
         linker::link(compiler.mod, compiler.module_name, compiler.linker_options);
@@ -159,4 +174,17 @@ fn int main(String[] args)
     }
 
     return 0;
+}
+
+fn bool? path_callback(Path path, bool is_dir, any data)
+{
+    String[]* links = (String[]*)data;
+
+    if (is_dir) return true;
+    if (path.has_extension("lc"))
+    {
+        (void)util::array_insert(links, path.absolute(mem).str_view());
+    }
+
+    return true;
 }

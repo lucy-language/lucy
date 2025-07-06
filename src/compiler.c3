@@ -333,7 +333,6 @@ fn void Compiler.compile_ext(&self, ExtNode node)
 
 fn void Compiler.compile_const(&self, ConstNode node, bool global = false)
 {
-    
     LLVMValueRef value;
 
     LLVMTypeRef int_type = (void*).sizeof == 8 ? llvm::int32_type() : llvm::int64_type();
@@ -574,7 +573,8 @@ fn LLVMValueRef Compiler.compile_ident(&self, ASTNode node_in)
     } else if ((*self.scope).has_const(name))
     {
         Const constant = (*self.scope).get_const(name);
-        return constant.value;
+        LLVMTypeRef type = self.get_type((String[]){constant.type});
+        loaded = llvm::build_load_2(self.builder, type, constant.value, "");
     } else if ((*self.scope).has_param(name))
     {
         loaded = (*self.scope).get_param(name).value;

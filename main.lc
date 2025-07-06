@@ -6,11 +6,9 @@ pkg main;
 
 use std.io;
 
+const int TEST = 69;
+
 def void main()
 {
-    #printf("%.2f\n", 1.0);
-    io.printn("Kiana");
-    io.printn(22);
-    io.printn(true);
-    io.printn(false);
+    io.printn(TEST);
 }
