@@ -1,9 +1,14 @@
+#link<c>;
+
 pkg main;
+
+#ext void printf(str fmt, var str args);
 
 use std.io;
 
 def void main()
 {
+    #printf("%.2f\n", 1.0);
     io.printn("Kiana");
     io.printn(22);
     io.printn(true);

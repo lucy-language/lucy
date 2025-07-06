@@ -1,7 +1,6 @@
 module lucy::util;
 
-import color_util;
-import std;
+import std::core::string, std::core::mem, std::os, std::io;
 import llvm;
 
 const String LOWERCASE   = "abcdefghijklmnopqrstuvwxyz";
@@ -42,7 +41,7 @@ macro void panicf(String fmt, args..., String file, int line) @noreturn
 *>
 fn void panic(String message, String file, int line) @noreturn
 {
-    io::eprint  (color_util::COLOR_YELLOW);
+    io::eprint  (Ansi.YELLOW);
     io::eprintn ("╭──────────────────────────────────────────────────────────────────────────────────╮");
     io::eprintn ("│ ⚠️ Feature not implemented yet                                                   │");
     io::eprintfn("│ Issue: %-*s │", 73, message);
@@ -51,7 +50,7 @@ fn void panic(String message, String file, int line) @noreturn
     io::eprintn ("│ Please create an issue on github at https://github.com/lucy-language/lucy/issues │");
     io::eprintn ("│ and include your compiler version you can get by running `lucy --version`        │");
     io::eprintn ("╰──────────────────────────────────────────────────────────────────────────────────╯");
-    io::eprint (color_util::COLOR_RESET);
+    io::eprint (Ansi.RESET);
     os::exit(1);
 }
 

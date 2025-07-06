@@ -6,12 +6,10 @@ import std::os;
 import lucy::token;
 import lucy::node;
 
-import color_util;
-
 fn void print(String file_path, Token token, String message)
 {
     String path = file_path.to_absolute_path(mem).str_view()!!;
-    io::printn(color_util::COLOR_BRIGHT_RED);
+    io::printn(Ansi.BRIGHT_RED);
     io::eprintfn("Something went wrong: %s", message);
 
     usz first_line = token.line - (token.context_lines.len() - 1);
@@ -37,14 +35,14 @@ fn void print(String file_path, Token token, String message)
         io::printn();
         io::printfn("Error in file (%s) %d:%d", path, token.line, token.range.start);
     }
-    io::print(color_util::COLOR_RESET);
+    io::print(Ansi.RESET);
     os::exit(1); // TODO: remove
 }
 
 fn void print_node(String file_path, ASTNode node, String message)
 {
     String path = file_path.to_absolute_path(mem).str_view()!!;
-    io::printn(color_util::COLOR_BRIGHT_RED);
+    io::printn(Ansi.BRIGHT_RED);
     io::eprintfn("Something went wrong: %s", message);
 
     usz first_line = node.line - (node.context_lines.len() - 1);
@@ -72,5 +70,5 @@ fn void print_node(String file_path, ASTNode node, String message)
         io::printn();
         io::printfn("Error in file (%s) %d:%d", path, node.line, node.range.start);
     }
-    io::print(color_util::COLOR_RESET);
+    io::print(Ansi.RESET);
 }

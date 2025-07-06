@@ -8,63 +8,72 @@ import lucy::parser;
 import lucy::lexer;
 import lucy::node;
 
-import argparser;
-import color_util;
+import args;
 import json;
 import llvm;
 
 fn int main(String[] args)
 {
-    Option[] options =
-    {
-        {
-            .long_name   = "lexer",
-            .description = "Stops after the lexing stage"
-        },
-        {
-            .short_name  = 'p',
-            .long_name   = "parser",
-            .description = "Stops after the parsing stage"
-        },
-        {
-
-            .long_name   = "compile",
-            .description = "The file to compile",
-            .has_arg     = true,
-            .subcommand  = true
-        },
-        {
-            .short_name  = 't',
-            .long_name   = "tree",
-            .description = "Prints the AST in JSON format to stdout"
-        },
-        {
-            .short_name  = 'T',
-            .long_name   = "ast",
-            .description = "Writes the AST in JSON to a file"
-        },
-        {
-            .short_name  = 'a',
-            .long_name   = "analyser",
-            .description = "Stops after the analysing stage"
-        },
-        {
-            .short_name  = 'v',
-            .long_name   = "version",
-            .description = "prints version info to stdout"
-        },
-        {
-            .short_name  = 'l',
-            .long_name   = "link",
-            .description = "Links the set library",
-            .has_arg     = true
+    Option[]? options = args::parse(
+        args:    args,
+        arg_sep: " ",
+        options: {
+            {
+                .short_name  = "ll",
+                .long_name   = "lexer",
+                .description = "stops after the lexing stage"
+            },
+            {
+                .short_name  = "p",
+                .long_name   = "parser",
+                .description = "stops after the parsing stage"
+            },
+            {
+                .short_name  = "a",
+                .long_name   = "analyser",
+                .description = "stops after the analysing stage"
+            },
+            {
+                .short_name        = "t",
+                .long_name         = "tree",
+                .description       = "outputs the ast mor the main module",
+                .valid_values      = { "file", "stdout" },
+                .is_value_required = true
+            },
+            {
+                .short_name  = "v",
+                .long_name   = "version",
+                .description = "prints the version info to stdout",
+                .is_value_required   = false
+            },
+            {
+                .short_name  = "el",
+                .long_name   = "emit-llvm",
+                .description = "prints the module to a llvm IR file"
+            },
+            {
+                .short_name        = "c",
+                .long_name         = "compile",
+                .description       = "compile a file",
+                .example_value     = "FILE",
+                .is_value_required = true
+            },
+            {
+                .short_name        = "l",
+                .long_name         = "link",
+                .description       = "link with this library",
+                .is_value_required = true
+            }
         }
-    };
+    );
 
-    ArgParser arg_parser = { args, options };
-    arg_parser.parse();
+    if (catch err = options)
+    {
+        io::eprintn(err);
+        return 1;
+    }
 
-    if (arg_parser.has_arg("version"))
+    if (args::has_arg_long(options, "version")!!)
     {
         io::printfn("%-*s%s", 30, "Compiler Version:", VERSION);
         io::printfn("%-*s%s", 30, "Backends:", BACKENDS);
@@ -77,14 +86,20 @@ fn int main(String[] args)
         return 0;
     }
 
-    if (arg_parser.has_arg("compile"))
+    if (args::has_arg_long(options, "compile")!!)
     {
-        String path    = arg_parser.get_arg("compile");
-        String content = (String)file::load(mem, path)!!;
+        String? compile_option = args::arg_value(options, "compile");
+        if (catch compile_option)
+        {
+            io::eprintn("expected value for option `compile`");
+            return 1;
+        }
+
+        String content = (String)file::load(mem, compile_option)!!;
 
         lucy::lexer::Lexer lexer = lexer::new(content);
 
-        if (arg_parser.has_arg("lexer"))
+        if (args::has_arg_long(options, "lexer")!!)
         {
             foreach(token : lexer.tokenize())
             {
@@ -93,20 +108,26 @@ fn int main(String[] args)
             return 0;
         }
 
-        Parser parser = parser::new(lexer, path);
+        Parser parser = parser::new(lexer, compile_option);
         ASTNode ast   = parser.parse();
     
-        if (arg_parser.has_arg("tree"))
+        if (args::has_arg_long(options, "tree")!!)
         {
-            io::printn(json::to_json(ast, mem)!!);
+            String? value = args::arg_value(options, "tree");
+            if (catch value)
+            {
+                io::eprintn("expected value for option `ast`");
+                return 1;
+            }
+
+            switch (value)
+            {
+                case "file":   file::save("ast.json", json::to_json(ast, mem))!!;
+                case "stdout": io::printn(json::to_json(ast, mem)!!);
+            }
         }
 
-        if (arg_parser.has_arg("ast"))
-        {
-            file::save("ast.json", json::to_json(ast, mem))!!;
-        }
-
-        if (arg_parser.has_arg("parser"))
+        if (args::has_arg_long(options, "parser")!!)
         {
             return 0;
         }
@@ -115,21 +136,26 @@ fn int main(String[] args)
 
         TypeTable* type_table = malloc(TypeTable.sizeof);
         (*type_table).init();
-        SemanticAnalyser semantic_analyser = semantic_analyser::new(path, ast, type_table);
+        SemanticAnalyser semantic_analyser = semantic_analyser::new(compile_option, ast, type_table);
         semantic_analyser.analyse(links);
 
-        if (arg_parser.has_arg("analyser"))
+        if (args::has_arg_long(options, "analyser")!!)
         {
             return 0;
         }
     
         // Need to reinstantiate because json fucks it up somehow
         // TODO: fix
-        parser = parser::new(lexer, path);
-        Compiler compiler = compiler::new(path, parser.parse(), type_table);
+        parser = parser::new(lexer, compile_option);
+        Compiler compiler = compiler::new(compile_option, parser.parse(), type_table);
         compiler.compile(links);
 
         linker::link(compiler.mod, compiler.module_name, compiler.linker_options);
+        
+        if (args::has_arg_long(options, "emit-llvm")!!)
+        {
+            llvm::print_module_to_file(compiler.mod, string::format(mem, "%s.ll", compiler.module_name), null);
+        }
     }
 
     return 0;
