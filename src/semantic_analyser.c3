@@ -716,7 +716,8 @@ fn void SemanticAnalyser.analyse_access(&self, ASTNode node_in)
         os::exit(1);
     } else
     { // import found
-        // TODO: figure out if function exists in other module --- look at compile function 
+        // TODO: figure out if function exists in other module --- look at compile function
+        
         return;
     }
 
@@ -767,6 +768,7 @@ fn Type* SemanticAnalyser.resolve_access(&self, Type* base_type, char* prev, AST
             }
             return self.resolve_access(field.type, access_node.id.zstr_copy(mem), access_node.node);
         case IDENT:
+            // TODO: check if from other module
             char*  field_name = next.node.ident_node.name.zstr_copy(mem);
             Field* field      = base_type.get_field(field_name);
             if (!field)
@@ -801,6 +803,8 @@ fn Type* SemanticAnalyser.resolve_access(&self, Type* base_type, char* prev, AST
             }
 
             return (*field).type;
+        // case CALL:
+            // TODO: add
         default:
             util::panic("Unsupported node type in access chain", $$FILE, $$LINE);
     }

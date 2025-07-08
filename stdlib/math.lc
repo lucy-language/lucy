@@ -1,0 +1,20 @@
+pkg std.math;
+
+const double PI = 3.141592653589793;
+const double E  = 2.718281828459045;
+
+def int pow(int base, int exponent)
+{
+    if (exponent == 0)
+    {
+        return 1;
+    }
+
+    var int result = base;
+    for (int i = 1; i < exponent; i++)
+    {
+        result = result * base;
+    }
+
+    return result;
+}

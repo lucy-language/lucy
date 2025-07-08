@@ -257,15 +257,15 @@ fn Token Lexer.number(&self)
     {
         self.column++;
         self.consume();
-        return { FLOAT, result.str_view(), { start, self.column }, self.line, self.get_context_lines() };
+        return { FLOAT, result.copy_str(mem), { start, self.column }, self.line, self.get_context_lines() };
     }
 
     if (!has_decimal_or_exponent)
     {
-        return { INTEGER, result.str_view(), { start, self.column }, self.line, self.get_context_lines() };
+        return { INTEGER, result.copy_str(mem), { start, self.column }, self.line, self.get_context_lines() };
     }
 
-    return { DOUBLE, result.str_view(), { start, self.column }, self.line, self.get_context_lines() };
+    return { DOUBLE, result.copy_str(mem), { start, self.column }, self.line, self.get_context_lines() };
 }
 
 fn Token Lexer.identifier(&self)

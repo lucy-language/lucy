@@ -8,18 +8,20 @@ macro void printn(x)
 {
     switch (x.$typekind)
     {
-        case "STRUCT": printf("<%s>\n", x.$typename);
+        case "STRUCT": printf("<%s>", x.$typename);
         case "BUILTIN":
             switch (x.$typeid)
             {
-                case str.$typeid:    printf("%s\n", x);
-                case int.$typeid:    printf("%d\n", x);
+                case str.$typeid:    printf("%s", x);
+                case int.$typeid:    printf("%d", x);
+                case double.$typeid: printf("%.32f", x);
                 case bool.$typeid:
                     switch (x)
                     {
-                        case true:  printf("true\n");
-                        case false: printf("false\n");
+                        case true:  printf("true");
+                        case false: printf("false");
                     }
             }
     }
+    printf("\n");
 }

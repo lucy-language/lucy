@@ -5,3 +5,6 @@ const IS_PRE_RELEASE  = true;
 
 const VERSION         = VERSION_NUMBER +++ (IS_PRE_RELEASE ? " (Pre-release)" : "");
 const BACKENDS        = "LLVM";
+
+// GIT_HASH
+$exec(`echo "const GIT_HASH = \"$(git rev-parse HEAD)\";"`);

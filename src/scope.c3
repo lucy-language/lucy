@@ -25,6 +25,7 @@ struct Var
 
 struct Const
 {
+    ConstNode    node;
     String       type;
     LLVMValueRef value;
 }

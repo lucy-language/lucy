@@ -80,12 +80,10 @@ fn int main(String[] args)
     if (args::has_arg_long(options, "version")!!)
     {
         io::printfn("%-*s%s", 30, "Compiler Version:", VERSION);
+        $if $feature(GIT_FOUND):
+            io::printfn("%-*s%s", 30, "Git hash:", GIT_HASH);
+        $endif
         io::printfn("%-*s%s", 30, "Backends:", BACKENDS);
-        for (int i = 0; i < 30 + VERSION.len; i++)
-        {
-            io::print("─");
-        }
-        io::printn();
         io::printfn("%-*s%s", 30, "LLVM Default Target:", (ZString)llvm::get_default_target_triple());
         return 0;
     }
@@ -165,7 +163,7 @@ fn int main(String[] args)
         Compiler compiler = compiler::new(path, parser.parse(), type_table);
         compiler.compile(links);
 
-        linker::link(compiler.mod, compiler.module_name, compiler.linker_options);
+        linker::link(compiler.mod, compiler.module_name, compiler.linker_options, !args::has_arg_long(options, "no-stdlib")!!);
         
         if (args::has_arg_long(options, "emit-llvm")!!)
         {
@@ -180,11 +178,11 @@ fn bool? path_callback(Path path, bool is_dir, any data)
 {
     String[]* links = (String[]*)data;
 
-    if (is_dir) return true;
+    if (is_dir) return false;
     if (path.has_extension("lc"))
     {
         (void)util::array_insert(links, path.absolute(mem).str_view());
     }
 
-    return true;
+    return false;
 }

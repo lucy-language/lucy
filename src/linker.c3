@@ -4,11 +4,17 @@ import lucy::util, lucy::lexer, lucy::parser, lucy::lookup_table, lucy::compiler
 import std::io, std::os, libc;
 import llvm;
 
-fn void link(LLVMModuleRef mod, String module_name, String[] linker_option_arr)
+fn void link(LLVMModuleRef mod, String module_name, String[] linker_option_arr, bool use_libc = true)
 {
     LLVMModuleRef[] link_mods;
 
-    create_entrypoint(mod, module_name);
+    if (use_libc)
+    {
+        create_main(mod, module_name);
+    } else
+    {
+        create_entrypoint(mod, module_name);
+    }
 
     LLVMTargetRef target        = initialize("");
     char*         target_name   = llvm::get_target_name(target);
@@ -56,14 +62,29 @@ fn void link(LLVMModuleRef mod, String module_name, String[] linker_option_arr)
     $case env::LINUX:
         String[] linker_options;
         add_option(&linker_options, "ld");
+
+        if (use_libc)
+        {
+            add_option(&linker_options, "/usr/lib/crt1.o"); 
+            add_option(&linker_options, "/usr/lib/crti.o");
+        }
+
         add_option(&linker_options, "-e");
         add_option(&linker_options, "_start");
+
+        if (use_libc)
+        {
+            add_option(&linker_options, "/usr/lib/crtn.o");
+            add_option(&linker_options, "-lc");
+        }
+
         add_option(&linker_options, string::format(mem, "%s.o", module_name));
         add_option(&linker_options, "-o");
         add_option(&linker_options, module_name);
         add_option(&linker_options, "--dynamic-linker");
         add_option(&linker_options, get_dynamic_linker());
         add_option(&linker_options, linker_option_str);
+
         int exit_code = libc::system(util::join_to_string(linker_options, " ").zstr_copy(mem));
         if (exit_code != 0) handle_error(exit_code);
     $case env::DARWIN:
@@ -79,6 +100,29 @@ fn void link(LLVMModuleRef mod, String module_name, String[] linker_option_arr)
     (void)file::delete(string::format(mem, "%s.o", module_name));
 
     //file::rm
+}
+
+fn void create_main(LLVMModuleRef mod, String module_name)
+{
+    // create builder
+    LLVMBuilderRef builder = llvm::create_builder();
+
+    // find main fn
+    LLVMValueRef main_func = llvm::get_named_function(mod, string::format(mem, "%s.main", module_name));
+    LLVMTypeRef  func_type = llvm::function_type(llvm::int32_type(), (LLVMTypeRef[]){}, 0, llvm::FALSE);
+
+    // create entrypoint
+    LLVMTypeRef       entrypoint_type = llvm::function_type(llvm::int32_type(), (LLVMTypeRef[]){}, 0, llvm::FALSE);
+    LLVMValueRef      entrypoint      = llvm::add_function(mod, "main", entrypoint_type);
+    LLVMBasicBlockRef entry_block     = llvm::append_basic_block(entrypoint, "entry");
+
+    // startup code
+    llvm::position_builder_at_end(builder, entry_block);
+    LLVMValueRef ret_value = llvm::build_call_2(builder, func_type, main_func, (LLVMValueRef[]){}, 0, "");
+    llvm::build_ret(builder, ret_value);
+
+    // cleanup
+    llvm::dispose_builder(builder);
 }
 
 fn String get_dynamic_linker()

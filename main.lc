@@ -1,14 +1,10 @@
-#link<c>;
-
 pkg main;
 
-#ext void printf(str fmt, var str args);
-
 use std.io;
-
-const int TEST = 69;
+use std.math;
 
 def void main()
 {
-    io.printn(TEST);
+    io.printn(math.pow(3, 2));
+    io.printn(math.PI);
 }
