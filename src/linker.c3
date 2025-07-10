@@ -1,3 +1,4 @@
+/*
 module lucy::linker;
 
 import lucy::util, lucy::lexer, lucy::parser, lucy::lookup_table, lucy::compiler, lucy::semantic_analyser, lucy::node;
@@ -315,3 +316,4 @@ macro print_darwin_error_code(int code) @private
 macro print_win_error_code(int code) @private
 {
 }
+*/

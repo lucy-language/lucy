@@ -2,9 +2,9 @@ module lucy;
 
 import std;
 
-import lucy::semantic_analyser;
-import lucy::compiler;
-import lucy::parser;
+// import lucy::semantic_analyser;
+// import lucy::compiler;
+// import lucy::parser;
 import lucy::lexer;
 import lucy::node;
 
@@ -110,10 +110,10 @@ fn int main(String[] args)
             }
             return 0;
         }
+        
+        Parser   parser = parser::new(lexer, path);
+        ASTNode* ast    = parser.parse();
 
-        Parser  parser = parser::new(lexer, path);
-        ASTNode ast    = parser.parse();
-    
         if (args::has_arg_long(options, "tree")!!)
         {
             String? value = args::arg_value(options, "tree");
@@ -125,11 +125,12 @@ fn int main(String[] args)
 
             switch (value)
             {
-                case "file":   file::save("ast.json", json::to_json(ast, mem))!!;
-                case "stdout": io::printn(json::to_json(ast, mem)!!);
+                case "file":   file::save("ast.json", json::to_json(*ast, mem))!!;
+                case "stdout": io::printn(json::to_json(*ast, mem)!!);
             }
         }
 
+        /*
         if (args::has_arg_long(options, "parser")!!)
         {
             return 0;
@@ -169,6 +170,7 @@ fn int main(String[] args)
         {
             llvm::print_module_to_file(compiler.mod, string::format(mem, "%s.ll", compiler.module_name), null);
         }
+        */
     }
 
     return 0;

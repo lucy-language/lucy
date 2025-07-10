@@ -1,5 +1,6 @@
 module lucy::util;
 
+import lucy::node;
 import std::core::string, std::core::mem, std::os, std::io;
 import llvm;
 
@@ -84,4 +85,9 @@ fn String[] all_ends(String[] arr, String el)
     }
 
     return ends;
+}
+
+fn ASTNode make_null()
+{
+    return { NULL, { .null_node = { "null" } }, {}, 0, {} };
 }

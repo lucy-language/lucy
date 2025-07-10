@@ -1,8 +1,0 @@
-pkg test;
-
-def int main()
-{
-    var str s = "Hello";
-    s = "World!";
-    return 0;
-}

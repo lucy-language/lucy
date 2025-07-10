@@ -1,9 +1,7 @@
 module lucy::lexer;
 
 import std;
-import lucy;
-
-alias TokenList = List{Token};
+import lucy::util, lucy::token;
 
 struct Lexer
 {
@@ -55,9 +53,9 @@ fn char Lexer.peek(&self)
     return self.text[self.pos + 1];
 }
 
-fn TokenList Lexer.tokenize(&self)
+fn Token[] Lexer.tokenize(&self)
 {
-    TokenList tokens;
+    Token[] tokens;
 
     while (self.current != '\0')
     {
@@ -78,32 +76,35 @@ fn TokenList Lexer.tokenize(&self)
         int start_column = self.column;
         int start_line   = self.line;
 
-        if (self.current == '=' && self.peek() == '=') { tokens.push({ IS_EQUAL,  "==", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
-        if (self.current == '!' && self.peek() == '=') { tokens.push({ NOT_EQUAL, "!=", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
-        if (self.current == '>' && self.peek() == '=') { tokens.push({ GT,        ">=", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
-        if (self.current == '<' && self.peek() == '=') { tokens.push({ LTE,       "<=", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
-        if (self.current == '>') { tokens.push({ GT, ">", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '<') { tokens.push({ LT, "<", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '&' && self.peek() == '&') { util::array_insert(&tokens, (Token){ AND, "&&", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
+        if (self.current == '|' && self.peek() == '|') { util::array_insert(&tokens, (Token){ OR,  "||", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
+        
+        if (self.current == '=' && self.peek() == '=') { util::array_insert(&tokens, (Token){ IS_EQUAL,  "==", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
+        if (self.current == '!' && self.peek() == '=') { util::array_insert(&tokens, (Token){ NOT_EQUAL, "!=", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
+        if (self.current == '>' && self.peek() == '=') { util::array_insert(&tokens, (Token){ GT,        ">=", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
+        if (self.current == '<' && self.peek() == '=') { util::array_insert(&tokens, (Token){ LTE,       "<=", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
+        if (self.current == '>') { util::array_insert(&tokens, (Token){ GT, ">", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '<') { util::array_insert(&tokens, (Token){ LT, "<", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
 
-        if (self.current == ';') { tokens.push({ SEMICOLON, ";", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '.') { tokens.push({ PERIOD,    ".", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == ',') { tokens.push({ COMMA,     ",", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '(') { tokens.push({ LPAREN,    "(", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == ')') { tokens.push({ RPAREN,    ")", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '{') { tokens.push({ LBRACE,    "{", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '}') { tokens.push({ RBRACE,    "}", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '[') { tokens.push({ LBRACKET,  "[", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == ']') { tokens.push({ RBRACKET,  "]", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '%') { tokens.push({ PERCENT,   "%", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '@') { tokens.push({ AT,        "@", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '=') { tokens.push({ EQUALS,    "=", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == ':') { tokens.push({ COLON,     ":", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '!') { tokens.push({ BANG,      "!", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == ';') { util::array_insert(&tokens, (Token){ SEMICOLON, ";", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '.') { util::array_insert(&tokens, (Token){ PERIOD,    ".", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == ',') { util::array_insert(&tokens, (Token){ COMMA,     ",", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '(') { util::array_insert(&tokens, (Token){ LPAREN,    "(", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == ')') { util::array_insert(&tokens, (Token){ RPAREN,    ")", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '{') { util::array_insert(&tokens, (Token){ LBRACE,    "{", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '}') { util::array_insert(&tokens, (Token){ RBRACE,    "}", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '[') { util::array_insert(&tokens, (Token){ LBRACKET,  "[", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == ']') { util::array_insert(&tokens, (Token){ RBRACKET,  "]", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '%') { util::array_insert(&tokens, (Token){ PERCENT,   "%", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '@') { util::array_insert(&tokens, (Token){ AT,        "@", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '=') { util::array_insert(&tokens, (Token){ EQUALS,    "=", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == ':') { util::array_insert(&tokens, (Token){ COLON,     ":", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '!') { util::array_insert(&tokens, (Token){ BANG,      "!", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
 
-        if (self.current == '+') { tokens.push({ PLUS,   "+", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '-') { tokens.push({ MINUS,  "-", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '*') { tokens.push({ STAR,   "*", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '/') { tokens.push({ SLASH,  "/", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '+') { util::array_insert(&tokens, (Token){ PLUS,   "+", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '-') { util::array_insert(&tokens, (Token){ MINUS,  "-", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '*') { util::array_insert(&tokens, (Token){ STAR,   "*", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '/') { util::array_insert(&tokens, (Token){ SLASH,  "/", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
 
         if (self.current == '#')
         {
@@ -113,10 +114,10 @@ fn TokenList Lexer.tokenize(&self)
             }
         }
 
-        if (self.current == '"') tokens.push(self.string());
-        if (self.current == '\'') tokens.push(self.character());
-        if (self.current.is_digit()) tokens.push(self.number());
-        if (self.current == '$' || self.current.is_alpha()) tokens.push(self.identifier());
+        if (self.current == '"')                            util::array_insert(&tokens, self.string());
+        if (self.current == '\'')                           util::array_insert(&tokens, self.character());
+        if (self.current.is_digit())                        util::array_insert(&tokens, self.number());
+        if (self.current == '$' || self.current.is_alpha()) util::array_insert(&tokens, self.identifier());
 
         bool consumed = (self.column > start_column) || (self.line > start_line);
         if (!consumed && !self.current.is_space() && self.current != '\0')
@@ -125,7 +126,7 @@ fn TokenList Lexer.tokenize(&self)
         }
     }
 
-    tokens.push({ EOF, "EOF", { self.column, self.column }, self.line, self.get_context_lines() });
+    util::array_insert(&tokens, (Token){ EOF, "EOF", { self.column, self.column }, self.line, self.get_context_lines() });
 
     return tokens;
 }
@@ -299,6 +300,7 @@ fn Token Lexer.identifier(&self)
     if (str == "else")   return { KW_ELSE,   str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "case")   return { KW_CASE,   str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "link")   return { KW_LINK,   str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "null")   return { KW_NULL,   str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "const")  return { KW_CONST,  str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "macro")  return { KW_MACRO,  str, { start, self.column }, self.line, self.get_context_lines() };
     if (str == "while")  return { KW_WHILE,  str, { start, self.column }, self.line, self.get_context_lines() };
@@ -310,16 +312,15 @@ fn Token Lexer.identifier(&self)
     return { IDENTIFIER, str, { start, self.column }, self.line, self.get_context_lines() };
 }
 
-fn StringList Lexer.get_context_lines(&self)
+fn String[] Lexer.get_context_lines(&self)
 {
-    int error_line = self.line;
-    StringList context_lines;
-    int current_pos = 0;
-    int current_line = 1;
-    int line_start = 0;
-    int text_len = self.text.len;
-
-    int start_line = max(1, error_line - 3);
+    int      error_line   = self.line;
+    String[] context_lines;
+    int      current_pos  = 0;
+    int      current_line = 1;
+    int      line_start   = 0;
+    int      text_len     = self.text.len;
+    int      start_line   = max(1, error_line - 3);
 
     while (current_pos < text_len && current_line <= error_line)
     {
@@ -333,7 +334,7 @@ fn StringList Lexer.get_context_lines(&self)
 
             if (line_start <= line_end && line_end < text_len)
             {
-                context_lines.push(self.text[line_start..line_end]);
+                util::array_insert(&context_lines, self.text[line_start..line_end]);
             }
         }
 

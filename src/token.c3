@@ -11,24 +11,21 @@ struct Range
 
 struct Token
 {
-    TokenType    type;
-    String       value;
-    Range        range;
-    int          line;
-    StringList   context_lines;
+    TokenType type;
+    String    value;
+    Range     range;
+    int       line;
+    String[]  ctx;
 }
 
-fn String Token.str_view(&self)
-{
-    return string::tformat("Token(%s, `%s`)", self.type, self.value);
-}
-
-enum TokenType : (String str)
+enum TokenType : const String
 {
     NOT_EQUAL = "`!=`",
     IS_EQUAL  = "`==`",
     GTE       = "`>=`",
     LTE       = "`<=`",
+    AND       = "`&&`",
+    OR        = "`||`",
     LT        = "`>`",
     GT        = "`<`",
 
@@ -48,8 +45,8 @@ enum TokenType : (String str)
     AT        = "`@`",
 
     SLASH = "`/`",
-    MINUS = "`+`",
-    PLUS  = "`-`",
+    MINUS = "`-`",
+    PLUS  = "`+`",
     STAR  = "`*`",
 
     BOOLEAN = "boolean",
@@ -69,6 +66,7 @@ enum TokenType : (String str)
     KW_ELSE   = "else",
     KW_CASE   = "case",
     KW_LINK   = "link",
+    KW_NULL   = "null",
     KW_PKG    = "pkg",
     KW_DEF    = "def",
     KW_USE    = "use",
