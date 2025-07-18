@@ -1,31 +1,33 @@
-module lucy::lookup_table;
+module lucy::types;
 
-import std::io;
 import llvm;
+import libc;
 
-extern fn CInt strcmp(char* s1, char* s2);
+// extern fn CInt strcmp(char* s1, char* s2);
 
 const int TABLE_SIZE               = 256;
 const int BUILTIN_TYPE_FIELD_COUNT = 5; // $typeid, $typekind, $typename, $size, $numfields
 
 struct Field
 {
-    char* name;
-    Type* type;
+    ZString name;
+    Type*   type;
 }
 
 struct Type
 {
-    char*       name;
+    ZString     name;
     Field*      fields;
     int         num_fields;
     LLVMTypeRef llvm_type;
     int         type_id;
+    bool        is_array;
+    bool        is_pointer;
 }
 
 struct TypeEntry
 {
-    char*      key;
+    ZString    key;
     Type*      value;
     TypeEntry* next;
 }
@@ -52,23 +54,24 @@ fn void TypeTable.insert(&self, Type* type)
     uint slot = hash((*type).name);
     TypeEntry* entry = malloc(TypeEntry.sizeof);
     
-    (*entry).key          = (*type).name;
-    (*entry).value        = type;
-    (*entry).next         = (*self).entries[slot];
-    (*self).entries[slot] = entry;
+    (*entry).key           = type.name;
+    (*entry).value         = type;
+    (*entry).next          = self.entries[slot];
+    (*self) .entries[slot] = entry;
 }
 
-fn Type* TypeTable.lookup(&self, char* name)
+fn Type* TypeTable.lookup(&self, String name_in)
 {
+    ZString name = name_in.zstr_copy(mem);
     uint slot = hash(name);
-    TypeEntry* entry = (*self).entries[slot];
+    TypeEntry* entry = self.entries[slot];
     while (entry != null)
     {
-        if (strcmp((*entry).key, name) == 0)
+        if (libc::strcmp(entry.key, name) == 0)
         {
-            return (entry).value;
+            return entry.value;
         }
-        entry = (*entry).next;
+        entry = entry.next;
     }
 
     return null;
@@ -82,6 +85,7 @@ fn void TypeTable.init(&self, int type_id = 0)
     }
     self.type_id = type_id;
 
+    self.insert_type("void",   null, llvm::void_type());
     self.insert_type("int",    null, llvm::int32_type());
     self.insert_type("float",  null, llvm::float_type());
     self.insert_type("str",    null, llvm::pointer_type(llvm::int8_type(), 0));
@@ -187,8 +191,9 @@ fn void TypeTable.init_double_type(&self)
     (*type).fields = fields;
 }
 
-fn void TypeTable.insert_type(&self, char* name, Field* fields, LLVMTypeRef llvm_type) @private
+fn void TypeTable.insert_type(&self, String name_in, Field* fields, LLVMTypeRef llvm_type, bool is_array = false, bool is_pointer = false)
 {
+    ZString name = name_in.zstr_copy(mem);
     Type* type = malloc(Type.sizeof);
     (*type).name      = name;
     (*type).fields    = fields;
@@ -198,26 +203,28 @@ fn void TypeTable.insert_type(&self, char* name, Field* fields, LLVMTypeRef llvm
     self.insert(type);
 }
 
-fn Type* Type.get_field_type(&self, char* field_name)
+fn Type* Type.get_field_type(&self, String field_name_in)
 {
-    if (!self || !(*self).fields) return null;
-    for (Field* f = (*self).fields; (*f).name != null; f++)
+    ZString field_name = field_name_in.zstr_copy(mem);
+    if (!self || !self.fields) return null;
+    for (Field* f = self.fields; f.name != null; f++)
     {
-        if (strcmp((*f).name, field_name) == 0)
+        if (libc::strcmp(f.name, field_name) == 0)
         {
-            return (*f).type;
+            return f.type;
         }
     }
     return null;
 }
 
-fn Field* Type.get_field(&self, char* field_name)
+fn Field* Type.get_field(&self, String field_name_in)
 {
-    if (!self || !(*self).fields) return null;
+    ZString field_name = field_name_in.zstr_copy(mem);
+    if (!self || !self.fields) return null;
     
-    for (Field* f = (*self).fields; (*f).name != null; f++)
+    for (Field* f = self.fields; f.name != null; f++)
     {
-        if (strcmp((*f).name, field_name) == 0) // strcmp errors???
+        if (libc::strcmp(f.name, field_name) == 0)
         {
             return f;
         }
@@ -225,17 +232,18 @@ fn Field* Type.get_field(&self, char* field_name)
     return null;
 }
 
-fn bool TypeTable.has(&self, char* name)
+fn bool TypeTable.has(&self, String name_in)
 {
+    ZString name = name_in.zstr_copy(mem);
     uint slot = hash(name);
-    TypeEntry* entry = (*self).entries[slot];
+    TypeEntry* entry = self.entries[slot];
     while (entry != null)
     {
-        if (strcmp((*entry).key, name) == 0)
+        if (libc::strcmp(entry.key, name) == 0)
         {
             return true;
         }
-        entry = (*entry).next;
+        entry = entry.next;
     }
 
     return false;

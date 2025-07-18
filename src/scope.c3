@@ -1,48 +1,37 @@
 module lucy::scope;
 
-const FMT = "Could not find variable `%s` in current scope (%s:%s)";
-
-
-module lucy::scope::comp;
-
-import std::io, std::os, std::collections::map;
+import std::collections::map, std::io;
 import llvm;
-import lucy::node, lucy::util;
+import lucy::node, lucy::util, lucy::types;
 
 struct Scope
 {
-    Scope*                 parent;
-    HashMap{String, Var}   variables;
-    HashMap{String, Const} constants;
-    HashMap{String, Param} parameters;
+    Scope*                        parent;
+    HashMap{ String, Var        } variables;
+    HashMap{ String, Const      } constants;
+    HashMap{ String, Param      } parameters;
+    HashMap{ String, Def        } functions;
+    HashMap{ String, StructNode } structs;
 }
 
-struct Var
-{
-    String       type;
-    LLVMValueRef value;
-}
+struct Var   { String type; ASTNode* node; LLVMValueRef value; }
+struct Const { String type; ASTNode* node; LLVMValueRef value; }
+struct Param { String type; ASTNode* node; LLVMValueRef value; }
+struct Def   { String type; ASTNode* node; LLVMValueRef value; }
 
-struct Const
+fn Scope* new()
 {
-    ConstNode    node;
-    String       type;
-    LLVMValueRef value;
-}
+    Scope* scope    = malloc(Scope.sizeof);
+    (*scope).parent = null;
 
-struct Param
-{
-    String       type;
-    LLVMValueRef value;
+    return scope;
 }
 
 fn Scope* Scope.new(&self)
 {
-    Scope* scope        = malloc(Scope.sizeof);
-    (*scope).parent     = self;
-    (*scope).variables  = {};
-    (*scope).constants  = {};
-    (*scope).parameters = {};
+    Scope* scope    = malloc(Scope.sizeof);
+    (*scope).parent = self;
+
     return scope;
 }
 
@@ -68,206 +57,92 @@ fn bool Scope.has(&self, String name)
 
 fn ScopeResult Scope.get(&self, String name)
 {
-    if (self.has_var(name))
-    {
-        return { .type = VAR, .variable = self.get_var(name) };
-    }
-    if (self.has_const(name))
-    {
-        return { .type = CONST, .constant = self.get_const(name) };
-    }
-    if (self.has_param(name))
-    {
-        return { .type = PARAM, .parameter = self.get_param(name) };
-    }
+    if (self.has_var(name))   return { .type = VAR,   .variable  = self.get_var(name)   };
+    if (self.has_const(name)) return { .type = CONST, .constant  = self.get_const(name) };
+    if (self.has_param(name)) return { .type = PARAM, .parameter = self.get_param(name) };
 
-    util::panic("Unreachable", $$FILE, $$LINE);
+    util::panic("Unreachable", $$FILE, $$LINE, $$FUNC);
 }
 
 fn Var Scope.get_var(&self, String name)
 {
-    if (self.variables.has_key(name))
-    {
-        return self.variables.get(name)!!;
-    }
+    if (self.variables.has_key(name)) return self.variables.get(name)!!;
+    if (self.parent != null)          return self.parent.get_var(name);
 
-    if (self.parent != null)
-    {
-        return (*self.parent).get_var(name);
-    }
-
-    io::eprintfn(scope::FMT, name, $$FILE, $$LINE);
-    os::exit(1);
+    util::panic("Unreachable", $$FILE, $$LINE, $$FUNC);
 }
 
 fn Const Scope.get_const(&self, String name)
 {
-    if (self.constants.has_key(name))
-    {
-        return self.constants.get(name)!!;
-    }
+    if (self.constants.has_key(name)) return self.constants.get(name)!!;
+    if (self.parent != null)          return self.parent.get_const(name);
 
-    if (self.parent != null)
-    {
-        return (*self.parent).get_const(name);
-    }
-
-    io::eprintfn(scope::FMT, name, $$FILE, $$LINE);
-    os::exit(1);
+    util::panic("Unreachable", $$FILE, $$LINE, $$FUNC);
 }
 
 fn Param Scope.get_param(&self, String name)
 {
-    if (self.parameters.has_key(name))
-    {
-        return self.parameters.get(name)!!;
-    }
+    if (self.parameters.has_key(name)) return self.parameters.get(name)!!;
+    if (self.parent != null)           return self.parent.get_param(name);
 
-    if (self.parent != null)
-    {
-        return (*self.parent).get_param(name);
-    }
+    util::panic("Unreachable", $$FILE, $$LINE, $$FUNC);
+}
 
-    io::eprintfn(scope::FMT, name, $$FILE, $$LINE);
-    os::exit(1);
+fn Def Scope.get_def(&self, String name)
+{
+    if (self.functions.has_key(name)) return self.functions.get(name)!!;
+    if (self.parent != null)          return self.parent.get_def(name);
+    
+    util::panic("Unreachable", $$FILE, $$LINE, $$FUNC);
 }
 
 fn bool Scope.has_var(&self, String name)
 {
-    if (self.variables.has_key(name))
-    {
-        return true;
-    }
-
-    if (self.parent != null)
-    {
-        return (*self.parent).has_var(name);
-    }
+    if (self.variables.has_key(name)) return true;
+    if (self.parent != null)          return self.parent.has_var(name);
     
     return false;
 }
 
 fn bool Scope.has_const(&self, String name)
 {
-    if (self.constants.has_key(name))
-    {
-        return true;
-    }
-
-    if (self.parent != null)
-    {
-        return (*self.parent).has_const(name);
-    }
+    if (self.constants.has_key(name)) return true;
+    if (self.parent != null)          return self.parent.has_const(name);
     
     return false;
 }
 
 fn bool Scope.has_param(&self, String name)
 {
-    if (self.parameters.has_key(name))
-    {
-        return true;
-    }
-
-    if (self.parent != null)
-    {
-        return (*self.parent).has_param(name);
-    }
+    if (self.parameters.has_key(name)) return true;
+    if (self.parent != null)           return self.parent.has_param(name);
     
     return false;
 }
 
-
-module lucy::scope::sema;
-
-import std::io, std::os, std::collections::map;
-import llvm;
-import lucy::node;
-
-struct SemScope
+fn bool Scope.has_def(&self, String name)
 {
-    SemScope*                  parent;
-    HashMap{String, SemVar}    variables;
-    HashMap{String, SemConst}  constants;
-}
-
-struct SemVar
-{
-    ASTNode node;
-    String  type;
-}
-
-struct SemConst
-{
-    ASTNode node;
-    String  type;
-}
-
-fn SemScope* SemScope.new(&self)
-{
-    SemScope* scope    = malloc(SemScope.sizeof);
-    (*scope).parent    = self;
-    (*scope).variables = {};
-    (*scope).constants = {};
-    return scope;
-}
-
-fn SemVar SemScope.get_var(&self, String name)
-{
-    if (self.variables.has_key(name))
-    {
-        return self.variables.get(name)!!;
-    }
-
-    if (self.parent != null)
-    {
-        return (*self.parent).get_var(name);
-    }
-    
-    return {};
-}
-
-fn SemConst SemScope.get_const(&self, String name)
-{
-    if (self.constants.has_key(name))
-    {
-        return self.constants.get(name)!!;
-    }
-
-    if (self.parent != null)
-    {
-        return (*self.parent).get_const(name);
-    }
-
-    return {};
-}
-
-fn bool SemScope.has_var(&self, String name)
-{
-    if (self.variables.has_key(name))
-    {
-        return true;
-    }
-
-    if (self.parent != null)
-    {
-        return (*self.parent).has_var(name);
-    }
+    if (self.functions.has_key(name)) return true;
+    if (self.parent != null)          return self.parent.has_def(name);
     
     return false;
 }
 
-fn bool SemScope.has_const(&self, String name)
+fn StructNode[] Scope.get_all_structs(&self)
 {
-    if (self.constants.has_key(name))
+    StructNode[] out;
+
+    foreach (s : self.structs.values(mem))
     {
-        return true;
+        util::array_insert(&out, s);
+    }
+    if (self.parent)
+    {
+        foreach (s : self.parent.structs.values(mem))
+        {
+            util::array_insert(&out, s);
+        }
     }
 
-    if (self.parent != null)
-    {
-        return (*self.parent).has_const(name);
-    }
-    
-    return false;
+    return out;
 }

@@ -122,7 +122,7 @@ fn Token[] Lexer.tokenize(&self)
         bool consumed = (self.column > start_column) || (self.line > start_line);
         if (!consumed && !self.current.is_space() && self.current != '\0')
         {
-            util::panic(string::tformat("Undefined character `%s`", (String){self.current}), $$FILE, $$LINE);
+            util::panicf("Undefined character `%s`", (String){self.current}, file: $$FILE, line: $$LINE, function: $$FUNC);
         }
     }
 

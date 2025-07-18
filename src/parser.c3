@@ -1,7 +1,6 @@
 module lucy::parser;
 
 import lucy::lexer, lucy::node, lucy::token, lucy::errors, lucy::util;
-import std::io;
 
 struct Parser
 {
@@ -28,7 +27,14 @@ fn void  Parser.try_consume(&self, TokenType expected)
 {
     if (self.current().type != expected)
     {
-        errors::print(self.path, self.current(), string::format(mem, "Expected token %s, got %s", expected, self.current().type));
+        Token last = self.last();
+        switch (expected)
+        {
+            case SEMICOLON:
+                Range range = { last.range.end, last.range.end + 1 };
+                errors::print_range(self.path, last.line, range, last.ctx, "`;` expected after statement");
+            default:        errors::print(self.path, self.current(), string::format(mem, "Expected token %s, got %s", expected, self.current().type));
+        }
     }
     self.consume();
 }
@@ -447,35 +453,25 @@ fn ASTNode* Parser.parse_var(&self)
     return node;
 }
 
-fn ASTNode* Parser.parse_condition(&self)
-{
-    ASTNode* node = self.parse_expression();
-
-    while (util::in((TokenType[]){ AND, OR }, self.current().type))
-    {
-        String operator = self.current().value;
-        self.consume();
-
-        ASTNode* left = malloc(ASTNode.sizeof);
-        *left = *node;
-        *node = { BIN, { .bin_node = { operator, left, self.parse_expression() } }, {}, 0, {} };
-    }
-
-    return node;
-}
-
 fn ASTNode* Parser.parse_expression(&self)
 {
-    ASTNode* node = self.parse_term();
+    ASTNode* node  = self.parse_term();
+    int      start = node.range.start;
+    int      line  = node.line;
+    String[] ctx   = node.ctx;
 
-    while (util::in((TokenType[]){ PLUS, MINUS, STAR, SLASH, IS_EQUAL, NOT_EQUAL, GTE, LTE, GT, LT }, self.current().type))
+    while (util::in((TokenType[]){ PLUS, MINUS, IS_EQUAL, NOT_EQUAL, GTE, LTE, GT, LT, AND, OR }, self.current().type))
     {
         String operator = self.current().value;
         self.consume();
         
         ASTNode* left = malloc(ASTNode.sizeof);
         *left = *node;
-        *node = { BIN, { .bin_node = { operator, left, self.parse_term() } }, {}, 0, {} };
+        
+        ASTNode* right = self.parse_term();
+        int      end   = right.range.end;
+
+        *node = { BIN, { .bin_node = { operator, left, right } }, { start, end }, line, ctx };
     }
 
     return node;
@@ -483,9 +479,36 @@ fn ASTNode* Parser.parse_expression(&self)
 
 fn ASTNode* Parser.parse_term(&self)
 {
+    ASTNode* node  = self.parse_factor();
+    int      start = node.range.start;
+    int      line  = node.line;
+    String[] ctx   = node.ctx;
+
+    while (util::in((TokenType[]){ STAR, SLASH }, self.current().type))
+    {
+        String operator = self.current().value;
+        self.consume();
+        
+        ASTNode* left = malloc(ASTNode.sizeof);
+        *left = *node;
+        
+        ASTNode* right = self.parse_factor();
+        int      end   = right.range.end;
+
+        *node = { BIN, { .bin_node = { operator, left, right } }, { start, end }, line, ctx };
+    }
+
+    return node;
+}
+
+fn ASTNode* Parser.parse_factor(&self)
+{
     switch (self.current().type)
     {
         case CHAR:       return self.parse_char();
+        case PLUS:
+        case BANG:
+        case MINUS:      return self.parse_unary();
         case FLOAT:      return self.parse_float();
         case LBRACE:     return self.parse_init();
         case DOUBLE:     return self.parse_double();
@@ -494,6 +517,8 @@ fn ASTNode* Parser.parse_term(&self)
             self.consume();
             ASTNode* expression = self.parse_expression();
             self.try_consume(RPAREN);
+            (*expression).range.start--;
+            (*expression).range.end++;
             return expression;
         case BOOLEAN:    return self.parse_bool();
         case INTEGER:    return self.parse_int();
@@ -765,9 +790,9 @@ fn ASTNode* Parser.parse_while(&self)
     int      line    = current.line;
     String[] ctx     = current.ctx;
 
-    self.try_consume(KW_WHILE);
+    self.consume();
     self.try_consume(LPAREN);
-    ASTNode* condition = self.parse_condition();
+    ASTNode* condition = self.parse_expression();
     self.try_consume(RPAREN);
     ASTNode*[] children = self.parse_body();
 
@@ -788,7 +813,7 @@ fn ASTNode* Parser.parse_reassign(&self)
 
     ASTNode* identifier = self.parse_single_identifier();
     self.try_consume(EQUALS);
-    ASTNode* value = self.parse_condition();
+    ASTNode* value = self.parse_expression();
 
     int end = self.last().range.end;
 
@@ -805,11 +830,11 @@ fn ASTNode* Parser.parse_for(&self)
     int      line    = current.line;
     String[] ctx     = current.ctx;
 
-    self.try_consume(KW_FOR);
+    self.consume();
     self.try_consume(LPAREN);
 
     ASTNode* statement  = self.parse_var();
-    ASTNode* condition  = self.parse_condition();
+    ASTNode* condition  = self.parse_expression();
     self.try_consume(SEMICOLON);
     ASTNode* expression = self.parse_expression();
 
@@ -870,16 +895,16 @@ fn ASTNode* Parser.parse_return(&self)
     int      line    = current.line;
     String[] ctx     = current.ctx;
 
-    self.try_consume(KW_RETURN);
+    self.consume();
 
     ASTNode*[] values;
     if (self.current().type != SEMICOLON)
     {
-        util::array_insert(&values, self.parse_condition());
+        util::array_insert(&values, self.parse_expression());
         while (self.current().type == COMMA)
         {
             self.consume();
-            util::array_insert(&values, self.parse_condition());
+            util::array_insert(&values, self.parse_expression());
         }
     }
 
@@ -900,9 +925,9 @@ fn ASTNode* Parser.parse_if(&self)
     int      line    = current.line;
     String[] ctx     = current.ctx;
 
-    self.try_consume(KW_IF);
+    self.consume();
     self.try_consume(LPAREN);
-    ASTNode* condition = self.parse_condition();
+    ASTNode* condition = self.parse_expression();
     self.try_consume(RPAREN);
 
     ASTNode*[] children = self.parse_body();
@@ -939,9 +964,9 @@ fn ASTNode* Parser.parse_switch(&self)
     int      line    = current.line;
     String[] ctx     = current.ctx;
 
-    self.try_consume(KW_SWITCH);
+    self.consume();
     self.try_consume(LPAREN);
-    ASTNode* condition = self.parse_condition();
+    ASTNode* condition = self.parse_expression();
     self.try_consume(RPAREN);
 
     self.try_consume(LBRACE);
@@ -968,8 +993,8 @@ fn ASTNode* Parser.parse_case(&self)
     int      line    = current.line;
     String[] ctx     = current.ctx;
 
-    self.try_consume(KW_CASE);
-    ASTNode* condition = self.parse_condition();
+    self.consume();
+    ASTNode* condition = self.parse_expression();
     self.try_consume(COLON);
 
     ASTNode*[] children;
@@ -998,7 +1023,7 @@ fn ASTNode* Parser.parse_const(&self)
     ASTNode* name = self.parse_single_identifier();
 
     self.try_consume(EQUALS);
-    ASTNode* value = self.parse_condition();
+    ASTNode* value = self.parse_expression();
 
     self.try_consume(SEMICOLON);
 
@@ -1026,6 +1051,26 @@ fn ASTNode* Parser.parse_macro(&self)
     int end = self.last().range.end;
 
     *node = { MACRO, { .macro_node = { type, name, parameters, children } }, { start, end }, line, ctx };
+
+    return node;
+}
+
+fn ASTNode* Parser.parse_unary(&self)
+{
+    ASTNode* node    = malloc(ASTNode.sizeof);
+    Token    current = self.current();
+    int      start   = current.range.start;
+    int      line    = current.line;
+    String[] ctx     = current.ctx;
+
+    String operator = self.current().value;
+    self.consume();
+
+    ASTNode* value = self.parse_expression();
+
+    int end = self.last().range.end;
+
+    *node = { UNARY, { .unary_node = { operator, value } }, { start, end }, line, ctx };
 
     return node;
 }

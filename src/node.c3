@@ -95,18 +95,18 @@ struct ASTNode
 
 struct PkgNode       { ASTNode* path; }
 struct PathNode      { ASTNode*[] segments; }
-struct FileNode      { ASTNode[] linker_options; ASTNode* module_name; ASTNode*[] statements; }
+struct FileNode      { ASTNode[] linker_options; ASTNode* pkg; ASTNode*[] statements; }
 struct UseNode       { ASTNode* path; }
 struct ParameterNode { bool is_vararg; ASTNode* type; ASTNode* name; }
 struct DefNode       { ASTNode* type; ASTNode* name; ASTNode*[] parameters; ASTNode*[] children; }
 struct ReturnNode    { ASTNode*[] values; }
 struct IntNode       { String value; }
 struct StrNode       { String value; }
-struct BinNode       { String op; ASTNode* left; ASTNode* right; }
+struct BinNode       { String operator; ASTNode* left; ASTNode* right; }
 struct DoubleNode    { String value; }
 struct FloatNode     { String value; }
 struct BoolNode      { String value; }
-struct ExtNode       { ASTNode* type; ASTNode* name; ASTNode*[] parameters; ASTNode* alias_name; }
+struct ExtNode       { ASTNode* type; ASTNode* name; ASTNode*[] parameters; ASTNode* aka; }
 struct LinkNode      { ASTNode* name; }
 struct ConstNode     { ASTNode* type; ASTNode* name; ASTNode* value; }
 struct GlobalNode    { ASTNode* node; }
@@ -120,11 +120,11 @@ struct FieldNode     { ASTNode* type; ASTNode* name; }
 struct StructNode    { ASTNode* name; ASTNode*[] fields; }
 struct InitNode      { ASTNode*[] values; }
 struct InitValueNode { ASTNode* name; ASTNode* value; }
-struct AccessNode    { ASTNode* identifier; ASTNode* next; }
+struct AccessNode    { ASTNode* expr; ASTNode* next; }
 struct MacroNode     { ASTNode* type; ASTNode* name; ASTNode*[] parameters; ASTNode*[] children; }
 struct UnaryNode     { String operator; ASTNode* expr; }
 struct WhileNode     { ASTNode* condition; ASTNode*[] children; }
-struct SwitchNode    { ASTNode* expr; ASTNode*[] cases; }
+struct SwitchNode    { ASTNode* expression; ASTNode*[] cases; }
 struct CaseNode      { ASTNode* condition; ASTNode*[] children; }
 struct IncNode       { ASTNode* identifier; String operator; }
 struct ForNode       { ASTNode* statement; ASTNode* condition; ASTNode* expression; ASTNode*[] children; }

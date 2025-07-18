@@ -3,8 +3,9 @@ link<raylib>;
 
 pkg main;
 
-use std.io;
-use std.math;
+#use std.io;
+#use std.math;
+use std.libc;
 
 ext void printf(str fmt, var str args);
 ext void CloseWindow() as close_window;
@@ -27,48 +28,62 @@ def void main()
     {
         .t = 1
     };
+
+    #io.printn(1);
+
+    # t1.t;
+
     var (Test, str) t3, s = test();
     var double      d1    = 1.0;
     var float       f1    = 1.0f;
     var bool        b1    = true;
     var str         s1    = "Test";
     var char        c1    = 'a';
+    var int         u1    = -1;
+    var bool        u2    = !true;
 
-    io.printn(math.pow(3, 2));
-    io.printn(math.PI);
+    #mama(0, "", "", "0", "true");
+    #mama(0, "");
+    #lol(0, "0", true);
+
+    #math.pow(1, 1);
+    #math.test("lol");
+
+    #io.printn(math.pow(3, 2));
+    #io.printn(math.PI);
 
     var int i = 0;
     while (i < 5)
     {
-        io.printn(i);
-        i = i + 1;
+        #io.printn(i);
+        i++;
     }
 
     for (var int j = 0; j < 5; j++)
     {
-        io.printn(j);
+        #io.printn(j);
     }
 
     if (true)
     {
-        io.printn(1);
+        #io.printn(1);
     } else if (false)
     {
-        io.printn(0);
+        #io.printn(0);
     } else
     {
-        io.printn(69);
+        #io.printn(69);
     }
 
     var int i2 = 7 + 3 * (10 / (12 / (3 + 1) - 1)) / (2 + 3) - 5 - 3 + (8);
 
-    switch (t)
+    switch (1)
     {
-        case 0:  io.printn(0);
-        case 1:  io.printn(1);
-        case 2:  io.printn(2);
-        case 3:  io.printn(3);
-        case 4:  io.printn(4);
+        case 0:  #io.printn(0);
+        case 1:  #io.printn(1);
+        case 2:  #io.printn(2);
+        case 3:  #io.printn(3);
+        case 4:  #io.printn(4);
     }
 }
 
@@ -77,7 +92,12 @@ def (Test, str) test()
     return { 0 }, "hello";
 }
 
-macro void mama(a, str b, var str c)
-{
-    
-}
+#macro void mama(a, var LOl b)
+#{
+#    libc.printf(a, b);
+#}
+
+#macro void lol(a, str b, bool c, var d)
+#{
+#    
+#}

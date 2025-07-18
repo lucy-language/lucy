@@ -1,27 +1,25 @@
-link<c>;
-
 pkg std.io;
 
-ext int printf(str fmt, var str args);
+use std.libc;
 
 macro void printn(x)
 {
     switch (x.$typekind)
     {
-        case "STRUCT": printf("<%s>", x.$typename);
+        case "STRUCT": libc.printf("<%s>", x.$typename);
         case "BUILTIN":
             switch (x.$typeid)
             {
-                case str.$typeid:    printf("%s", x);
-                case int.$typeid:    printf("%d", x);
-                case double.$typeid: printf("%.32f", x);
+                case str.$typeid:    libc.printf("%s", x);
+                case int.$typeid:    libc.printf("%d", x);
+                case double.$typeid: libc.printf("%.32f", x);
                 case bool.$typeid:
                     switch (x)
                     {
-                        case true:  printf("true");
-                        case false: printf("false");
+                        case true:  libc.printf("true");
+                        case false: libc.printf("false");
                     }
             }
     }
-    printf("\n");
+    libc.printf("\n");
 }

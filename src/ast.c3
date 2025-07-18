@@ -54,7 +54,7 @@ struct GlobalJson    { NodeType node_type; ASTNode node; }
 struct FloatJson     { NodeType node_type; String value; }
 struct ConstJson     { NodeType node_type; ASTNode type; ASTNode name; ASTNode value; }
 struct IdentJson     { NodeType node_type; String name; }
-struct FileJson      { NodeType node_type; ASTNode[] linker_options; ASTNode module_name; ASTNode[] statements; }
+struct FileJson      { NodeType node_type; ASTNode[] linker_options; ASTNode pkg; ASTNode[] statements; }
 struct BoolJson      { NodeType node_type; String value; }
 struct CallJson      { NodeType node_type; ASTNode name; ASTNode[] arguments; }
 struct CharJson      { NodeType node_type; String value; }
@@ -62,8 +62,8 @@ struct UseJson       { NodeType node_type; ASTNode path; }
 struct DefJson       { NodeType node_type; ASTNode type; ASTNode name; ASTNode[] parameters; ASTNode[] children; }
 struct IntJson       { NodeType node_type; String value; }
 struct StrJson       { NodeType node_type; String value; }
-struct BinJson       { NodeType node_type; String op; ASTNode left; ASTNode right; }
-struct ExtJson       { NodeType node_type; ASTNode type; ASTNode name; ASTNode[] parameters; ASTNode alias_name; }
+struct BinJson       { NodeType node_type; String operator; ASTNode left; ASTNode right; }
+struct ExtJson       { NodeType node_type; ASTNode type; ASTNode name; ASTNode[] parameters; ASTNode aka; }
 struct VarJson       { NodeType node_type; ASTNode type; ASTNode[] names; ASTNode value; }
 struct VarJson2      { NodeType node_type; String[] types; String[] names; String value; }
 struct IfJson        { NodeType node_type; ASTNode condition; ASTNode[] children; ASTNode else_if; ASTNode[] else_children; }
@@ -71,11 +71,11 @@ struct FieldJson     { NodeType node_type; ASTNode type; ASTNode name; }
 struct StructJson    { NodeType node_type; ASTNode name; ASTNode[] fields; }
 struct InitJson      { NodeType node_type; ASTNode[] values; }
 struct InitValueJson { NodeType node_type; ASTNode name; ASTNode value; }
-struct AccessJson    { NodeType node_type; ASTNode idendifier; ASTNode next; }
+struct AccessJson    { NodeType node_type; ASTNode expr; ASTNode next; }
 struct MacroJson     { NodeType node_type; ASTNode type; ASTNode name; ASTNode[] parameters; ASTNode[] children; }
 struct UnaryJson     { NodeType node_type; String operator; ASTNode expr; }
 struct WhileJson     { NodeType node_type; ASTNode condition; ASTNode[] children; }
-struct SwitchJson    { NodeType node_type; ASTNode expr; ASTNode[] cases; }
+struct SwitchJson    { NodeType node_type; ASTNode expression; ASTNode[] cases; }
 struct CaseJson      { NodeType node_type; ASTNode condition; ASTNode[] children; }
 struct IncJson       { NodeType node_type; ASTNode identifier; String operator; }
 struct ForJson       { NodeType node_type; ASTNode statement; ASTNode condition; ASTNode expression; ASTNode[] children; }
@@ -92,7 +92,7 @@ fn void? GlobalNode   .to_json(&self, DString* dest, int indent, int indent_leve
 fn void? FloatNode    .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((FloatJson){ FLOAT, self.value }, dest, indent, indent_level)!;
 fn void? ConstNode    .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((ConstJson){ CONST, *self.type, *self.name, *self.value}, dest, indent, indent_level)!;
 fn void? IdentNode    .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((IdentJson){ IDENT, self.name }, dest, indent, indent_level)!;
-fn void? FileNode     .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((FileJson){ FILE, self.linker_options, *self.module_name, ref_arr(self.statements) }, dest, indent, indent_level)!;
+fn void? FileNode     .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((FileJson){ FILE, self.linker_options, *self.pkg, ref_arr(self.statements) }, dest, indent, indent_level)!;
 fn void? BoolNode     .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((BoolJson){ BOOL, self.value }, dest, indent, indent_level)!;
 fn void? CallNode     .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((CallJson){ CALL, *self.name, ref_arr(self.arguments) }, dest, indent, indent_level)!;
 fn void? CharNode     .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((CharJson){ CHAR, self.value }, dest, indent, indent_level)!;
@@ -100,19 +100,19 @@ fn void? UseNode      .to_json(&self, DString* dest, int indent, int indent_leve
 fn void? DefNode      .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((DefJson){ DEF, *self.type, *self.name, ref_arr(self.parameters), ref_arr(self.children) }, dest, indent, indent_level)!;
 fn void? IntNode      .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((IntJson){ INT, self.value }, dest, indent, indent_level)!;
 fn void? StrNode      .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((StrJson){ STR, self.value }, dest, indent, indent_level)!;
-fn void? BinNode      .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((BinJson){ BIN, self.op, *self.left, *self.right }, dest, indent, indent_level)!;
-fn void? ExtNode      .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((ExtJson){ EXT, *self.type, *self.name, ref_arr(self.parameters), *self.alias_name }, dest, indent, indent_level)!;
+fn void? BinNode      .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((BinJson){ BIN, self.operator, *self.left, *self.right }, dest, indent, indent_level)!;
+fn void? ExtNode      .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((ExtJson){ EXT, *self.type, *self.name, ref_arr(self.parameters), *self.aka }, dest, indent, indent_level)!;
 fn void? VarNode      .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((VarJson){ VAR, *self.type, ref_arr(self.names), *self.value }, dest, indent, indent_level)!;
 fn void? IfNode       .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((IfJson){ IF, *self.condition, ref_arr(self.children), *self.else_if, ref_arr(self.else_children) }, dest, indent, indent_level)!;
 fn void? FieldNode    .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((FieldJson){ FIELD, *self.type, *self.name }, dest, indent, indent_level)!;
 fn void? StructNode   .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((StructJson){ STRUCT, *self.name, ref_arr(self.fields) }, dest, indent, indent_level)!;
 fn void? InitNode     .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((InitJson){ INIT, ref_arr(self.values) }, dest, indent, indent_level)!;
 fn void? InitValueNode.to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((InitValueJson){ INIT_VALUE, *self.name, *self.value }, dest, indent, indent_level)!;
-fn void? AccessNode   .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((AccessJson){ ACCESS, *self.identifier, *self.next }, dest, indent, indent_level)!;
+fn void? AccessNode   .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((AccessJson){ ACCESS, *self.expr, *self.next }, dest, indent, indent_level)!;
 fn void? MacroNode    .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((MacroJson){ MACRO, *self.type, *self.name, ref_arr(self.parameters), ref_arr(self.children) }, dest, indent, indent_level)!;
 fn void? UnaryNode    .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((UnaryJson){ UNARY, self.operator, *self.expr }, dest, indent, indent_level)!;
 fn void? WhileNode    .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((WhileJson){ WHILE, *self.condition, ref_arr(self.children) }, dest, indent, indent_level)!;
-fn void? SwitchNode   .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((SwitchJson){ SWITCH, *self.expr, ref_arr(self.cases) }, dest, indent, indent_level)!;
+fn void? SwitchNode   .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((SwitchJson){ SWITCH, *self.expression, ref_arr(self.cases) }, dest, indent, indent_level)!;
 fn void? CaseNode     .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((CaseJson){ CASE, *self.condition, ref_arr(self.children) }, dest, indent, indent_level)!;
 fn void? IncNode      .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((IncJson){ INC, *self.identifier, self.operator }, dest, indent, indent_level)!;
 fn void? ForNode      .to_json(&self, DString* dest, int indent, int indent_level) => serialize::add_json((ForJson){ FOR, *self.statement, *self.condition, *self.expression, ref_arr(self.children) }, dest, indent, indent_level)!;
