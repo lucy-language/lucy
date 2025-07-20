@@ -25,3 +25,13 @@ macro void test(str x)
 {
     libc.printf("%s\n", x);
 }
+
+def (str, int, bool) hello()
+{
+    
+}
+
+macro bool mac()
+{
+    
+}

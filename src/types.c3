@@ -1,9 +1,6 @@
 module lucy::types;
 
 import llvm;
-import libc;
-
-// extern fn CInt strcmp(char* s1, char* s2);
 
 const int TABLE_SIZE               = 256;
 const int BUILTIN_TYPE_FIELD_COUNT = 5; // $typeid, $typekind, $typename, $size, $numfields
@@ -67,7 +64,7 @@ fn Type* TypeTable.lookup(&self, String name_in)
     TypeEntry* entry = self.entries[slot];
     while (entry != null)
     {
-        if (libc::strcmp(entry.key, name) == 0)
+        if (entry.key == name)
         {
             return entry.value;
         }
@@ -209,7 +206,7 @@ fn Type* Type.get_field_type(&self, String field_name_in)
     if (!self || !self.fields) return null;
     for (Field* f = self.fields; f.name != null; f++)
     {
-        if (libc::strcmp(f.name, field_name) == 0)
+        if (f.name == field_name)
         {
             return f.type;
         }
@@ -224,7 +221,7 @@ fn Field* Type.get_field(&self, String field_name_in)
     
     for (Field* f = self.fields; f.name != null; f++)
     {
-        if (libc::strcmp(f.name, field_name) == 0)
+        if (f.name == field_name)
         {
             return f;
         }
@@ -239,7 +236,7 @@ fn bool TypeTable.has(&self, String name_in)
     TypeEntry* entry = self.entries[slot];
     while (entry != null)
     {
-        if (libc::strcmp(entry.key, name) == 0)
+        if (entry.key == name)
         {
             return true;
         }
@@ -247,4 +244,23 @@ fn bool TypeTable.has(&self, String name_in)
     }
 
     return false;
+}
+
+fn void TypeTable.append_builtin_type_fields(&self, Field* fields, int offset)
+{
+    // typeid, typekind, typename, size, numfields
+    ((Field[])fields[:offset + BUILTIN_TYPE_FIELD_COUNT])[offset + 0].name = "$typeid";
+    ((Field[])fields[:offset + BUILTIN_TYPE_FIELD_COUNT])[offset + 0].type = self.lookup("int");
+
+    ((Field[])fields[:offset + BUILTIN_TYPE_FIELD_COUNT])[offset + 1].name = "$typekind";
+    ((Field[])fields[:offset + BUILTIN_TYPE_FIELD_COUNT])[offset + 1].type = self.lookup("str");
+
+    ((Field[])fields[:offset + BUILTIN_TYPE_FIELD_COUNT])[offset + 2].name = "$typename";
+    ((Field[])fields[:offset + BUILTIN_TYPE_FIELD_COUNT])[offset + 2].type = self.lookup("str");
+
+    ((Field[])fields[:offset + BUILTIN_TYPE_FIELD_COUNT])[offset + 3].name = "$size";
+    ((Field[])fields[:offset + BUILTIN_TYPE_FIELD_COUNT])[offset + 3].type = self.lookup("int");
+
+    ((Field[])fields[:offset + BUILTIN_TYPE_FIELD_COUNT])[offset + 4].name = "$numfields";
+    ((Field[])fields[:offset + BUILTIN_TYPE_FIELD_COUNT])[offset + 4].type = self.lookup("int");
 }

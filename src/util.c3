@@ -1,6 +1,6 @@
 module lucy::util;
 
-import lucy::node, lucy::scope, lucy::types, lucy::errors;
+import lucy::node, lucy::scope, lucy::types, lucy::errors, lucy::sema;
 import std::core::string, std::core::mem, std::os, std::io, std::collections::map;
 import llvm;
 
@@ -99,25 +99,26 @@ fn bool String.is_upper(self)
 
 fn bool is_builtin_type(ASTNode* type) => in((String[]){ "str", "int", "char", "bool", "float", "double" }, type.node.ident_node.name);
 
-fn String get_type_node(ASTNode* node, Scope* scope, String path)
+fn String get_type_node(ASTNode* node, Sema* sema)
 {
     switch (node.node_type)
     {
         case INT:       return "int";
         case DEF:       return get_type_node_def(node);
         case STR:       return "str";
-        case BIN:       return get_type_node_bin(node, scope, path);
-        case CALL:      return get_type_node_call(node, scope);
+        case BIN:       return get_type_node_bin(node, sema);
+        case CALL:      return get_type_node_call(node, sema);
         case BOOL:      return "bool";
         case CHAR:      return "char";
-        case INIT:      return get_type_node_init(node, scope, path);
+        case INIT:      return get_type_node_init(node, sema);
         case TUPLE:     return get_type_node_tuple(node);
         case FLOAT:     return "float";
-        case UNARY:     return get_type_node(node.node.unary_node.expr, scope, path);
-        case IDENT:     return get_type_node_ident(node, scope);
+        case UNARY:     return get_type_node(node.node.unary_node.expr, sema);
+        case IDENT:     return get_type_node_ident(node, sema);
         case DOUBLE:    return "double";
-        case RETURN:    return get_type_node_return(node, scope, path);
-        case PARAMETER: return get_type_node_parameter(node, scope);
+        case RETURN:    return get_type_node_return(node, sema);
+        case ACCESS:    return get_type_node_access(node, sema);
+        case PARAMETER: return get_type_node_parameter(node);
         
         default: panicf("Missing case for type `%s`", node.node_type, file: $$FILE, line: $$LINE, function: $$FUNC);
     }
@@ -160,11 +161,11 @@ fn String get_type_node_tuple(ASTNode* node)
     return out.copy_str(mem);
 }
 
-fn String get_type_node_call(ASTNode* node, Scope* scope)
+fn String get_type_node_call(ASTNode* node, Sema* sema)
 {
     CallNode call_node = node.node.call_node;
     String   name      = call_node.name.node.ident_node.name;
-    return scope.get_def(name).type;
+    return sema.scope.get_def(name).type;
 }
 
 fn String get_type_node_def(ASTNode* node)
@@ -200,7 +201,7 @@ fn String[] get_possible_pkgs(String[] in, String filter)
     return out;
 }
 
-fn String get_type_node_parameter(ASTNode* node, Scope* scope)
+fn String get_type_node_parameter(ASTNode* node)
 {
     ParameterNode parameter_node = node.node.parameter_node;
 
@@ -209,13 +210,13 @@ fn String get_type_node_parameter(ASTNode* node, Scope* scope)
     return parameter_node.type.node.ident_node.name;
 }
 
-fn String get_type_node_ident(ASTNode* node, Scope* scope)
+fn String get_type_node_ident(ASTNode* node, Sema* sema)
 {
     String name = node.node.ident_node.name;
-    return scope.get(name).get_type();
+    return sema.scope.get(name).get_type();
 }
 
-fn String get_type_node_bin(ASTNode* node, Scope* scope, String path)
+fn String get_type_node_bin(ASTNode* node, Sema* sema)
 {
     BinNode bin_node = node.node.bin_node;
     String  operator = bin_node.operator;
@@ -234,13 +235,13 @@ fn String get_type_node_bin(ASTNode* node, Scope* scope, String path)
         case "-":
         case "*":
         case "/":
-            return get_type_node(bin_node.left, scope, path);
+            return get_type_node(bin_node.left, sema);
     }
     
     panicf("Missing case for operator `%s`", operator, file: $$FILE, line: $$LINE, function: $$FUNC);
 }
 
-fn String get_type_node_return(ASTNode* node, Scope* scope, String path)
+fn String get_type_node_return(ASTNode* node, Sema* sema)
 {
     ReturnNode return_node = node.node.return_node;
     ASTNode*[] values      = return_node.values;
@@ -252,7 +253,7 @@ fn String get_type_node_return(ASTNode* node, Scope* scope, String path)
         String[] types;
         foreach (value : values)
         {
-            array_insert(&types, get_type_node(value, scope, path));
+            array_insert(&types, get_type_node(value, sema));
         }
 
         DString out;
@@ -264,31 +265,31 @@ fn String get_type_node_return(ASTNode* node, Scope* scope, String path)
         return out.copy_str(mem);
     } else
     {
-        return get_type_node(values[0], scope, path);
+        return get_type_node(values[0], sema);
     }
 }
 
-fn String get_type_node_init(ASTNode* node, Scope* scope, String path)
+fn String get_type_node_init(ASTNode* node, Sema* sema)
 {
     InitNode init_node      = node.node.init_node;
-    String[] possible_types = get_possible_types(init_node, scope, path);
+    String[] possible_types = get_possible_types(init_node, sema);
 
     if (possible_types.len > 1)
     {
-        errors::print_node(path, *node, string::format(mem, "Multiple matching types found: `%s`", join_to_string(possible_types, ", ")));
+        errors::print_node(sema.path, *node, string::format(mem, "Multiple matching types found: `%s`", join_to_string(possible_types, ", ")));
         os::exit(1);
     }
 
     if (possible_types.len == 0)
     {
-        errors::print_node(path, *node, "Could not find type with those properties.");
+        errors::print_node(sema.path, *node, "Could not find type with those properties.");
         os::exit(1);
     }
 
     return possible_types[0];
 }
 
-fn String[] get_possible_types(InitNode init_node, Scope* scope, String path)
+fn String[] get_possible_types(InitNode init_node, Sema* sema)
 {
     String[] possible_types;
 
@@ -300,14 +301,14 @@ fn String[] get_possible_types(InitNode init_node, Scope* scope, String path)
         
         if (named && is_null(value_node.name) || !named && !is_null(value_node.name))
         {
-            errors::print_node(path, *value, "Cannot mix named and unnamed initialization.");
+            errors::print_node(sema.path, *value, "Cannot mix named and unnamed initialization.");
             os::exit(1);
         }
     }
 
     if (named)
     {
-        foreach (type : scope.get_all_structs())
+        foreach (type : sema.scope.get_all_structs())
         {
             bool all_names_match = true;
 
@@ -319,8 +320,8 @@ fn String[] get_possible_types(InitNode init_node, Scope* scope, String path)
 
                 if (previous_names.has_key(name))
                 {
-                    errors::print_node(path, *previous_names.get(name)!!, errors::ERROR_PREVIOUS);
-                    errors::print_node(path, *value, "A field with this name has already been initialized.");
+                    errors::print_node(sema.path, *previous_names.get(name)!!, errors::ERROR_PREVIOUS);
+                    errors::print_node(sema.path, *value, "A field with this name has already been initialized.");
                     os::exit(1);
                 }
 
@@ -348,12 +349,12 @@ fn String[] get_possible_types(InitNode init_node, Scope* scope, String path)
             {
                 foreach (value : init_node.values)
                 {
-                    String type_name  = get_type_node(value.node.init_value_node.value, scope, path);
+                    String type_name  = get_type_node(value.node.init_value_node.value, sema);
                     String field_type = get_field_by_name(value.node.init_value_node.name.node.ident_node.name, type).node.field_node.type.node.ident_node.name;
 
                     if (type_name != field_type)
                     {
-                        errors::print_node(path, *value, string::format(mem, "Expected type `%s`, got `%s`", field_type, type_name));
+                        errors::print_node(sema.path, *value, string::format(mem, "Expected type `%s`, got `%s`", field_type, type_name));
                         os::exit(1);
                     }
                 }
@@ -363,7 +364,7 @@ fn String[] get_possible_types(InitNode init_node, Scope* scope, String path)
         }
     } else
     {
-        foreach (type : scope.get_all_structs())
+        foreach (type : sema.scope.get_all_structs())
         {
             if (type.fields.len != init_node.values.len) continue;
             
@@ -371,7 +372,7 @@ fn String[] get_possible_types(InitNode init_node, Scope* scope, String path)
             foreach FIELDS: (i, field : type.fields)
             {
                 String field_type = field.node.field_node.type.node.ident_node.name;
-                String value_type = get_type_node(init_node.values[i].node.init_value_node.value, scope, path);
+                String value_type = get_type_node(init_node.values[i].node.init_value_node.value, sema);
 
                 if (field_type != value_type)
                 {
@@ -400,6 +401,70 @@ fn ASTNode* get_field_by_name(String name, StructNode str)
     }
     
     return null;
+}
+
+fn String get_type_node_access(ASTNode* node, Sema* sema)
+{
+    AccessNode access_node = node.node.access_node;
+    IdentNode  ident       = access_node.expr.node.ident_node;
+
+    ZString id_name   = ident.name.zstr_copy(mem);
+    String  type_name;
+    Type*   type      = null;
+
+    if (sema.types.lookup(ident.name))
+    {
+        type = sema.types.lookup(ident.name);
+    }
+    
+    if (sema.scope.has(ident.name))
+    {
+        type_name = sema.scope.get(ident.name).get_type();
+        type      = sema.types.lookup(type_name);
+    }
+
+    return resolve_type_node_access(type, ident.name, access_node.expr, access_node.next, sema);
+}
+
+fn String resolve_type_node_access(Type* prev_type, String prev_name, ASTNode* prev_node, ASTNode* next_node, Sema* sema)
+{
+    if (!prev_type)
+    {
+        String[] pkg_names;
+        sema.get_all_pkg_names(&pkg_names);
+        String[] possible_pkgs = util::get_possible_pkgs(pkg_names, prev_name);
+
+        String pkg_name  = possible_pkgs[0];
+        Sema*  pkg       = sema.get_pkg(pkg_name);
+        switch (next_node.node_type)
+        {
+            case IDENT:
+                IdentNode ident_node = next_node.node.ident_node;
+                String    ident_name = ident_node.name;
+
+                return pkg.scope.get_const(ident_name).type;
+            case CALL:
+                CallNode call_node = next_node.node.call_node;
+                String   call_name = call_node.name.node.ident_node.name;
+                Def      def       = pkg.scope.get_def(call_name);
+
+                return def.type;
+            default:
+                util::panicf("Unsupported node type in access chain: `%s`", next_node.node_type, file: $$FILE, line: $$LINE, function: $$FUNC);
+        }
+    } else
+    {
+        switch (next_node.node_type)
+        {
+            case IDENT:
+                IdentNode ident_node = next_node.node.ident_node;
+                String    ident_name = ident_node.name;
+
+                return prev_type.get_field(ident_name).type.name.str_view();
+            default:
+                util::panicf("Unsupported node type in access chain: `%s`", next_node.node_type, file: $$FILE, line: $$LINE, function: $$FUNC);
+        }
+    }
 }
 
 

@@ -2,4 +2,4 @@ link<c>;
 
 pkg std.libc;
 
-ext int printf(str fmt, var str args);
+ext int printf(str fmt, var args);
