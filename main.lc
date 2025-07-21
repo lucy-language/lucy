@@ -65,12 +65,13 @@ def void main()
 
     var Foo g;
 
-    #var int x = t.t;
-    #var int x1 = t.$size;
-    #var int x2 = char.$size;
-    #var bool x3 = g.h.j.$size;
+    var int x = t.t;
+    var int x1 = t.$size;
+    var int x2 = char.$size;
+    var int x3 = g.h.j.name.$size;
+    var int x4 = g.h.j.age++;
 
-    #g.h.j.age++;
+    g.h.j.age++;
 
     #mama(0, "", "", "0", "true");
     #mama(0, "");

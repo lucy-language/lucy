@@ -408,16 +408,13 @@ fn String get_type_node_access(ASTNode* node, Sema* sema)
     AccessNode access_node = node.node.access_node;
     IdentNode  ident       = access_node.expr.node.ident_node;
 
-    ZString id_name   = ident.name.zstr_copy(mem);
     String  type_name;
     Type*   type      = null;
 
     if (sema.types.lookup(ident.name))
     {
         type = sema.types.lookup(ident.name);
-    }
-    
-    if (sema.scope.has(ident.name))
+    } else if (sema.scope.has(ident.name))
     {
         type_name = sema.scope.get(ident.name).get_type();
         type      = sema.types.lookup(type_name);
@@ -461,6 +458,20 @@ fn String resolve_type_node_access(Type* prev_type, String prev_name, ASTNode* p
                 String    ident_name = ident_node.name;
 
                 return prev_type.get_field(ident_name).type.name.str_view();
+            case ACCESS:
+                AccessNode access_node = next_node.node.access_node;
+                IdentNode  ident_node  = access_node.expr.node.ident_node;
+                String     field_name  = ident_node.name;
+                Field*     field       = prev_type.get_field(field_name);
+
+                return resolve_type_node_access(field.type, field_name, access_node.expr, access_node.next, sema);
+            case INC:
+                IncNode   inc_node   = next_node.node.inc_node;
+                IdentNode ident_node = inc_node.identifier.node.ident_node;
+                String    field_name = ident_node.name;
+                Field*    field      = prev_type.get_field(field_name);
+
+                return field.type.name.str_view();
             default:
                 util::panicf("Unsupported node type in access chain: `%s`", next_node.node_type, file: $$FILE, line: $$LINE, function: $$FUNC);
         }

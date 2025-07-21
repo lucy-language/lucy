@@ -83,11 +83,11 @@ fn void TypeTable.init(&self, int type_id = 0)
     self.type_id = type_id;
 
     self.insert_type("void",   null, llvm::void_type());
-    self.insert_type("int",    null, llvm::int32_type());
+    self.insert_type("int",    null, llvm::int_32_type());
     self.insert_type("float",  null, llvm::float_type());
-    self.insert_type("str",    null, llvm::pointer_type(llvm::int8_type(), 0));
-    self.insert_type("bool",   null, llvm::int1_type());
-    self.insert_type("char",   null, llvm::int8_type());
+    self.insert_type("str",    null, llvm::pointer_type(llvm::int_8_type(), 0));
+    self.insert_type("bool",   null, llvm::int_1_type());
+    self.insert_type("char",   null, llvm::int_8_type());
     self.insert_type("double", null, llvm::double_type());
 
     self.init_builtin_fields();
@@ -140,7 +140,7 @@ fn void TypeTable.init_str_type(&self)
     ((Field[])fields[:num_fields])[1] = { "$typekind", self.lookup("str") };
     ((Field[])fields[:num_fields])[2] = { "$typename", self.lookup("str") };
     ((Field[])fields[:num_fields])[3] = { "$size",     self.lookup("int") };
-    ((Field[])fields[:num_fields])[3] = { "$length",   self.lookup("int") };
+    ((Field[])fields[:num_fields])[4] = { "$length",   self.lookup("int") };
 
     Type* type = self.lookup("str");
     (*type).fields = fields;

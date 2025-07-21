@@ -166,19 +166,7 @@ fn void Sema.register_struct(&self, ASTNode* node_in)
         os::exit(1);
     }
 
-    Field* fields = malloc(Field.sizeof * (node.fields.len + types::BUILTIN_TYPE_FIELD_COUNT));
-    foreach (i, field : node.fields)
-    {
-        FieldNode field_node = field.node.field_node;
-        String    type_name  = field_node.type.node.ident_node.name;
-        String    field_name = field_node.name.node.ident_node.name;
-
-        ((Field[])fields[:node.fields.len])[i] = { field_name.zstr_copy(mem), self.types.lookup(type_name) };
-    }
-
-    self.types.append_builtin_type_fields(fields, node.fields.len);
-
-    self.types.insert_type(name, fields, null);
+    self.types.insert_type(name, null, null);
     self.scope.structs.set(name, node);
 }
 
@@ -319,6 +307,19 @@ fn void Sema.analyse_struct(&self, ASTNode* node_in)
         errors::print_node(self.path, *node.name, "Type names cannot be all uppercase.");
         os::exit(1);
     }
+
+    Field* fields = malloc(Field.sizeof * (node.fields.len + types::BUILTIN_TYPE_FIELD_COUNT));
+    foreach (i, field : node.fields)
+    {
+        FieldNode field_node = field.node.field_node;
+        String    type_name  = field_node.type.node.ident_node.name;
+        String    field_name = field_node.name.node.ident_node.name;
+
+        ((Field[])fields[:node.fields.len])[i] = { field_name.zstr_copy(mem), self.types.lookup(type_name) };
+    }
+
+    self.types.append_builtin_type_fields(fields, node.fields.len);
+    self.types.lookup(name).fields = fields;
 }
 
 fn void Sema.analyse_const(&self, ASTNode* node_in)
@@ -774,18 +775,46 @@ fn void Sema.resolve_access(&self, Type* prev_type, String prev_name, ASTNode* p
                 if (prev_type.name == "void") return;
                 if (!prev_type.get_field(ident_name))
                 {
-                    errors::print_node(self.path, *next_node, string::format(mem, "Could not find property `%s` on type `%s`", ident_name, prev_type.name));
+                    errors::print_node(self.path, *next_node, string::format(mem, "Could not find property `%s` on type `%s`.", ident_name, prev_name));
                     os::exit(1);
                 }
             case ACCESS:
                 AccessNode access_node = next_node.node.access_node;
-                // TODO: get type from field instead
-                // IdentNode  ident_node  = ;
-                // Type*      type        = self.types.lookup(type_name);
+                IdentNode  ident_node  = access_node.expr.node.ident_node;
+                String     field_name  = ident_node.name;
+                Field*     field       = prev_type.get_field(field_name);
+                if (!field)
+                {
+                    // TODO: error
+                    errors::print_node(self.path, *access_node.expr, string::format(mem, "Could not find field `%s` on type `%s`.", field_name, prev_name));
+                    os::exit(1);
+                }
 
-                // io::printn(type_name);
+                self.resolve_access(field.type, field_name, access_node.expr, access_node.next);
+            case INC:
+                IncNode   inc_node     = next_node.node.inc_node;
+                IdentNode ident_node   = inc_node.identifier.node.ident_node;
+                String    ident_name   = ident_node.name;
+                String    operator     = inc_node.operator;
 
-                // self.resolve_access(type, "", access_node.expr, null);
+                String type = util::get_type_node(inc_node.identifier, self);
+
+                switch (operator)
+                {
+                    case "+":
+                    case "-":
+                        if (type != "int")
+                        {
+                            errors::print_node(self.path, *next_node, string::format(mem, "Unsupported incremental operation for type `%s`", type));
+                            os::exit(1);
+                        }
+                    case "!":
+                        if (type != "bool")
+                        {
+                            errors::print_node(self.path, *next_node, string::format(mem, "Unsupported incremental operation for type `%s`", type));
+                            os::exit(1);
+                        }
+                }
             default:
                 util::panicf("Unsupported node type in access chain: `%s`", next_node.node_type, file: $$FILE, line: $$LINE, function: $$FUNC);
         }

@@ -15,7 +15,7 @@ fn void print(String file_path, Token token, String message) @noreturn
     io::eprintfn("Something went wrong: %s", message);
 
     int line_nr = token.line;
-    int padding = 0;
+    int padding = line_nr > 10 ? 0 : 1;
 
     while (line_nr != 0)
     {
@@ -58,7 +58,7 @@ fn void print_range(String file_path, int line, Range range, String[] ctx, Strin
     io::eprintfn("Something went wrong: %s", message);
 
     int line_nr = line;
-    int padding = 0;
+    int padding = line_nr > 10 ? 0 : 1;
 
     while (line_nr != 0)
     {
@@ -101,7 +101,7 @@ fn void print_node(String file_path, ASTNode node, String message)
     io::eprintfn("Something went wrong: %s", message);
 
     int line_nr = node.line;
-    int padding = 0;
+    int padding = line_nr > 10 ? 0 : 1;
 
     while (line_nr != 0)
     {
