@@ -67,7 +67,7 @@ def void main()
 
 ### Prerequisites
 - C3 compiler installed (available from [c3-lang.org](https://c3-lang.org/))
-- libLLVM (available from [releases.llvm.org](https://releases.llvm.org/download.html))
+- libLLVM 20 (available from [releases.llvm.org](https://releases.llvm.org/download.html))
 
 ### Building the Compiler
 
