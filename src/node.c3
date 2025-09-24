@@ -7,6 +7,7 @@ import json::serialize;
 enum NodeType
 {
     INIT_VALUE,
+    ATTRIBUTE,
     PARAMETER,
     REASSIGN,
     ACCESS,
@@ -51,6 +52,7 @@ struct ASTNode
     union        node
     {
         InitValueNode    init_value_node;
+        AttributeNode    attribute_node;
         ParameterNode    parameter_node;
         ReassignNode     reassign_node;
         AccessNode       access_node;
@@ -93,40 +95,42 @@ struct ASTNode
     String[] ctx;
 }
 
-struct PkgNode       { ASTNode* path; }
-struct PathNode      { ASTNode*[] segments; }
-struct FileNode      { ASTNode[] linker_options; ASTNode* pkg; ASTNode*[] statements; }
-struct UseNode       { ASTNode* path; }
-struct ParameterNode { bool is_vararg; ASTNode* type; ASTNode* name; }
-struct DefNode       { ASTNode* type; ASTNode* name; ASTNode*[] parameters; ASTNode*[] children; }
-struct ReturnNode    { ASTNode*[] values; }
-struct IntNode       { String value; }
-struct StrNode       { String value; }
-struct BinNode       { String operator; ASTNode* left; ASTNode* right; }
-struct DoubleNode    { String value; }
-struct FloatNode     { String value; }
-struct BoolNode      { String value; }
-struct ExtNode       { ASTNode* type; ASTNode* name; ASTNode*[] parameters; ASTNode* aka; }
-struct LinkNode      { ASTNode* name; }
-struct ConstNode     { ASTNode* type; ASTNode* name; ASTNode* value; }
-struct GlobalNode    { ASTNode* node; }
-struct VarNode       { ASTNode* type; ASTNode*[] names; ASTNode* value; }
-struct ReassignNode  { ASTNode* name; ASTNode* value; }
-struct CallNode      { ASTNode* name; ASTNode*[] arguments; }
-struct IdentNode     { String name; }
-struct CharNode      { String value; }
 struct IfNode        { ASTNode* condition; ASTNode*[] children; ASTNode* else_if; ASTNode*[] else_children; }
-struct FieldNode     { ASTNode* type; ASTNode* name; }
-struct StructNode    { ASTNode* name; ASTNode*[] fields; }
+struct BinNode       { String operator; ASTNode* left; ASTNode* right; }
+struct DefNode       { ASTNode* type; ASTNode* name; ASTNode*[] parameters; ASTNode*[] attributes; ASTNode*[] children; }
+struct ExtNode       { ASTNode* type; ASTNode* name; ASTNode*[] parameters; ASTNode* aka; ASTNode*[] attributes; }
+struct ForNode       { ASTNode* statement; ASTNode* condition; ASTNode* expression; ASTNode*[] children; }
+struct IncNode       { ASTNode* identifier; String operator; }
+struct IntNode       { String value; }
+struct PkgNode       { ASTNode* path; }
+struct StrNode       { String value; }
+struct UseNode       { ASTNode* path; }
+struct VarNode       { ASTNode* type; ASTNode*[] names; ASTNode* value; }
+struct BoolNode      { String value; }
+struct CallNode      { ASTNode* name; ASTNode*[] arguments; }
+struct CaseNode      { ASTNode* condition; ASTNode*[] children; }
+struct CharNode      { String value; }
+struct FileNode      { ASTNode*[] links; ASTNode* pkg; ASTNode*[] statements; }
 struct InitNode      { ASTNode*[] values; }
-struct InitValueNode { ASTNode* name; ASTNode* value; }
-struct AccessNode    { ASTNode* expr; ASTNode* next; }
-struct MacroNode     { ASTNode* type; ASTNode* name; ASTNode*[] parameters; ASTNode*[] children; }
+struct LinkNode      { ASTNode* name; }
+struct NullNode      { String value; }
+struct PathNode      { ASTNode*[] segments; }
+struct ConstNode     { ASTNode* type; ASTNode* name; ASTNode* value; }
+struct FieldNode     { ASTNode* type; ASTNode* name; }
+struct FloatNode     { String value; }
+struct IdentNode     { String name; }
+struct MacroNode     { ASTNode* type; ASTNode* name; ASTNode*[] parameters; ASTNode*[] attributes; ASTNode*[] children; }
+struct TupleNode     { ASTNode*[] values; }
 struct UnaryNode     { String operator; ASTNode* expr; }
 struct WhileNode     { ASTNode* condition; ASTNode*[] children; }
+struct AccessNode    { ASTNode* expr; ASTNode* next; }
+struct DoubleNode    { String value; }
+struct GlobalNode    { ASTNode* node; }
+struct ReturnNode    { ASTNode*[] values; }
+struct StructNode    { ASTNode* name; ASTNode*[] fields; }
 struct SwitchNode    { ASTNode* expression; ASTNode*[] cases; }
-struct CaseNode      { ASTNode* condition; ASTNode*[] children; }
-struct IncNode       { ASTNode* identifier; String operator; }
-struct ForNode       { ASTNode* statement; ASTNode* condition; ASTNode* expression; ASTNode*[] children; }
-struct TupleNode     { ASTNode*[] values; }
-struct NullNode      { String value; }
+struct ReassignNode  { ASTNode* name; ASTNode* value; }
+struct AttributeNode { String name; }
+struct InitValueNode { ASTNode* name; ASTNode* value; }
+struct ParameterNode { bool is_vararg; ASTNode* type; ASTNode* name; }
+struct VariatricNode { ASTNode* node; }

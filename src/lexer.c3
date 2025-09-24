@@ -76,35 +76,37 @@ fn Token[] Lexer.tokenize(&self)
         int start_column = self.column;
         int start_line   = self.line;
 
-        if (self.current == '&' && self.peek() == '&') { util::array_insert(&tokens, (Token){ AND, "&&", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
-        if (self.current == '|' && self.peek() == '|') { util::array_insert(&tokens, (Token){ OR,  "||", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
+        if (self.current == '@' && self.peek().is_alpha()) util::array_insert(&tokens, self.attribute());
+
+        if (self.current == '&' && self.peek() == '&') { util::array_insert(&tokens, (Token){ AND, "&&", { self.column, self.column + 2 }, self.line, self.get_ctx() }); self.consume(2); self.column += 2; }
+        if (self.current == '|' && self.peek() == '|') { util::array_insert(&tokens, (Token){ OR,  "||", { self.column, self.column + 2 }, self.line, self.get_ctx() }); self.consume(2); self.column += 2; }
         
-        if (self.current == '=' && self.peek() == '=') { util::array_insert(&tokens, (Token){ IS_EQUAL,  "==", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
-        if (self.current == '!' && self.peek() == '=') { util::array_insert(&tokens, (Token){ NOT_EQUAL, "!=", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
-        if (self.current == '>' && self.peek() == '=') { util::array_insert(&tokens, (Token){ GT,        ">=", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
-        if (self.current == '<' && self.peek() == '=') { util::array_insert(&tokens, (Token){ LTE,       "<=", { self.column, self.column + 2 }, self.line, self.get_context_lines() }); self.consume(2); self.column += 2; }
-        if (self.current == '>') { util::array_insert(&tokens, (Token){ GT, ">", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '<') { util::array_insert(&tokens, (Token){ LT, "<", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '=' && self.peek() == '=') { util::array_insert(&tokens, (Token){ IS_EQUAL,  "==", { self.column, self.column + 2 }, self.line, self.get_ctx() }); self.consume(2); self.column += 2; }
+        if (self.current == '!' && self.peek() == '=') { util::array_insert(&tokens, (Token){ NOT_EQUAL, "!=", { self.column, self.column + 2 }, self.line, self.get_ctx() }); self.consume(2); self.column += 2; }
+        if (self.current == '>' && self.peek() == '=') { util::array_insert(&tokens, (Token){ GT,        ">=", { self.column, self.column + 2 }, self.line, self.get_ctx() }); self.consume(2); self.column += 2; }
+        if (self.current == '<' && self.peek() == '=') { util::array_insert(&tokens, (Token){ LTE,       "<=", { self.column, self.column + 2 }, self.line, self.get_ctx() }); self.consume(2); self.column += 2; }
+        if (self.current == '>') { util::array_insert(&tokens, (Token){ GT, ">", { self.column, self.column + 1 }, self.line, self.get_ctx() }); self.consume(); self.column++; }
+        if (self.current == '<') { util::array_insert(&tokens, (Token){ LT, "<", { self.column, self.column + 1 }, self.line, self.get_ctx() }); self.consume(); self.column++; }
 
-        if (self.current == ';') { util::array_insert(&tokens, (Token){ SEMICOLON, ";", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '.') { util::array_insert(&tokens, (Token){ PERIOD,    ".", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == ',') { util::array_insert(&tokens, (Token){ COMMA,     ",", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '(') { util::array_insert(&tokens, (Token){ LPAREN,    "(", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == ')') { util::array_insert(&tokens, (Token){ RPAREN,    ")", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '{') { util::array_insert(&tokens, (Token){ LBRACE,    "{", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '}') { util::array_insert(&tokens, (Token){ RBRACE,    "}", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '[') { util::array_insert(&tokens, (Token){ LBRACKET,  "[", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == ']') { util::array_insert(&tokens, (Token){ RBRACKET,  "]", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '%') { util::array_insert(&tokens, (Token){ PERCENT,   "%", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '@') { util::array_insert(&tokens, (Token){ AT,        "@", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '=') { util::array_insert(&tokens, (Token){ EQUALS,    "=", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == ':') { util::array_insert(&tokens, (Token){ COLON,     ":", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '!') { util::array_insert(&tokens, (Token){ BANG,      "!", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == ';') { util::array_insert(&tokens, (Token){ SEMICOLON, ";", { self.column, self.column + 1 }, self.line, self.get_ctx() }); self.consume(); self.column++; }
+        if (self.current == '.') { util::array_insert(&tokens, (Token){ PERIOD,    ".", { self.column, self.column + 1 }, self.line, self.get_ctx() }); self.consume(); self.column++; }
+        if (self.current == ',') { util::array_insert(&tokens, (Token){ COMMA,     ",", { self.column, self.column + 1 }, self.line, self.get_ctx() }); self.consume(); self.column++; }
+        if (self.current == '(') { util::array_insert(&tokens, (Token){ LPAREN,    "(", { self.column, self.column + 1 }, self.line, self.get_ctx() }); self.consume(); self.column++; }
+        if (self.current == ')') { util::array_insert(&tokens, (Token){ RPAREN,    ")", { self.column, self.column + 1 }, self.line, self.get_ctx() }); self.consume(); self.column++; }
+        if (self.current == '{') { util::array_insert(&tokens, (Token){ LBRACE,    "{", { self.column, self.column + 1 }, self.line, self.get_ctx() }); self.consume(); self.column++; }
+        if (self.current == '}') { util::array_insert(&tokens, (Token){ RBRACE,    "}", { self.column, self.column + 1 }, self.line, self.get_ctx() }); self.consume(); self.column++; }
+        if (self.current == '[') { util::array_insert(&tokens, (Token){ LBRACKET,  "[", { self.column, self.column + 1 }, self.line, self.get_ctx() }); self.consume(); self.column++; }
+        if (self.current == ']') { util::array_insert(&tokens, (Token){ RBRACKET,  "]", { self.column, self.column + 1 }, self.line, self.get_ctx() }); self.consume(); self.column++; }
+        if (self.current == '%') { util::array_insert(&tokens, (Token){ PERCENT,   "%", { self.column, self.column + 1 }, self.line, self.get_ctx() }); self.consume(); self.column++; }
+        if (self.current == '@') { util::array_insert(&tokens, (Token){ AT,        "@", { self.column, self.column + 1 }, self.line, self.get_ctx() }); self.consume(); self.column++; }
+        if (self.current == '=') { util::array_insert(&tokens, (Token){ EQUALS,    "=", { self.column, self.column + 1 }, self.line, self.get_ctx() }); self.consume(); self.column++; }
+        if (self.current == ':') { util::array_insert(&tokens, (Token){ COLON,     ":", { self.column, self.column + 1 }, self.line, self.get_ctx() }); self.consume(); self.column++; }
+        if (self.current == '!') { util::array_insert(&tokens, (Token){ BANG,      "!", { self.column, self.column + 1 }, self.line, self.get_ctx() }); self.consume(); self.column++; }
 
-        if (self.current == '+') { util::array_insert(&tokens, (Token){ PLUS,   "+", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '-') { util::array_insert(&tokens, (Token){ MINUS,  "-", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '*') { util::array_insert(&tokens, (Token){ STAR,   "*", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
-        if (self.current == '/') { util::array_insert(&tokens, (Token){ SLASH,  "/", { self.column, self.column + 1 }, self.line, self.get_context_lines() }); self.consume(); self.column++; }
+        if (self.current == '+') { util::array_insert(&tokens, (Token){ PLUS,   "+", { self.column, self.column + 1 }, self.line, self.get_ctx() }); self.consume(); self.column++; }
+        if (self.current == '-') { util::array_insert(&tokens, (Token){ MINUS,  "-", { self.column, self.column + 1 }, self.line, self.get_ctx() }); self.consume(); self.column++; }
+        if (self.current == '*') { util::array_insert(&tokens, (Token){ STAR,   "*", { self.column, self.column + 1 }, self.line, self.get_ctx() }); self.consume(); self.column++; }
+        if (self.current == '/') { util::array_insert(&tokens, (Token){ SLASH,  "/", { self.column, self.column + 1 }, self.line, self.get_ctx() }); self.consume(); self.column++; }
 
         if (self.current == '#')
         {
@@ -126,7 +128,7 @@ fn Token[] Lexer.tokenize(&self)
         }
     }
 
-    util::array_insert(&tokens, (Token){ EOF, "EOF", { self.column, self.column }, self.line, self.get_context_lines() });
+    util::array_insert(&tokens, (Token){ EOF, "EOF", { self.column, self.column }, self.line, self.get_ctx() });
 
     return tokens;
 }
@@ -144,18 +146,66 @@ fn Token Lexer.string(&self)
     {
         if (self.current == '\\')
         {
-            result.append_char(self.current);
             self.consume();
             self.column++;
+
+            switch (self.current)
+            {
+                case 'n':  result.append_chars("b10:\n"); break;
+                case 't':  result.append_chars("b10:\t"); break;
+                case 'r':  result.append_chars("b10:\r"); break;
+                case 'v':  result.append_chars("b10:\v"); break;
+                case 'b':  result.append_chars("b10:\b"); break;
+                case '\\': result.append_chars("b10:\\"); break;
+                case '\'': result.append_chars("b10:'");  break;
+                case '"':  result.append_chars("b10:\""); break;
+                case '0':
+                    int digits = 0;
+                    
+                    result.append_chars("b8:\\");
+
+                    while (digits < 3 && self.current >= '0' && self.current <= '7')
+                    {
+                        result.append_char(self.current);
+                        self.consume();
+                        self.column++;
+                        digits++;
+                    }
+                case 'u':
+                    self.consume();
+                    self.column++;
+
+                    char unicodeValue = 0;
+                    int  hexDigits    = 0;
+
+                    // result.append_chars("b16:");
+                    
+                    while (hexDigits < 4)
+                    {
+                        io::printn(self.current);
+                        result.append_char(self.current);
+                        self.consume();
+                        self.column++;
+                        hexDigits++;
+                    }
+                    io::printn(self.current);
+                default:
+                    result.append_char('\\');
+                    result.append_char(self.current);
+            }
         }
-        result.append_char(self.current);
+        else
+        {
+            result.append_char(self.current);
+        }
+
         self.column++;
         self.consume();
     }
     self.column++;
     self.consume();
 
-    return { STRING, result.copy_str(mem), { start, self.column }, self.line, self.get_context_lines() };
+    return { STRING, result.copy_str(mem), { start, self.column }, self.line, self.get_ctx() };
 }
 
 fn Token Lexer.character(&self)
@@ -171,18 +221,71 @@ fn Token Lexer.character(&self)
     {
         if (self.current == '\\')
         {
-            result.append_char(self.current);
             self.consume();
             self.column++;
+
+            result.append_char('\\');
+            
+            switch (self.current)
+            {
+                case 'n':  result.append_char('n');  break;
+                case 't':  result.append_char('t');  break;
+                case 'r':  result.append_char('r');  break;
+                case 'v':  result.append_char('v');  break;
+                case 'b':  result.append_char('b');  break;
+                case '\\': result.append_char('\\'); break;
+                case '\'': result.append_char('\''); break;
+                case '"':  result.append_char('"');  break;
+                case '0':
+                    char octalValue = 0;
+                    int digits = 0;
+                    
+                    while (digits < 3 && self.current >= '0' && self.current <= '7')
+                    {
+                        result.append_char(self.current);
+                        self.consume();
+                        self.column++;
+                        digits++;
+                    }
+                case 'u':
+                    self.consume();
+                    self.column++;
+                    char unicodeValue = 0;
+                    int hexDigits = 0;
+
+                    result.append_char('u');
+
+                    while (hexDigits < 4)
+                    {
+                        result.append_char(self.current);
+                        self.consume();
+                        self.column++;
+                        hexDigits++;
+                    }
+                default:
+                    result.append_char('\\');
+                    result.append_char(self.current);
+                    break;
+            }
         }
-        result.append_char(self.current);
+        else
+        {
+            result.append_char(self.current);
+        }
+        
         self.column++;
         self.consume();
     }
-    self.column++;
-    self.consume();
+    
+    if (self.current == '\'')
+    {
+        self.column++;
+        self.consume();
+    }
 
-    return { CHAR, result.copy_str(mem), { start, self.column }, self.line, self.get_context_lines() };
+    io::printfn("'%s'", result.str_view());
+    
+    return { CHAR, result.copy_str(mem), { start, self.column }, self.line, self.get_ctx() };
 }
 
 fn Token Lexer.number(&self)
@@ -206,7 +309,7 @@ fn Token Lexer.number(&self)
             self.consume();
         }
 
-        return { INTEGER, result.copy_str(mem), { start, self.column }, self.line, self.get_context_lines() };
+        return { INTEGER, result.copy_str(mem), { start, self.column }, self.line, self.get_ctx() };
     }
 
     while (self.current.is_digit())
@@ -258,15 +361,15 @@ fn Token Lexer.number(&self)
     {
         self.column++;
         self.consume();
-        return { FLOAT, result.copy_str(mem), { start, self.column }, self.line, self.get_context_lines() };
+        return { FLOAT, result.copy_str(mem), { start, self.column }, self.line, self.get_ctx() };
     }
 
     if (!has_decimal_or_exponent)
     {
-        return { INTEGER, result.copy_str(mem), { start, self.column }, self.line, self.get_context_lines() };
+        return { INTEGER, result.copy_str(mem), { start, self.column }, self.line, self.get_ctx() };
     }
 
-    return { DOUBLE, result.copy_str(mem), { start, self.column }, self.line, self.get_context_lines() };
+    return { DOUBLE, result.copy_str(mem), { start, self.column }, self.line, self.get_ctx() };
 }
 
 fn Token Lexer.identifier(&self)
@@ -286,33 +389,53 @@ fn Token Lexer.identifier(&self)
 
     if (util::in((String[]){ "true", "false" }, str))
     {
-        return { BOOLEAN, str, { start, self.column }, self.line, self.get_context_lines() };
+        return { BOOLEAN, str, { start, self.column }, self.line, self.get_ctx() };
     }
 
-    if (str == "if")     return { KW_IF,     str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "as")     return { KW_AS,     str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "pkg")    return { KW_PKG,    str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "def")    return { KW_DEF,    str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "use")    return { KW_USE,    str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "ext")    return { KW_EXT,    str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "var")    return { KW_VAR,    str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "for")    return { KW_FOR,    str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "else")   return { KW_ELSE,   str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "case")   return { KW_CASE,   str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "link")   return { KW_LINK,   str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "null")   return { KW_NULL,   str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "const")  return { KW_CONST,  str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "macro")  return { KW_MACRO,  str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "while")  return { KW_WHILE,  str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "struct") return { KW_STRUCT, str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "return") return { KW_RETURN, str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "global") return { KW_GLOBAL, str, { start, self.column }, self.line, self.get_context_lines() };
-    if (str == "switch") return { KW_SWITCH, str, { start, self.column }, self.line, self.get_context_lines() };
+    if (str == "if")     return { KW_IF,     str, { start, self.column }, self.line, self.get_ctx() };
+    if (str == "as")     return { KW_AS,     str, { start, self.column }, self.line, self.get_ctx() };
+    if (str == "pkg")    return { KW_PKG,    str, { start, self.column }, self.line, self.get_ctx() };
+    if (str == "def")    return { KW_DEF,    str, { start, self.column }, self.line, self.get_ctx() };
+    if (str == "use")    return { KW_USE,    str, { start, self.column }, self.line, self.get_ctx() };
+    if (str == "ext")    return { KW_EXT,    str, { start, self.column }, self.line, self.get_ctx() };
+    if (str == "var")    return { KW_VAR,    str, { start, self.column }, self.line, self.get_ctx() };
+    if (str == "for")    return { KW_FOR,    str, { start, self.column }, self.line, self.get_ctx() };
+    if (str == "else")   return { KW_ELSE,   str, { start, self.column }, self.line, self.get_ctx() };
+    if (str == "case")   return { KW_CASE,   str, { start, self.column }, self.line, self.get_ctx() };
+    if (str == "link")   return { KW_LINK,   str, { start, self.column }, self.line, self.get_ctx() };
+    if (str == "null")   return { KW_NULL,   str, { start, self.column }, self.line, self.get_ctx() };
+    if (str == "const")  return { KW_CONST,  str, { start, self.column }, self.line, self.get_ctx() };
+    if (str == "macro")  return { KW_MACRO,  str, { start, self.column }, self.line, self.get_ctx() };
+    if (str == "while")  return { KW_WHILE,  str, { start, self.column }, self.line, self.get_ctx() };
+    if (str == "struct") return { KW_STRUCT, str, { start, self.column }, self.line, self.get_ctx() };
+    if (str == "return") return { KW_RETURN, str, { start, self.column }, self.line, self.get_ctx() };
+    if (str == "global") return { KW_GLOBAL, str, { start, self.column }, self.line, self.get_ctx() };
+    if (str == "switch") return { KW_SWITCH, str, { start, self.column }, self.line, self.get_ctx() };
 
-    return { IDENTIFIER, str, { start, self.column }, self.line, self.get_context_lines() };
+    return { IDENTIFIER, str, { start, self.column }, self.line, self.get_ctx() };
 }
 
-fn String[] Lexer.get_context_lines(&self)
+fn Token Lexer.attribute(&self)
+{
+    DString result;
+    defer result.free();
+    int start = self.column;
+
+    result.append_char('@');
+    self.column++;
+    self.consume();
+
+    while (self.current.is_alpha())
+    {
+        result.append_char(self.current);
+        self.column++;
+        self.consume();
+    }
+
+    return { ATTRIBUTE, result.copy_str(mem), { start, self.column }, self.line, self.get_ctx() };
+}
+
+fn String[] Lexer.get_ctx(&self)
 {
     int      error_line   = self.line;
     String[] context_lines;

@@ -1,0 +1,13 @@
+pkg test;
+
+def void main()
+{
+    var bool b = true;
+}
+
+# define i64 @test.main() {
+# entry:
+#   %b = alloca i1, align 1
+#   store i1 true, ptr %b, align 1
+#   ret i64 0
+# }

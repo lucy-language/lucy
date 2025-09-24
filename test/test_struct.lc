@@ -1,0 +1,20 @@
+pkg test;
+
+struct Foo
+{
+    str s;
+    int i;
+}
+
+def void main()
+{
+    var Foo f;
+}
+
+# %test.Foo = type { ptr, i64 }
+#
+# define i64 @test.main() {
+# entry:
+#   %f = alloca %test.Foo, align 8
+#   ret i64 0
+# }

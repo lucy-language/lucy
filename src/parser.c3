@@ -33,7 +33,8 @@ fn void  Parser.try_consume(&self, TokenType expected)
             case SEMICOLON:
                 Range range = { last.range.end, last.range.end + 1 };
                 errors::print_range(self.path, last.line, range, last.ctx, "`;` expected after statement");
-            default:        errors::print(self.path, self.current(), string::format(mem, "Expected token %s, got %s", expected, self.current().type));
+            default:
+                errors::print(self.path, self.current(), string::format(mem, "Expected token %s, got %s", expected, self.current().type));
         }
     }
     self.consume();
@@ -42,7 +43,7 @@ fn void  Parser.try_consume(&self, TokenType expected)
 fn ASTNode* Parser.parse(&self)
 {
     ASTNode*   node       = malloc(ASTNode.sizeof);
-    ASTNode[]  links      = self.parse_links();
+    ASTNode*[]  links      = self.parse_links();
     ASTNode*   pkg        = self.parse_pkg();
     ASTNode*[] statements = self.parse_statements();
     
@@ -53,12 +54,13 @@ fn ASTNode* Parser.parse(&self)
     return node;
 }
 
-fn ASTNode[] Parser.parse_links(&self)
+fn ASTNode*[] Parser.parse_links(&self)
 {
-    ASTNode[] links;
+    ASTNode*[] links;
 
     while (self.current().type == KW_LINK)
     {
+        ASTNode* node    = malloc(ASTNode.sizeof);
         Token    current = self.current();
         int      start   = current.range.start;
         int      line    = current.line;
@@ -74,7 +76,9 @@ fn ASTNode[] Parser.parse_links(&self)
 
         int end = self.last().range.end;
 
-        util::array_insert(&links, (ASTNode){ LINK, { .link_node = { name } }, { start, end }, line, ctx });
+        *node = { LINK, { .link_node = { name } }, { start, end }, line, ctx };
+
+        util::array_insert(&links, node);
     }
 
     return links;
@@ -198,11 +202,18 @@ fn ASTNode* Parser.parse_def(&self)
     ASTNode*   type       = self.parse_type();
     ASTNode*   name       = self.parse_single_identifier();
     ASTNode*[] parameters = self.parse_parameters();
-    ASTNode*[] children   = self.parse_body();
+
+    ASTNode*[] attributes;
+    while (self.current().type == ATTRIBUTE)
+    {
+        util::array_insert(&attributes, self.parse_attribute());
+    }
+
+    ASTNode*[] children = self.parse_body();
 
     int end = self.last().range.end;
 
-    *node = { DEF, { .def_node = { type, name, parameters, children } }, { start, end }, line, ctx };
+    *node = { DEF, { .def_node = { type, name, parameters, attributes, children } }, { start, end }, line, ctx };
 
     return node;
 }
@@ -355,11 +366,17 @@ fn ASTNode* Parser.parse_ext(&self)
         aka = self.parse_single_identifier();
     }
 
+    ASTNode*[] attributes;
+    while (self.current().type == ATTRIBUTE)
+    {
+        util::array_insert(&attributes, self.parse_attribute());
+    }
+
     self.try_consume(SEMICOLON);
 
     int end = self.last().range.end;
 
-    *node = { EXT, { .ext_node = { type, name, parameters, aka } }, { start, end }, line, ctx };
+    *node = { EXT, { .ext_node = { type, name, parameters, aka, attributes } }, { start, end }, line, ctx };
 
     return node;
 }
@@ -1046,11 +1063,18 @@ fn ASTNode* Parser.parse_macro(&self)
     ASTNode*   type       = self.parse_type();
     ASTNode*   name       = self.parse_single_identifier();
     ASTNode*[] parameters = self.parse_parameters();
-    ASTNode*[] children   = self.parse_body();
+
+    ASTNode*[] attributes;
+    while (self.current().type == ATTRIBUTE)
+    {
+        util::array_insert(&attributes, self.parse_attribute());
+    }
+
+    ASTNode*[] children = self.parse_body();
 
     int end = self.last().range.end;
 
-    *node = { MACRO, { .macro_node = { type, name, parameters, children } }, { start, end }, line, ctx };
+    *node = { MACRO, { .macro_node = { type, name, parameters, attributes, children } }, { start, end }, line, ctx };
 
     return node;
 }
@@ -1071,6 +1095,24 @@ fn ASTNode* Parser.parse_unary(&self)
     int end = self.last().range.end;
 
     *node = { UNARY, { .unary_node = { operator, value } }, { start, end }, line, ctx };
+
+    return node;
+}
+
+fn ASTNode* Parser.parse_attribute(&self)
+{
+    ASTNode* node    = malloc(ASTNode.sizeof);
+    Token    current = self.current();
+    int      start   = current.range.start;
+    int      line    = current.line;
+    String[] ctx     = current.ctx;
+
+    String name = self.current().value;
+    self.consume();
+
+    int end = self.last().range.end;
+
+    *node = { ATTRIBUTE, { .attribute_node = { name } }, { start, end }, line, ctx };
 
     return node;
 }

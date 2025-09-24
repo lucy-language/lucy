@@ -1,142 +1,143 @@
 
 module llvm;
 
-const DISASSEMBLER_VARIANTKIND_NONE = 0;
-const DISASSEMBLER_VARIANTKIND_ARM_HI16 = 1;
-const DISASSEMBLER_VARIANTKIND_ARM_LO16 = 2;
-const DISASSEMBLER_VARIANTKIND_ARM64_PAGE = 1;
-const DISASSEMBLER_VARIANTKIND_ARM64_PAGEOFF = 2;
-const DISASSEMBLER_VARIANTKIND_ARM64_GOTPAGE = 3;
-const DISASSEMBLER_VARIANTKIND_ARM64_GOTPAGEOFF = 4;
-const DISASSEMBLER_VARIANTKIND_ARM64_TLVP = 5;
-const DISASSEMBLER_VARIANTKIND_ARM64_TLVOFF = 6;
-const DISASSEMBLER_REFERENCETYPE_INOUT_NONE = 0;
-const DISASSEMBLER_REFERENCETYPE_IN_BRANCH = 1;
-const DISASSEMBLER_REFERENCETYPE_IN_PCREL_LOAD = 2;
-const DISASSEMBLER_REFERENCETYPE_IN_ARM64_ADRP = 0x100000001;
-const DISASSEMBLER_REFERENCETYPE_IN_ARM64_ADDXRI = 0x100000002;
-const DISASSEMBLER_REFERENCETYPE_IN_ARM64_LDRXUI = 0x100000003;
-const DISASSEMBLER_REFERENCETYPE_IN_ARM64_LDRXL = 0x100000004;
-const DISASSEMBLER_REFERENCETYPE_IN_ARM64_ADR = 0x100000005;
-const DISASSEMBLER_REFERENCETYPE_OUT_SYMBOLSTUB = 1;
-const DISASSEMBLER_REFERENCETYPE_OUT_LITPOOL_SYMADDR = 2;
-const DISASSEMBLER_REFERENCETYPE_OUT_LITPOOL_CSTRADDR = 3;
-const DISASSEMBLER_REFERENCETYPE_OUT_OBJC_CFSTRING_REF = 4;
-const DISASSEMBLER_REFERENCETYPE_OUT_OBJC_MESSAGE = 5;
-const DISASSEMBLER_REFERENCETYPE_OUT_OBJC_MESSAGE_REF = 6;
-const DISASSEMBLER_REFERENCETYPE_OUT_OBJC_SELECTOR_REF = 7;
-const DISASSEMBLER_REFERENCETYPE_OUT_OBJC_CLASS_REF = 8;
-const DISASSEMBLER_REFERENCETYPE_DEMANGLED_NAME = 9;
-const DISASSEMBLER_OPTION_USEMARKUP = 1;
-const DISASSEMBLER_OPTION_PRINTIMMHEX = 2;
-const DISASSEMBLER_OPTION_ASMPRINTERVARIANT = 4;
-const DISASSEMBLER_OPTION_SETINSTRCOMMENTS = 8;
-const DISASSEMBLER_OPTION_PRINTLATENCY = 16;
-const DISASSEMBLER_OPTION_COLOR = 32;
-const ERROR_SUCCESS = 0;
+const FALSE = 0;
+const TRUE = 1;
+
+const DISASSEMBLER__VARIANT_KIND__NONE = 0;
+const DISASSEMBLER__VARIANT_KIND__AR_M__HI_1_6 = 1;
+const DISASSEMBLER__VARIANT_KIND__AR_M__LO_1_6 = 2;
+const DISASSEMBLER__VARIANT_KIND__ARM_6_4__PAGE = 1;
+const DISASSEMBLER__VARIANT_KIND__ARM_6_4__PAGEOFF = 2;
+const DISASSEMBLER__VARIANT_KIND__ARM_6_4__GOTPAGE = 3;
+const DISASSEMBLER__VARIANT_KIND__ARM_6_4__GOTPAGEOFF = 4;
+const DISASSEMBLER__VARIANT_KIND__ARM_6_4__TLVP = 5;
+const DISASSEMBLER__VARIANT_KIND__ARM_6_4__TLVOFF = 6;
+const DISASSEMBLER__REFERENCE_TYPE__IN_OUT__NONE = 0;
+const DISASSEMBLER__REFERENCE_TYPE__IN__BRANCH = 1;
+const DISASSEMBLER__REFERENCE_TYPE__IN__P_CREL__LOAD = 2;
+const DISASSEMBLER__REFERENCE_TYPE__IN__ARM_6_4__ADRP = 0x100000001;
+const DISASSEMBLER__REFERENCE_TYPE__IN__ARM_6_4__ADD_XRI = 0x100000002;
+const DISASSEMBLER__REFERENCE_TYPE__IN__ARM_6_4__LDR_XUI = 0x100000003;
+const DISASSEMBLER__REFERENCE_TYPE__IN__ARM_6_4__LDR_XL = 0x100000004;
+const DISASSEMBLER__REFERENCE_TYPE__IN__ARM_6_4__ADR = 0x100000005;
+const DISASSEMBLER__REFERENCE_TYPE__OUT__SYMBOL_STUB = 1;
+const DISASSEMBLER__REFERENCE_TYPE__OUT__LIT_POOL__SYM_ADDR = 2;
+const DISASSEMBLER__REFERENCE_TYPE__OUT__LIT_POOL__CSTR_ADDR = 3;
+const DISASSEMBLER__REFERENCE_TYPE__OUT__OBJC__CF_STRING__REF = 4;
+const DISASSEMBLER__REFERENCE_TYPE__OUT__OBJC__MESSAGE = 5;
+const DISASSEMBLER__REFERENCE_TYPE__OUT__OBJC__MESSAGE__REF = 6;
+const DISASSEMBLER__REFERENCE_TYPE__OUT__OBJC__SELECTOR__REF = 7;
+const DISASSEMBLER__REFERENCE_TYPE__OUT__OBJC__CLASS__REF = 8;
+const DISASSEMBLER__REFERENCE_TYPE__DE_MANGLED__NAME = 9;
+const DISASSEMBLER__OPTION__USE_MARKUP = 1;
+const DISASSEMBLER__OPTION__PRINT_IMM_HEX = 2;
+const DISASSEMBLER__OPTION__ASM_PRINTER_VARIANT = 4;
+const DISASSEMBLER__OPTION__SET_INSTR_COMMENTS = 8;
+const DISASSEMBLER__OPTION__PRINT_LATENCY = 16;
+const DISASSEMBLER__OPTION__COLOR = 32;
+const ERRORSUCCESS = 0;
+const DEFAULT_TARGET_TRIPLE = "x86_64-pc-linux-gnu";
+const ENABLE_THREADS = 1;
+const HAS_AARCH64_TARGET = 1;
+const HAS_AMDGPU_TARGET = 1;
+const HAS_ARC_TARGET = 0;
+const HAS_ARM_TARGET = 1;
+const HAS_AVR_TARGET = 1;
+const HAS_BPF_TARGET = 1;
+const HAS_CSKY_TARGET = 0;
+const HAS_DIRECTX_TARGET = 0;
+const HAS_HEXAGON_TARGET = 1;
+const HAS_LANAI_TARGET = 1;
+const HAS_LOONGARCH_TARGET = 1;
+const HAS_M68K_TARGET = 0;
+const HAS_MIPS_TARGET = 1;
+const HAS_MSP430_TARGET = 1;
+const HAS_NVPTX_TARGET = 1;
+const HAS_POWERPC_TARGET = 1;
+const HAS_RISCV_TARGET = 1;
+const HAS_SPARC_TARGET = 1;
+const HAS_SPIRV_TARGET = 1;
+const HAS_SYSTEMZ_TARGET = 1;
+const HAS_VE_TARGET = 1;
+const HAS_WEBASSEMBLY_TARGET = 1;
+const HAS_X86_TARGET = 1;
+const HAS_XCORE_TARGET = 1;
+const HAS_XTENSA_TARGET = 0;
+const ON_UNIX = 1;
+const USE_INTEL_JITEVENTS = 0;
+const USE_OPROFILE = 0;
+const USE_PERF = 1;
+const VERSION_MAJOR = 20;
+const VERSION_MINOR = 1;
+const VERSION_PATCH = 8;
+const VERSION_STRING = "20.1.8";
+const FORCE_ENABLE_STATS = 0;
+const ENABLE_CURL = 1;
+const ENABLE_ZLIB = 1;
+const ENABLE_ZSTD = 1;
+const HAVE_SYSEXITS_H = 1;
+const UNREACHABLE_OPTIMIZE = 1;
+const ENABLE_DIA_SDK = 0;
 const REMARKS_API_VERSION = 1;
-const _BLAK_E_3__VERSIO_N__STRING = "1.3.1";
-const _BLAK_E_3__KE_Y__LEN = 32;
-const _BLAK_E_3__OU_T__LEN = 32;
-const _BLAK_E_3__BLOC_K__LEN = 64;
-const _BLAK_E_3__CHUN_K__LEN = 1024;
-const _BLAK_E_3__MA_X__DEPTH = 54;
+const BLAKE3_VERSION_STRING = "1.3.1";
+const BLAKE3_KEY_LEN = 32;
+const BLAKE3_OUT_LEN = 32;
+const BLAKE3_BLOCK_LEN = 64;
+const BLAKE3_CHUNK_LEN = 1024;
+const BLAKE3_MAX_DEPTH = 54;
 const LTO_API_VERSION = 29;
 
 alias LLVMBool = CInt;
 
-typedef LLVMOpaqueMemoryBuffer = void;
+alias LLVMMemoryBufferRef = void*;
 
-alias LLVMMemoryBufferRef = LLVMOpaqueMemoryBuffer*;
+alias LLVMContextRef = void*;
 
-typedef LLVMOpaqueContext = void;
+alias LLVMModuleRef = void*;
 
-alias LLVMContextRef = LLVMOpaqueContext*;
+alias LLVMTypeRef = void*;
 
-typedef LLVMOpaqueModule = void;
+alias LLVMValueRef = void*;
 
-alias LLVMModuleRef = LLVMOpaqueModule*;
+alias LLVMBasicBlockRef = void*;
 
-typedef LLVMOpaqueType = void;
+alias LLVMMetadataRef = void*;
 
-alias LLVMTypeRef = LLVMOpaqueType*;
+alias LLVMNamedMDNodeRef = void*;
 
-typedef LLVMOpaqueValue = void;
+alias LLVMValueMetadataEntry = void;
 
-alias LLVMValueRef = LLVMOpaqueValue*;
+alias LLVMBuilderRef = void*;
 
-typedef LLVMOpaqueBasicBlock = void;
+alias LLVMDIBuilderRef = void*;
 
-alias LLVMBasicBlockRef = LLVMOpaqueBasicBlock*;
+alias LLVMModuleProviderRef = void*;
 
-typedef LLVMOpaqueMetadata = void;
+alias LLVMPassManagerRef = void*;
 
-alias LLVMMetadataRef = LLVMOpaqueMetadata*;
+alias LLVMUseRef = void*;
 
-typedef LLVMOpaqueNamedMDNode = void;
+alias LLVMOperandBundleRef = void*;
 
-alias LLVMNamedMDNodeRef = LLVMOpaqueNamedMDNode*;
+alias LLVMAttributeRef = void*;
 
-typedef LLVMOpaqueValueMetadataEntry = void;
+alias LLVMDiagnosticInfoRef = void*;
 
-alias LLVMValueMetadataEntry = LLVMOpaqueValueMetadataEntry;
+alias LLVMComdatRef = void*;
 
-typedef LLVMOpaqueBuilder = void;
+alias LLVMModuleFlagEntry = void;
 
-alias LLVMBuilderRef = LLVMOpaqueBuilder*;
+alias LLVMJITEventListenerRef = void*;
 
-typedef LLVMOpaqueDIBuilder = void;
+alias LLVMBinaryRef = void*;
 
-alias LLVMDIBuilderRef = LLVMOpaqueDIBuilder*;
-
-typedef LLVMOpaqueModuleProvider = void;
-
-alias LLVMModuleProviderRef = LLVMOpaqueModuleProvider*;
-
-typedef LLVMOpaquePassManager = void;
-
-alias LLVMPassManagerRef = LLVMOpaquePassManager*;
-
-typedef LLVMOpaqueUse = void;
-
-alias LLVMUseRef = LLVMOpaqueUse*;
-
-typedef LLVMOpaqueOperandBundle = void;
-
-alias LLVMOperandBundleRef = LLVMOpaqueOperandBundle*;
-
-typedef LLVMOpaqueAttributeRef = void;
-
-alias LLVMAttributeRef = LLVMOpaqueAttributeRef*;
-
-typedef LLVMOpaqueDiagnosticInfo = void;
-
-alias LLVMDiagnosticInfoRef = LLVMOpaqueDiagnosticInfo*;
-
-typedef LLVMComdat = void;
-
-alias LLVMComdatRef = LLVMComdat*;
-
-typedef LLVMOpaqueModuleFlagEntry = void;
-
-alias LLVMModuleFlagEntry = LLVMOpaqueModuleFlagEntry;
-
-typedef LLVMOpaqueJITEventListener = void;
-
-alias LLVMJITEventListenerRef = LLVMOpaqueJITEventListener*;
-
-typedef LLVMOpaqueBinary = void;
-
-alias LLVMBinaryRef = LLVMOpaqueBinary*;
-
-typedef LLVMOpaqueDbgRecord = void;
-
-alias LLVMDbgRecordRef = LLVMOpaqueDbgRecord*;
+alias LLVMDbgRecordRef = void*;
 
 typedef LLVMVerifierFailureAction = inline CUInt;
-const LLVMVerifierFailureAction ABORT_PROCESS_ACTION = 0;
-const LLVMVerifierFailureAction PRINT_MESSAGE_ACTION = 1;
-const LLVMVerifierFailureAction RETURN_STATUS_ACTION = 2;
+const LLVMVerifierFailureAction ABORTPROCESSACTION = 0;
+const LLVMVerifierFailureAction PRINTMESSAGEACTION = 1;
+const LLVMVerifierFailureAction RETURNSTATUSACTION = 2;
 
 fn LLVMBool verify_module(
   LLVMModuleRef m, 
@@ -227,11 +228,11 @@ fn LLVMMemoryBufferRef write_bitcode_to_memory_buffer(
 @extern("LLVMWriteBitcodeToMemoryBuffer");
 
 typedef LLVMComdatSelectionKind = inline CUInt;
-const LLVMComdatSelectionKind ANY_COMDAT_SELECTION_KIND = 0;
-const LLVMComdatSelectionKind EXACT_MATCH_COMDAT_SELECTION_KIND = 1;
-const LLVMComdatSelectionKind LARGEST_COMDAT_SELECTION_KIND = 2;
-const LLVMComdatSelectionKind NO_DEDUPLICATE_COMDAT_SELECTION_KIND = 3;
-const LLVMComdatSelectionKind SAME_SIZE_COMDAT_SELECTION_KIND = 4;
+const LLVMComdatSelectionKind ANYCOMDATSELECTIONKIND = 0;
+const LLVMComdatSelectionKind EXACTMATCHCOMDATSELECTIONKIND = 1;
+const LLVMComdatSelectionKind LARGESTCOMDATSELECTIONKIND = 2;
+const LLVMComdatSelectionKind NODEDUPLICATECOMDATSELECTIONKIND = 3;
+const LLVMComdatSelectionKind SAMESIZECOMDATSELECTIONKIND = 4;
 
 fn LLVMComdatRef get_or_insert_comdat(
   LLVMModuleRef m, 
@@ -273,313 +274,313 @@ typedef LLVMOpcode = inline CUInt;
 const LLVMOpcode RET = 1;
 const LLVMOpcode BR = 2;
 const LLVMOpcode SWITCH = 3;
-const LLVMOpcode INDIRECT_BR = 4;
+const LLVMOpcode INDIRECTBR = 4;
 const LLVMOpcode INVOKE = 5;
 const LLVMOpcode UNREACHABLE = 7;
-const LLVMOpcode CALL_BR = 67;
-const LLVMOpcode F_NEG = 66;
+const LLVMOpcode CALLBR = 67;
+const LLVMOpcode FNEG = 66;
 const LLVMOpcode ADD = 8;
-const LLVMOpcode F_ADD = 9;
+const LLVMOpcode FADD = 9;
 const LLVMOpcode SUB = 10;
-const LLVMOpcode F_SUB = 11;
+const LLVMOpcode FSUB = 11;
 const LLVMOpcode MUL = 12;
-const LLVMOpcode F_MUL = 13;
-const LLVMOpcode U_DIV = 14;
-const LLVMOpcode S_DIV = 15;
-const LLVMOpcode F_DIV = 16;
-const LLVMOpcode U_REM = 17;
-const LLVMOpcode S_REM = 18;
-const LLVMOpcode F_REM = 19;
+const LLVMOpcode FMUL = 13;
+const LLVMOpcode UDIV = 14;
+const LLVMOpcode SDIV = 15;
+const LLVMOpcode FDIV = 16;
+const LLVMOpcode UREM = 17;
+const LLVMOpcode SREM = 18;
+const LLVMOpcode FREM = 19;
 const LLVMOpcode SHL = 20;
-const LLVMOpcode L_SHR = 21;
-const LLVMOpcode A_SHR = 22;
+const LLVMOpcode LSHR = 21;
+const LLVMOpcode ASHR = 22;
 const LLVMOpcode AND = 23;
 const LLVMOpcode OR = 24;
 const LLVMOpcode XOR = 25;
 const LLVMOpcode ALLOCA = 26;
 const LLVMOpcode LOAD = 27;
 const LLVMOpcode STORE = 28;
-const LLVMOpcode GET_ELEMENT_PTR = 29;
+const LLVMOpcode GETELEMENTPTR = 29;
 const LLVMOpcode TRUNC = 30;
-const LLVMOpcode Z_EXT = 31;
-const LLVMOpcode S_EXT = 32;
-const LLVMOpcode FP_TO_UI = 33;
-const LLVMOpcode FP_TO_SI = 34;
-const LLVMOpcode UI_TO_FP = 35;
-const LLVMOpcode SI_TO_FP = 36;
-const LLVMOpcode FP_TRUNC = 37;
-const LLVMOpcode FP_EXT = 38;
-const LLVMOpcode PTR_TO_INT = 39;
-const LLVMOpcode INT_TO_PTR = 40;
-const LLVMOpcode BIT_CAST = 41;
-const LLVMOpcode ADDR_SPACE_CAST = 60;
-const LLVMOpcode I_CMP = 42;
-const LLVMOpcode F_CMP = 43;
+const LLVMOpcode ZEXT = 31;
+const LLVMOpcode SEXT = 32;
+const LLVMOpcode FPTOUI = 33;
+const LLVMOpcode FPTOSI = 34;
+const LLVMOpcode UITOFP = 35;
+const LLVMOpcode SITOFP = 36;
+const LLVMOpcode FPTRUNC = 37;
+const LLVMOpcode FPEXT = 38;
+const LLVMOpcode PTRTOINT = 39;
+const LLVMOpcode INTTOPTR = 40;
+const LLVMOpcode BITCAST = 41;
+const LLVMOpcode ADDRSPACECAST = 60;
+const LLVMOpcode ICMP = 42;
+const LLVMOpcode FCMP = 43;
 const LLVMOpcode PHI = 44;
 const LLVMOpcode CALL = 45;
 const LLVMOpcode SELECT = 46;
-const LLVMOpcode USER_OP_1 = 47;
-const LLVMOpcode USER_OP_2 = 48;
-const LLVMOpcode VA_ARG = 49;
-const LLVMOpcode EXTRACT_ELEMENT = 50;
-const LLVMOpcode INSERT_ELEMENT = 51;
-const LLVMOpcode SHUFFLE_VECTOR = 52;
-const LLVMOpcode EXTRACT_VALUE = 53;
-const LLVMOpcode INSERT_VALUE = 54;
+const LLVMOpcode USEROP1 = 47;
+const LLVMOpcode USEROP2 = 48;
+const LLVMOpcode VAARG = 49;
+const LLVMOpcode EXTRACTELEMENT = 50;
+const LLVMOpcode INSERTELEMENT = 51;
+const LLVMOpcode SHUFFLEVECTOR = 52;
+const LLVMOpcode EXTRACTVALUE = 53;
+const LLVMOpcode INSERTVALUE = 54;
 const LLVMOpcode FREEZE = 68;
 const LLVMOpcode FENCE = 55;
-const LLVMOpcode ATOMIC_CMP_XCHG = 56;
-const LLVMOpcode ATOMIC_RMW = 57;
+const LLVMOpcode ATOMICCMPXCHG = 56;
+const LLVMOpcode ATOMICRMW = 57;
 const LLVMOpcode RESUME = 58;
-const LLVMOpcode LANDING_PAD = 59;
-const LLVMOpcode CLEANUP_RET = 61;
-const LLVMOpcode CATCH_RET = 62;
-const LLVMOpcode CATCH_PAD = 63;
-const LLVMOpcode CLEANUP_PAD = 64;
-const LLVMOpcode CATCH_SWITCH = 65;
+const LLVMOpcode LANDINGPAD = 59;
+const LLVMOpcode CLEANUPRET = 61;
+const LLVMOpcode CATCHRET = 62;
+const LLVMOpcode CATCHPAD = 63;
+const LLVMOpcode CLEANUPPAD = 64;
+const LLVMOpcode CATCHSWITCH = 65;
 
 typedef LLVMTypeKind = inline CUInt;
-const LLVMTypeKind VOID_TYPE_KIND = 0;
-const LLVMTypeKind HALF_TYPE_KIND = 1;
-const LLVMTypeKind FLOAT_TYPE_KIND = 2;
-const LLVMTypeKind DOUBLE_TYPE_KIND = 3;
-const LLVMTypeKind X_86__F_P_80_TYPE_KIND = 4;
-const LLVMTypeKind F_P_128_TYPE_KIND = 5;
-const LLVMTypeKind PP_C__F_P_128_TYPE_KIND = 6;
-const LLVMTypeKind LABEL_TYPE_KIND = 7;
-const LLVMTypeKind INTEGER_TYPE_KIND = 8;
-const LLVMTypeKind FUNCTION_TYPE_KIND = 9;
-const LLVMTypeKind STRUCT_TYPE_KIND = 10;
-const LLVMTypeKind ARRAY_TYPE_KIND = 11;
-const LLVMTypeKind POINTER_TYPE_KIND = 12;
-const LLVMTypeKind VECTOR_TYPE_KIND = 13;
-const LLVMTypeKind METADATA_TYPE_KIND = 14;
-const LLVMTypeKind TOKEN_TYPE_KIND = 16;
-const LLVMTypeKind SCALABLE_VECTOR_TYPE_KIND = 17;
-const LLVMTypeKind B_FLOAT_TYPE_KIND = 18;
-const LLVMTypeKind X_86__AMX_TYPE_KIND = 19;
-const LLVMTypeKind TARGET_EXT_TYPE_KIND = 20;
+const LLVMTypeKind VOIDTYPEKIND = 0;
+const LLVMTypeKind HALFTYPEKIND = 1;
+const LLVMTypeKind FLOATTYPEKIND = 2;
+const LLVMTypeKind DOUBLETYPEKIND = 3;
+const LLVMTypeKind X86_FP80TYPEKIND = 4;
+const LLVMTypeKind FP128TYPEKIND = 5;
+const LLVMTypeKind PPC_FP128TYPEKIND = 6;
+const LLVMTypeKind LABELTYPEKIND = 7;
+const LLVMTypeKind INTEGERTYPEKIND = 8;
+const LLVMTypeKind FUNCTIONTYPEKIND = 9;
+const LLVMTypeKind STRUCTTYPEKIND = 10;
+const LLVMTypeKind ARRAYTYPEKIND = 11;
+const LLVMTypeKind POINTERTYPEKIND = 12;
+const LLVMTypeKind VECTORTYPEKIND = 13;
+const LLVMTypeKind METADATATYPEKIND = 14;
+const LLVMTypeKind TOKENTYPEKIND = 16;
+const LLVMTypeKind SCALABLEVECTORTYPEKIND = 17;
+const LLVMTypeKind BFLOATTYPEKIND = 18;
+const LLVMTypeKind X86_AMXTYPEKIND = 19;
+const LLVMTypeKind TARGETEXTTYPEKIND = 20;
 
 typedef LLVMLinkage = inline CUInt;
-const LLVMLinkage EXTERNAL_LINKAGE = 0;
-const LLVMLinkage AVAILABLE_EXTERNALLY_LINKAGE = 1;
-const LLVMLinkage LINK_ONCE_ANY_LINKAGE = 2;
-const LLVMLinkage LINK_ONCE_ODR_LINKAGE = 3;
-const LLVMLinkage LINK_ONCE_ODR_AUTO_HIDE_LINKAGE = 4;
-const LLVMLinkage WEAK_ANY_LINKAGE = 5;
-const LLVMLinkage WEAK_ODR_LINKAGE = 6;
-const LLVMLinkage APPENDING_LINKAGE = 7;
-const LLVMLinkage INTERNAL_LINKAGE = 8;
-const LLVMLinkage PRIVATE_LINKAGE = 9;
-const LLVMLinkage DLL_IMPORT_LINKAGE = 10;
-const LLVMLinkage DLL_EXPORT_LINKAGE = 11;
-const LLVMLinkage EXTERNAL_WEAK_LINKAGE = 12;
-const LLVMLinkage GHOST_LINKAGE = 13;
-const LLVMLinkage COMMON_LINKAGE = 14;
-const LLVMLinkage LINKER_PRIVATE_LINKAGE = 15;
-const LLVMLinkage LINKER_PRIVATE_WEAK_LINKAGE = 16;
+const LLVMLinkage EXTERNALLINKAGE = 0;
+const LLVMLinkage AVAILABLEEXTERNALLYLINKAGE = 1;
+const LLVMLinkage LINKONCEANYLINKAGE = 2;
+const LLVMLinkage LINKONCEODRLINKAGE = 3;
+const LLVMLinkage LINKONCEODRAUTOHIDELINKAGE = 4;
+const LLVMLinkage WEAKANYLINKAGE = 5;
+const LLVMLinkage WEAKODRLINKAGE = 6;
+const LLVMLinkage APPENDINGLINKAGE = 7;
+const LLVMLinkage INTERNALLINKAGE = 8;
+const LLVMLinkage PRIVATELINKAGE = 9;
+const LLVMLinkage DLLIMPORTLINKAGE = 10;
+const LLVMLinkage DLLEXPORTLINKAGE = 11;
+const LLVMLinkage EXTERNALWEAKLINKAGE = 12;
+const LLVMLinkage GHOSTLINKAGE = 13;
+const LLVMLinkage COMMONLINKAGE = 14;
+const LLVMLinkage LINKERPRIVATELINKAGE = 15;
+const LLVMLinkage LINKERPRIVATEWEAKLINKAGE = 16;
 
 typedef LLVMVisibility = inline CUInt;
-const LLVMVisibility DEFAULT_VISIBILITY = 0;
-const LLVMVisibility HIDDEN_VISIBILITY = 1;
-const LLVMVisibility PROTECTED_VISIBILITY = 2;
+const LLVMVisibility DEFAULTVISIBILITY = 0;
+const LLVMVisibility HIDDENVISIBILITY = 1;
+const LLVMVisibility PROTECTEDVISIBILITY = 2;
 
 typedef LLVMUnnamedAddr = inline CUInt;
-const LLVMUnnamedAddr NO_UNNAMED_ADDR = 0;
-const LLVMUnnamedAddr LOCAL_UNNAMED_ADDR = 1;
-const LLVMUnnamedAddr GLOBAL_UNNAMED_ADDR = 2;
+const LLVMUnnamedAddr NOUNNAMEDADDR = 0;
+const LLVMUnnamedAddr LOCALUNNAMEDADDR = 1;
+const LLVMUnnamedAddr GLOBALUNNAMEDADDR = 2;
 
 typedef LLVMDLLStorageClass = inline CUInt;
-const LLVMDLLStorageClass DEFAULT_STORAGE_CLASS = 0;
-const LLVMDLLStorageClass DLL_IMPORT_STORAGE_CLASS = 1;
-const LLVMDLLStorageClass DLL_EXPORT_STORAGE_CLASS = 2;
+const LLVMDLLStorageClass DEFAULTSTORAGECLASS = 0;
+const LLVMDLLStorageClass DLLIMPORTSTORAGECLASS = 1;
+const LLVMDLLStorageClass DLLEXPORTSTORAGECLASS = 2;
 
 typedef LLVMCallConv = inline CUInt;
-const LLVMCallConv C_CALL_CONV = 0;
-const LLVMCallConv FAST_CALL_CONV = 8;
-const LLVMCallConv COLD_CALL_CONV = 9;
-const LLVMCallConv GHC_CALL_CONV = 10;
-const LLVMCallConv HI_PE_CALL_CONV = 11;
-const LLVMCallConv ANY_REG_CALL_CONV = 13;
-const LLVMCallConv PRESERVE_MOST_CALL_CONV = 14;
-const LLVMCallConv PRESERVE_ALL_CALL_CONV = 15;
-const LLVMCallConv SWIFT_CALL_CONV = 16;
-const LLVMCallConv CXXFASTTLS_CALL_CONV = 17;
-const LLVMCallConv X_86_STDCALL_CALL_CONV = 64;
-const LLVMCallConv X_86_FASTCALL_CALL_CONV = 65;
-const LLVMCallConv ARMAPCS_CALL_CONV = 66;
-const LLVMCallConv ARMAAPCS_CALL_CONV = 67;
-const LLVMCallConv ARMAAPCSVFP_CALL_CONV = 68;
-const LLVMCallConv MS_P_430_INTR_CALL_CONV = 69;
-const LLVMCallConv X_86_THIS_CALL_CALL_CONV = 70;
-const LLVMCallConv PTX_KERNEL_CALL_CONV = 71;
-const LLVMCallConv PTX_DEVICE_CALL_CONV = 72;
-const LLVMCallConv SPIRFUNC_CALL_CONV = 75;
-const LLVMCallConv SPIRKERNEL_CALL_CONV = 76;
-const LLVMCallConv INTEL_OCLBI_CALL_CONV = 77;
-const LLVMCallConv X_8664_SYS_V_CALL_CONV = 78;
-const LLVMCallConv WIN_64_CALL_CONV = 79;
-const LLVMCallConv X_86_VECTOR_CALL_CALL_CONV = 80;
-const LLVMCallConv HHVM_CALL_CONV = 81;
-const LLVMCallConv HHVMC_CALL_CONV = 82;
-const LLVMCallConv X_86_INTR_CALL_CONV = 83;
-const LLVMCallConv AVRINTR_CALL_CONV = 84;
-const LLVMCallConv AVRSIGNAL_CALL_CONV = 85;
-const LLVMCallConv AVRBUILTIN_CALL_CONV = 86;
-const LLVMCallConv AMDGPUVS_CALL_CONV = 87;
-const LLVMCallConv AMDGPUGS_CALL_CONV = 88;
-const LLVMCallConv AMDGPUPS_CALL_CONV = 89;
-const LLVMCallConv AMDGPUCS_CALL_CONV = 90;
-const LLVMCallConv AMDGPUKERNEL_CALL_CONV = 91;
-const LLVMCallConv X_86_REG_CALL_CALL_CONV = 92;
-const LLVMCallConv AMDGPUHS_CALL_CONV = 93;
-const LLVMCallConv MS_P_430_BUILTIN_CALL_CONV = 94;
-const LLVMCallConv AMDGPULS_CALL_CONV = 95;
-const LLVMCallConv AMDGPUES_CALL_CONV = 96;
+const LLVMCallConv CCALLCONV = 0;
+const LLVMCallConv FASTCALLCONV = 8;
+const LLVMCallConv COLDCALLCONV = 9;
+const LLVMCallConv GHCCALLCONV = 10;
+const LLVMCallConv HIPECALLCONV = 11;
+const LLVMCallConv ANYREGCALLCONV = 13;
+const LLVMCallConv PRESERVEMOSTCALLCONV = 14;
+const LLVMCallConv PRESERVEALLCALLCONV = 15;
+const LLVMCallConv SWIFTCALLCONV = 16;
+const LLVMCallConv CXXFASTTLSCALLCONV = 17;
+const LLVMCallConv X86STDCALLCALLCONV = 64;
+const LLVMCallConv X86FASTCALLCALLCONV = 65;
+const LLVMCallConv ARMAPCSCALLCONV = 66;
+const LLVMCallConv ARMAAPCSCALLCONV = 67;
+const LLVMCallConv ARMAAPCSVFPCALLCONV = 68;
+const LLVMCallConv MSP430INTRCALLCONV = 69;
+const LLVMCallConv X86THISCALLCALLCONV = 70;
+const LLVMCallConv PTXKERNELCALLCONV = 71;
+const LLVMCallConv PTXDEVICECALLCONV = 72;
+const LLVMCallConv SPIRFUNCCALLCONV = 75;
+const LLVMCallConv SPIRKERNELCALLCONV = 76;
+const LLVMCallConv INTELOCLBICALLCONV = 77;
+const LLVMCallConv X8664SYSVCALLCONV = 78;
+const LLVMCallConv WIN64CALLCONV = 79;
+const LLVMCallConv X86VECTORCALLCALLCONV = 80;
+const LLVMCallConv HHVMCALLCONV = 81;
+const LLVMCallConv HHVMCCALLCONV = 82;
+const LLVMCallConv X86INTRCALLCONV = 83;
+const LLVMCallConv AVRINTRCALLCONV = 84;
+const LLVMCallConv AVRSIGNALCALLCONV = 85;
+const LLVMCallConv AVRBUILTINCALLCONV = 86;
+const LLVMCallConv AMDGPUVSCALLCONV = 87;
+const LLVMCallConv AMDGPUGSCALLCONV = 88;
+const LLVMCallConv AMDGPUPSCALLCONV = 89;
+const LLVMCallConv AMDGPUCSCALLCONV = 90;
+const LLVMCallConv AMDGPUKERNELCALLCONV = 91;
+const LLVMCallConv X86REGCALLCALLCONV = 92;
+const LLVMCallConv AMDGPUHSCALLCONV = 93;
+const LLVMCallConv MSP430BUILTINCALLCONV = 94;
+const LLVMCallConv AMDGPULSCALLCONV = 95;
+const LLVMCallConv AMDGPUESCALLCONV = 96;
 
 typedef LLVMValueKind = inline CUInt;
-const LLVMValueKind ARGUMENT_VALUE_KIND = 0;
-const LLVMValueKind BASIC_BLOCK_VALUE_KIND = 1;
-const LLVMValueKind MEMORY_USE_VALUE_KIND = 2;
-const LLVMValueKind MEMORY_DEF_VALUE_KIND = 3;
-const LLVMValueKind MEMORY_PHI_VALUE_KIND = 4;
-const LLVMValueKind FUNCTION_VALUE_KIND = 5;
-const LLVMValueKind GLOBAL_ALIAS_VALUE_KIND = 6;
-const LLVMValueKind GLOBAL_I_FUNC_VALUE_KIND = 7;
-const LLVMValueKind GLOBAL_VARIABLE_VALUE_KIND = 8;
-const LLVMValueKind BLOCK_ADDRESS_VALUE_KIND = 9;
-const LLVMValueKind CONSTANT_EXPR_VALUE_KIND = 10;
-const LLVMValueKind CONSTANT_ARRAY_VALUE_KIND = 11;
-const LLVMValueKind CONSTANT_STRUCT_VALUE_KIND = 12;
-const LLVMValueKind CONSTANT_VECTOR_VALUE_KIND = 13;
-const LLVMValueKind UNDEF_VALUE_VALUE_KIND = 14;
-const LLVMValueKind CONSTANT_AGGREGATE_ZERO_VALUE_KIND = 15;
-const LLVMValueKind CONSTANT_DATA_ARRAY_VALUE_KIND = 16;
-const LLVMValueKind CONSTANT_DATA_VECTOR_VALUE_KIND = 17;
-const LLVMValueKind CONSTANT_INT_VALUE_KIND = 18;
-const LLVMValueKind CONSTANT_FP_VALUE_KIND = 19;
-const LLVMValueKind CONSTANT_POINTER_NULL_VALUE_KIND = 20;
-const LLVMValueKind CONSTANT_TOKEN_NONE_VALUE_KIND = 21;
-const LLVMValueKind METADATA_AS_VALUE_VALUE_KIND = 22;
-const LLVMValueKind INLINE_ASM_VALUE_KIND = 23;
-const LLVMValueKind INSTRUCTION_VALUE_KIND = 24;
-const LLVMValueKind POISON_VALUE_VALUE_KIND = 25;
-const LLVMValueKind CONSTANT_TARGET_NONE_VALUE_KIND = 26;
-const LLVMValueKind CONSTANT_PTR_AUTH_VALUE_KIND = 27;
+const LLVMValueKind ARGUMENTVALUEKIND = 0;
+const LLVMValueKind BASICBLOCKVALUEKIND = 1;
+const LLVMValueKind MEMORYUSEVALUEKIND = 2;
+const LLVMValueKind MEMORYDEFVALUEKIND = 3;
+const LLVMValueKind MEMORYPHIVALUEKIND = 4;
+const LLVMValueKind FUNCTIONVALUEKIND = 5;
+const LLVMValueKind GLOBALALIASVALUEKIND = 6;
+const LLVMValueKind GLOBALIFUNCVALUEKIND = 7;
+const LLVMValueKind GLOBALVARIABLEVALUEKIND = 8;
+const LLVMValueKind BLOCKADDRESSVALUEKIND = 9;
+const LLVMValueKind CONSTANTEXPRVALUEKIND = 10;
+const LLVMValueKind CONSTANTARRAYVALUEKIND = 11;
+const LLVMValueKind CONSTANTSTRUCTVALUEKIND = 12;
+const LLVMValueKind CONSTANTVECTORVALUEKIND = 13;
+const LLVMValueKind UNDEFVALUEVALUEKIND = 14;
+const LLVMValueKind CONSTANTAGGREGATEZEROVALUEKIND = 15;
+const LLVMValueKind CONSTANTDATAARRAYVALUEKIND = 16;
+const LLVMValueKind CONSTANTDATAVECTORVALUEKIND = 17;
+const LLVMValueKind CONSTANTINTVALUEKIND = 18;
+const LLVMValueKind CONSTANTFPVALUEKIND = 19;
+const LLVMValueKind CONSTANTPOINTERNULLVALUEKIND = 20;
+const LLVMValueKind CONSTANTTOKENNONEVALUEKIND = 21;
+const LLVMValueKind METADATAASVALUEVALUEKIND = 22;
+const LLVMValueKind INLINEASMVALUEKIND = 23;
+const LLVMValueKind INSTRUCTIONVALUEKIND = 24;
+const LLVMValueKind POISONVALUEVALUEKIND = 25;
+const LLVMValueKind CONSTANTTARGETNONEVALUEKIND = 26;
+const LLVMValueKind CONSTANTPTRAUTHVALUEKIND = 27;
 
 typedef LLVMIntPredicate = inline CUInt;
-const LLVMIntPredicate INT_EQ = 32;
-const LLVMIntPredicate INT_NE = 33;
-const LLVMIntPredicate INT_UGT = 34;
-const LLVMIntPredicate INT_UGE = 35;
-const LLVMIntPredicate INT_ULT = 36;
-const LLVMIntPredicate INT_ULE = 37;
-const LLVMIntPredicate INT_SGT = 38;
-const LLVMIntPredicate INT_SGE = 39;
-const LLVMIntPredicate INT_SLT = 40;
-const LLVMIntPredicate INT_SLE = 41;
+const LLVMIntPredicate INTEQ = 32;
+const LLVMIntPredicate INTNE = 33;
+const LLVMIntPredicate INTUGT = 34;
+const LLVMIntPredicate INTUGE = 35;
+const LLVMIntPredicate INTULT = 36;
+const LLVMIntPredicate INTULE = 37;
+const LLVMIntPredicate INTSGT = 38;
+const LLVMIntPredicate INTSGE = 39;
+const LLVMIntPredicate INTSLT = 40;
+const LLVMIntPredicate INTSLE = 41;
 
 typedef LLVMRealPredicate = inline CUInt;
-const LLVMRealPredicate REAL_PREDICATE_FALSE = 0;
-const LLVMRealPredicate REAL_OEQ = 1;
-const LLVMRealPredicate REAL_OGT = 2;
-const LLVMRealPredicate REAL_OGE = 3;
-const LLVMRealPredicate REAL_OLT = 4;
-const LLVMRealPredicate REAL_OLE = 5;
-const LLVMRealPredicate REAL_ONE = 6;
-const LLVMRealPredicate REAL_ORD = 7;
-const LLVMRealPredicate REAL_UNO = 8;
-const LLVMRealPredicate REAL_UEQ = 9;
-const LLVMRealPredicate REAL_UGT = 10;
-const LLVMRealPredicate REAL_UGE = 11;
-const LLVMRealPredicate REAL_ULT = 12;
-const LLVMRealPredicate REAL_ULE = 13;
-const LLVMRealPredicate REAL_UNE = 14;
-const LLVMRealPredicate REAL_PREDICATE_TRUE = 15;
+const LLVMRealPredicate REALPREDICATEFALSE = 0;
+const LLVMRealPredicate REALOEQ = 1;
+const LLVMRealPredicate REALOGT = 2;
+const LLVMRealPredicate REALOGE = 3;
+const LLVMRealPredicate REALOLT = 4;
+const LLVMRealPredicate REALOLE = 5;
+const LLVMRealPredicate REALONE = 6;
+const LLVMRealPredicate REALORD = 7;
+const LLVMRealPredicate REALUNO = 8;
+const LLVMRealPredicate REALUEQ = 9;
+const LLVMRealPredicate REALUGT = 10;
+const LLVMRealPredicate REALUGE = 11;
+const LLVMRealPredicate REALULT = 12;
+const LLVMRealPredicate REALULE = 13;
+const LLVMRealPredicate REALUNE = 14;
+const LLVMRealPredicate REALPREDICATETRUE = 15;
 
 typedef LLVMLandingPadClauseTy = inline CUInt;
-const LLVMLandingPadClauseTy LANDING_PAD_CATCH = 0;
-const LLVMLandingPadClauseTy LANDING_PAD_FILTER = 1;
+const LLVMLandingPadClauseTy LANDINGPADCATCH = 0;
+const LLVMLandingPadClauseTy LANDINGPADFILTER = 1;
 
 typedef LLVMThreadLocalMode = inline CUInt;
-const LLVMThreadLocalMode NOT_THREAD_LOCAL = 0;
-const LLVMThreadLocalMode GENERAL_DYNAMIC_TLS_MODEL = 1;
-const LLVMThreadLocalMode LOCAL_DYNAMIC_TLS_MODEL = 2;
-const LLVMThreadLocalMode INITIAL_EXEC_TLS_MODEL = 3;
-const LLVMThreadLocalMode LOCAL_EXEC_TLS_MODEL = 4;
+const LLVMThreadLocalMode NOTTHREADLOCAL = 0;
+const LLVMThreadLocalMode GENERALDYNAMICTLSMODEL = 1;
+const LLVMThreadLocalMode LOCALDYNAMICTLSMODEL = 2;
+const LLVMThreadLocalMode INITIALEXECTLSMODEL = 3;
+const LLVMThreadLocalMode LOCALEXECTLSMODEL = 4;
 
 typedef LLVMAtomicOrdering = inline CUInt;
-const LLVMAtomicOrdering ATOMIC_ORDERING_NOT_ATOMIC = 0;
-const LLVMAtomicOrdering ATOMIC_ORDERING_UNORDERED = 1;
-const LLVMAtomicOrdering ATOMIC_ORDERING_MONOTONIC = 2;
-const LLVMAtomicOrdering ATOMIC_ORDERING_ACQUIRE = 4;
-const LLVMAtomicOrdering ATOMIC_ORDERING_RELEASE = 5;
-const LLVMAtomicOrdering ATOMIC_ORDERING_ACQUIRE_RELEASE = 6;
-const LLVMAtomicOrdering ATOMIC_ORDERING_SEQUENTIALLY_CONSISTENT = 7;
+const LLVMAtomicOrdering ATOMICORDERINGNOTATOMIC = 0;
+const LLVMAtomicOrdering ATOMICORDERINGUNORDERED = 1;
+const LLVMAtomicOrdering ATOMICORDERINGMONOTONIC = 2;
+const LLVMAtomicOrdering ATOMICORDERINGACQUIRE = 4;
+const LLVMAtomicOrdering ATOMICORDERINGRELEASE = 5;
+const LLVMAtomicOrdering ATOMICORDERINGACQUIRERELEASE = 6;
+const LLVMAtomicOrdering ATOMICORDERINGSEQUENTIALLYCONSISTENT = 7;
 
 typedef LLVMAtomicRMWBinOp = inline CUInt;
-const LLVMAtomicRMWBinOp ATOMIC_RMW_BIN_OP_XCHG = 0;
-const LLVMAtomicRMWBinOp ATOMIC_RMW_BIN_OP_ADD = 1;
-const LLVMAtomicRMWBinOp ATOMIC_RMW_BIN_OP_SUB = 2;
-const LLVMAtomicRMWBinOp ATOMIC_RMW_BIN_OP_AND = 3;
-const LLVMAtomicRMWBinOp ATOMIC_RMW_BIN_OP_NAND = 4;
-const LLVMAtomicRMWBinOp ATOMIC_RMW_BIN_OP_OR = 5;
-const LLVMAtomicRMWBinOp ATOMIC_RMW_BIN_OP_XOR = 6;
-const LLVMAtomicRMWBinOp ATOMIC_RMW_BIN_OP_MAX = 7;
-const LLVMAtomicRMWBinOp ATOMIC_RMW_BIN_OP_MIN = 8;
-const LLVMAtomicRMWBinOp ATOMIC_RMW_BIN_OP_U_MAX = 9;
-const LLVMAtomicRMWBinOp ATOMIC_RMW_BIN_OP_U_MIN = 10;
-const LLVMAtomicRMWBinOp ATOMIC_RMW_BIN_OP_F_ADD = 11;
-const LLVMAtomicRMWBinOp ATOMIC_RMW_BIN_OP_F_SUB = 12;
-const LLVMAtomicRMWBinOp ATOMIC_RMW_BIN_OP_F_MAX = 13;
-const LLVMAtomicRMWBinOp ATOMIC_RMW_BIN_OP_F_MIN = 14;
-const LLVMAtomicRMWBinOp ATOMIC_RMW_BIN_OP_U_INC_WRAP = 15;
-const LLVMAtomicRMWBinOp ATOMIC_RMW_BIN_OP_U_DEC_WRAP = 16;
-const LLVMAtomicRMWBinOp ATOMIC_RMW_BIN_OP_U_SUB_COND = 17;
-const LLVMAtomicRMWBinOp ATOMIC_RMW_BIN_OP_U_SUB_SAT = 18;
+const LLVMAtomicRMWBinOp ATOMICRMWBINOPXCHG = 0;
+const LLVMAtomicRMWBinOp ATOMICRMWBINOPADD = 1;
+const LLVMAtomicRMWBinOp ATOMICRMWBINOPSUB = 2;
+const LLVMAtomicRMWBinOp ATOMICRMWBINOPAND = 3;
+const LLVMAtomicRMWBinOp ATOMICRMWBINOPNAND = 4;
+const LLVMAtomicRMWBinOp ATOMICRMWBINOPOR = 5;
+const LLVMAtomicRMWBinOp ATOMICRMWBINOPXOR = 6;
+const LLVMAtomicRMWBinOp ATOMICRMWBINOPMAX = 7;
+const LLVMAtomicRMWBinOp ATOMICRMWBINOPMIN = 8;
+const LLVMAtomicRMWBinOp ATOMICRMWBINOPUMAX = 9;
+const LLVMAtomicRMWBinOp ATOMICRMWBINOPUMIN = 10;
+const LLVMAtomicRMWBinOp ATOMICRMWBINOPFADD = 11;
+const LLVMAtomicRMWBinOp ATOMICRMWBINOPFSUB = 12;
+const LLVMAtomicRMWBinOp ATOMICRMWBINOPFMAX = 13;
+const LLVMAtomicRMWBinOp ATOMICRMWBINOPFMIN = 14;
+const LLVMAtomicRMWBinOp ATOMICRMWBINOPUINCWRAP = 15;
+const LLVMAtomicRMWBinOp ATOMICRMWBINOPUDECWRAP = 16;
+const LLVMAtomicRMWBinOp ATOMICRMWBINOPUSUBCOND = 17;
+const LLVMAtomicRMWBinOp ATOMICRMWBINOPUSUBSAT = 18;
 
 typedef LLVMDiagnosticSeverity = inline CUInt;
-const LLVMDiagnosticSeverity DS_ERROR = 0;
-const LLVMDiagnosticSeverity DS_WARNING = 1;
-const LLVMDiagnosticSeverity DS_REMARK = 2;
-const LLVMDiagnosticSeverity DS_NOTE = 3;
+const LLVMDiagnosticSeverity DSERROR = 0;
+const LLVMDiagnosticSeverity DSWARNING = 1;
+const LLVMDiagnosticSeverity DSREMARK = 2;
+const LLVMDiagnosticSeverity DSNOTE = 3;
 
 typedef LLVMInlineAsmDialect = inline CUInt;
-const LLVMInlineAsmDialect INLINE_ASM_DIALECT_ATT = 0;
-const LLVMInlineAsmDialect INLINE_ASM_DIALECT_INTEL = 1;
+const LLVMInlineAsmDialect INLINEASMDIALECTATT = 0;
+const LLVMInlineAsmDialect INLINEASMDIALECTINTEL = 1;
 
 typedef LLVMModuleFlagBehavior = inline CUInt;
-const LLVMModuleFlagBehavior MODULE_FLAG_BEHAVIOR_ERROR = 0;
-const LLVMModuleFlagBehavior MODULE_FLAG_BEHAVIOR_WARNING = 1;
-const LLVMModuleFlagBehavior MODULE_FLAG_BEHAVIOR_REQUIRE = 2;
-const LLVMModuleFlagBehavior MODULE_FLAG_BEHAVIOR_OVERRIDE = 3;
-const LLVMModuleFlagBehavior MODULE_FLAG_BEHAVIOR_APPEND = 4;
-const LLVMModuleFlagBehavior MODULE_FLAG_BEHAVIOR_APPEND_UNIQUE = 5;
-const CInt ATTRIBUTE_RETURN_INDEX = 0U;
-const CInt ATTRIBUTE_FUNCTION_INDEX = -1;
+const LLVMModuleFlagBehavior MODULEFLAGBEHAVIORERROR = 0;
+const LLVMModuleFlagBehavior MODULEFLAGBEHAVIORWARNING = 1;
+const LLVMModuleFlagBehavior MODULEFLAGBEHAVIORREQUIRE = 2;
+const LLVMModuleFlagBehavior MODULEFLAGBEHAVIOROVERRIDE = 3;
+const LLVMModuleFlagBehavior MODULEFLAGBEHAVIORAPPEND = 4;
+const LLVMModuleFlagBehavior MODULEFLAGBEHAVIORAPPENDUNIQUE = 5;
+const CInt ATTRIBUTERETURNINDEX = 0U;
+const CInt ATTRIBUTEFUNCTIONINDEX = -1;
 
 alias LLVMAttributeIndex = CUInt;
 
 typedef LLVMTailCallKind = inline CUInt;
-const LLVMTailCallKind TAIL_CALL_KIND_NONE = 0;
-const LLVMTailCallKind TAIL_CALL_KIND_TAIL = 1;
-const LLVMTailCallKind TAIL_CALL_KIND_MUST_TAIL = 2;
-const LLVMTailCallKind TAIL_CALL_KIND_NO_TAIL = 3;
-const CUInt FAST_MATH_ALLOW_REASSOC = (1<<0);
-const CUInt FAST_MATH_NO_NA_NS = (1<<1);
-const CUInt FAST_MATH_NO_INFS = (1<<2);
-const CUInt FAST_MATH_NO_SIGNED_ZEROS = (1<<3);
-const CUInt FAST_MATH_ALLOW_RECIPROCAL = (1<<4);
-const CUInt FAST_MATH_ALLOW_CONTRACT = (1<<5);
-const CUInt FAST_MATH_APPROX_FUNC = (1<<6);
-const CUInt FAST_MATH_NONE = 0;
-const CUInt FAST_MATH_ALL = FAST_MATH_ALLOW_REASSOC|FAST_MATH_NO_NA_NS|FAST_MATH_NO_INFS|FAST_MATH_NO_SIGNED_ZEROS|FAST_MATH_ALLOW_RECIPROCAL|FAST_MATH_ALLOW_CONTRACT|FAST_MATH_APPROX_FUNC;
+const LLVMTailCallKind TAILCALLKINDNONE = 0;
+const LLVMTailCallKind TAILCALLKINDTAIL = 1;
+const LLVMTailCallKind TAILCALLKINDMUSTTAIL = 2;
+const LLVMTailCallKind TAILCALLKINDNOTAIL = 3;
+const CUInt FASTMATHALLOWREASSOC = (1<<0);
+const CUInt FASTMATHNONANS = (1<<1);
+const CUInt FASTMATHNOINFS = (1<<2);
+const CUInt FASTMATHNOSIGNEDZEROS = (1<<3);
+const CUInt FASTMATHALLOWRECIPROCAL = (1<<4);
+const CUInt FASTMATHALLOWCONTRACT = (1<<5);
+const CUInt FASTMATHAPPROXFUNC = (1<<6);
+const CUInt FASTMATHNONE = 0;
+const CUInt FASTMATHALL = FASTMATHALLOWREASSOC|FASTMATHNONANS|FASTMATHNOINFS|FASTMATHNOSIGNEDZEROS|FASTMATHALLOWRECIPROCAL|FASTMATHALLOWCONTRACT|FASTMATHAPPROXFUNC;
 
 alias LLVMFastMathFlags = CUInt;
 
-const CUInt GEP_FLAG_IN_BOUNDS = (1<<0);
-const CUInt GEP_FLAG_NUSW = (1<<1);
-const CUInt GEP_FLAG_NUW = (1<<2);
+const CUInt GEPFLAGINBOUNDS = (1<<0);
+const CUInt GEPFLAGNUSW = (1<<1);
+const CUInt GEPFLAGNUW = (1<<2);
 
 alias LLVMGEPNoWrapFlags = CUInt;
 
@@ -1135,15 +1136,15 @@ fn LLVMTypeRef double_type_in_context(
   LLVMContextRef c)
 @extern("LLVMDoubleTypeInContext");
 
-fn LLVMTypeRef x_86_f_p_80_type_in_context(
+fn LLVMTypeRef x86_fp_8_0_type_in_context(
   LLVMContextRef c)
 @extern("LLVMX86FP80TypeInContext");
 
-fn LLVMTypeRef f_p_128_type_in_context(
+fn LLVMTypeRef fp_1_28_type_in_context(
   LLVMContextRef c)
 @extern("LLVMFP128TypeInContext");
 
-fn LLVMTypeRef ppcf_p_128_type_in_context(
+fn LLVMTypeRef ppcfp_1_28_type_in_context(
   LLVMContextRef c)
 @extern("LLVMPPCFP128TypeInContext");
 
@@ -1159,13 +1160,13 @@ fn LLVMTypeRef float_type()
 fn LLVMTypeRef double_type()
 @extern("LLVMDoubleType");
 
-fn LLVMTypeRef x_86_f_p_80_type()
+fn LLVMTypeRef x86_fp_8_0_type()
 @extern("LLVMX86FP80Type");
 
-fn LLVMTypeRef f_p_128_type()
+fn LLVMTypeRef fp_1_28_type()
 @extern("LLVMFP128Type");
 
-fn LLVMTypeRef ppcf_p_128_type()
+fn LLVMTypeRef ppcfp_1_28_type()
 @extern("LLVMPPCFP128Type");
 
 fn LLVMTypeRef function_type(
@@ -1334,7 +1335,7 @@ fn LLVMTypeRef label_type_in_context(
   LLVMContextRef c)
 @extern("LLVMLabelTypeInContext");
 
-fn LLVMTypeRef x_86_amx_type_in_context(
+fn LLVMTypeRef x86_amx_type_in_context(
   LLVMContextRef c)
 @extern("LLVMX86AMXTypeInContext");
 
@@ -1352,7 +1353,7 @@ fn LLVMTypeRef void_type()
 fn LLVMTypeRef label_type()
 @extern("LLVMLabelType");
 
-fn LLVMTypeRef x_86_amx_type()
+fn LLVMTypeRef x86_amx_type()
 @extern("LLVMX86AMXType");
 
 fn LLVMTypeRef target_ext_type_in_context(
@@ -2089,14 +2090,14 @@ fn LLVMValueRef const_xor(
   LLVMValueRef rhs_constant)
 @extern("LLVMConstXor");
 
-fn LLVMValueRef const_ge_p_2(
+fn LLVMValueRef const_gep_2(
   LLVMTypeRef ty, 
   LLVMValueRef constant_val, 
   LLVMValueRef* constant_indices, 
   CUInt num_indices)
 @extern("LLVMConstGEP2");
 
-fn LLVMValueRef const_in_bounds_ge_p_2(
+fn LLVMValueRef const_in_bounds_gep_2(
   LLVMTypeRef ty, 
   LLVMValueRef constant_val, 
   LLVMValueRef* constant_indices, 
@@ -3809,7 +3810,7 @@ fn LLVMValueRef build_store(
   LLVMValueRef ptr)
 @extern("LLVMBuildStore");
 
-fn LLVMValueRef build_ge_p_2(
+fn LLVMValueRef build_gep_2(
   LLVMBuilderRef b, 
   LLVMTypeRef ty, 
   LLVMValueRef pointer, 
@@ -3818,7 +3819,7 @@ fn LLVMValueRef build_ge_p_2(
   CChar* name)
 @extern("LLVMBuildGEP2");
 
-fn LLVMValueRef build_in_bounds_ge_p_2(
+fn LLVMValueRef build_in_bounds_gep_2(
   LLVMBuilderRef b, 
   LLVMTypeRef ty, 
   LLVMValueRef pointer, 
@@ -3837,7 +3838,7 @@ fn LLVMValueRef build_gep_with_no_wrap_flags(
   LLVMGEPNoWrapFlags no_wrap_flags)
 @extern("LLVMBuildGEPWithNoWrapFlags");
 
-fn LLVMValueRef build_struct_ge_p_2(
+fn LLVMValueRef build_struct_gep_2(
   LLVMBuilderRef b, 
   LLVMTypeRef ty, 
   LLVMValueRef pointer, 
@@ -4361,158 +4362,158 @@ fn LLVMBool is_multithreaded()
 @extern("LLVMIsMultithreaded");
 
 typedef LLVMDIFlags = inline CUInt;
-const LLVMDIFlags DI_FLAG_ZERO = 0;
-const LLVMDIFlags DI_FLAG_PRIVATE = 1;
-const LLVMDIFlags DI_FLAG_PROTECTED = 2;
-const LLVMDIFlags DI_FLAG_PUBLIC = 3;
-const LLVMDIFlags DI_FLAG_FWD_DECL = 1<<2;
-const LLVMDIFlags DI_FLAG_APPLE_BLOCK = 1<<3;
-const LLVMDIFlags DI_FLAG_RESERVED_BIT_4 = 1<<4;
-const LLVMDIFlags DI_FLAG_VIRTUAL = 1<<5;
-const LLVMDIFlags DI_FLAG_ARTIFICIAL = 1<<6;
-const LLVMDIFlags DI_FLAG_EXPLICIT = 1<<7;
-const LLVMDIFlags DI_FLAG_PROTOTYPED = 1<<8;
-const LLVMDIFlags DI_FLAG_OBJC_CLASS_COMPLETE = 1<<9;
-const LLVMDIFlags DI_FLAG_OBJECT_POINTER = 1<<10;
-const LLVMDIFlags DI_FLAG_VECTOR = 1<<11;
-const LLVMDIFlags DI_FLAG_STATIC_MEMBER = 1<<12;
-const LLVMDIFlags DI_FLAG_L_VALUE_REFERENCE = 1<<13;
-const LLVMDIFlags DI_FLAG_R_VALUE_REFERENCE = 1<<14;
-const LLVMDIFlags DI_FLAG_RESERVED = 1<<15;
-const LLVMDIFlags DI_FLAG_SINGLE_INHERITANCE = 1<<16;
-const LLVMDIFlags DI_FLAG_MULTIPLE_INHERITANCE = 2<<16;
-const LLVMDIFlags DI_FLAG_VIRTUAL_INHERITANCE = 3<<16;
-const LLVMDIFlags DI_FLAG_INTRODUCED_VIRTUAL = 1<<18;
-const LLVMDIFlags DI_FLAG_BIT_FIELD = 1<<19;
-const LLVMDIFlags DI_FLAG_NO_RETURN = 1<<20;
-const LLVMDIFlags DI_FLAG_TYPE_PASS_BY_VALUE = 1<<22;
-const LLVMDIFlags DI_FLAG_TYPE_PASS_BY_REFERENCE = 1<<23;
-const LLVMDIFlags DI_FLAG_ENUM_CLASS = 1<<24;
-const LLVMDIFlags DI_FLAG_FIXED_ENUM = DI_FLAG_ENUM_CLASS;
-const LLVMDIFlags DI_FLAG_THUNK = 1<<25;
-const LLVMDIFlags DI_FLAG_NON_TRIVIAL = 1<<26;
-const LLVMDIFlags DI_FLAG_BIG_ENDIAN = 1<<27;
-const LLVMDIFlags DI_FLAG_LITTLE_ENDIAN = 1<<28;
-const LLVMDIFlags DI_FLAG_INDIRECT_VIRTUAL_BASE = (1<<2)|(1<<5);
-const LLVMDIFlags DI_FLAG_ACCESSIBILITY = DI_FLAG_PRIVATE|DI_FLAG_PROTECTED|DI_FLAG_PUBLIC;
-const LLVMDIFlags DI_FLAG_PTR_TO_MEMBER_REP = DI_FLAG_SINGLE_INHERITANCE|DI_FLAG_MULTIPLE_INHERITANCE|DI_FLAG_VIRTUAL_INHERITANCE;
+const LLVMDIFlags DIFLAGZERO = 0;
+const LLVMDIFlags DIFLAGPRIVATE = 1;
+const LLVMDIFlags DIFLAGPROTECTED = 2;
+const LLVMDIFlags DIFLAGPUBLIC = 3;
+const LLVMDIFlags DIFLAGFWDDECL = 1<<2;
+const LLVMDIFlags DIFLAGAPPLEBLOCK = 1<<3;
+const LLVMDIFlags DIFLAGRESERVEDBIT4 = 1<<4;
+const LLVMDIFlags DIFLAGVIRTUAL = 1<<5;
+const LLVMDIFlags DIFLAGARTIFICIAL = 1<<6;
+const LLVMDIFlags DIFLAGEXPLICIT = 1<<7;
+const LLVMDIFlags DIFLAGPROTOTYPED = 1<<8;
+const LLVMDIFlags DIFLAGOBJCCLASSCOMPLETE = 1<<9;
+const LLVMDIFlags DIFLAGOBJECTPOINTER = 1<<10;
+const LLVMDIFlags DIFLAGVECTOR = 1<<11;
+const LLVMDIFlags DIFLAGSTATICMEMBER = 1<<12;
+const LLVMDIFlags DIFLAGLVALUEREFERENCE = 1<<13;
+const LLVMDIFlags DIFLAGRVALUEREFERENCE = 1<<14;
+const LLVMDIFlags DIFLAGRESERVED = 1<<15;
+const LLVMDIFlags DIFLAGSINGLEINHERITANCE = 1<<16;
+const LLVMDIFlags DIFLAGMULTIPLEINHERITANCE = 2<<16;
+const LLVMDIFlags DIFLAGVIRTUALINHERITANCE = 3<<16;
+const LLVMDIFlags DIFLAGINTRODUCEDVIRTUAL = 1<<18;
+const LLVMDIFlags DIFLAGBITFIELD = 1<<19;
+const LLVMDIFlags DIFLAGNORETURN = 1<<20;
+const LLVMDIFlags DIFLAGTYPEPASSBYVALUE = 1<<22;
+const LLVMDIFlags DIFLAGTYPEPASSBYREFERENCE = 1<<23;
+const LLVMDIFlags DIFLAGENUMCLASS = 1<<24;
+const LLVMDIFlags DIFLAGFIXEDENUM = DIFLAGENUMCLASS;
+const LLVMDIFlags DIFLAGTHUNK = 1<<25;
+const LLVMDIFlags DIFLAGNONTRIVIAL = 1<<26;
+const LLVMDIFlags DIFLAGBIGENDIAN = 1<<27;
+const LLVMDIFlags DIFLAGLITTLEENDIAN = 1<<28;
+const LLVMDIFlags DIFLAGINDIRECTVIRTUALBASE = (1<<2)|(1<<5);
+const LLVMDIFlags DIFLAGACCESSIBILITY = DIFLAGPRIVATE|DIFLAGPROTECTED|DIFLAGPUBLIC;
+const LLVMDIFlags DIFLAGPTRTOMEMBERREP = DIFLAGSINGLEINHERITANCE|DIFLAGMULTIPLEINHERITANCE|DIFLAGVIRTUALINHERITANCE;
 
 typedef LLVMDWARFSourceLanguage = inline CUInt;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_C_89 = 0;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_C = 1;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_ADA_83 = 2;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_C_PLUS_PLUS = 3;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_COBOL_74 = 4;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_COBOL_85 = 5;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_FORTRAN_77 = 6;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_FORTRAN_90 = 7;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_PASCAL_83 = 8;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_MODULA_2 = 9;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_JAVA = 10;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_C_99 = 11;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_ADA_95 = 12;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_FORTRAN_95 = 13;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_PLI = 14;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_OBJ_C = 15;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_OBJ_C_PLUS_PLUS = 16;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_UPC = 17;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_D = 18;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_PYTHON = 19;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_OPEN_CL = 20;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_GO = 21;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_MODULA_3 = 22;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_HASKELL = 23;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_C_PLUS_PLUS__03 = 24;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_C_PLUS_PLUS__11 = 25;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_O_CAML = 26;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_RUST = 27;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_C_11 = 28;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_SWIFT = 29;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_JULIA = 30;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_DYLAN = 31;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_C_PLUS_PLUS__14 = 32;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_FORTRAN_03 = 33;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_FORTRAN_08 = 34;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_RENDER_SCRIPT = 35;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_BLISS = 36;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_KOTLIN = 37;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_ZIG = 38;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_CRYSTAL = 39;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_C_PLUS_PLUS__17 = 40;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_C_PLUS_PLUS__20 = 41;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_C_17 = 42;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_FORTRAN_18 = 43;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_ADA_2005 = 44;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_ADA_2012 = 45;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_HIP = 46;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_ASSEMBLY = 47;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_C_SHARP = 48;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_MOJO = 49;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_GLSL = 50;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_GLS_L__ES = 51;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_HLSL = 52;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_OPEN_C_L__CPP = 53;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_CP_P_FOR__OPEN_CL = 54;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_SYCL = 55;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_RUBY = 56;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_MOVE = 57;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_HYLO = 58;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_METAL = 59;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_MIPS__ASSEMBLER = 60;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_GOOGL_E__RENDER_SCRIPT = 61;
-const LLVMDWARFSourceLanguage DWARF_SOURCE_LANGUAGE_BORLAN_D__DELPHI = 62;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEC89 = 0;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEC = 1;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEADA83 = 2;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEC_PLUS_PLUS = 3;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGECOBOL74 = 4;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGECOBOL85 = 5;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEFORTRAN77 = 6;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEFORTRAN90 = 7;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEPASCAL83 = 8;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEMODULA2 = 9;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEJAVA = 10;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEC99 = 11;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEADA95 = 12;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEFORTRAN95 = 13;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEPLI = 14;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEOBJC = 15;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEOBJC_PLUS_PLUS = 16;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEUPC = 17;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGED = 18;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEPYTHON = 19;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEOPENCL = 20;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEGO = 21;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEMODULA3 = 22;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEHASKELL = 23;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEC_PLUS_PLUS_03 = 24;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEC_PLUS_PLUS_11 = 25;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEOCAML = 26;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGERUST = 27;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEC11 = 28;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGESWIFT = 29;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEJULIA = 30;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEDYLAN = 31;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEC_PLUS_PLUS_14 = 32;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEFORTRAN03 = 33;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEFORTRAN08 = 34;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGERENDERSCRIPT = 35;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEBLISS = 36;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEKOTLIN = 37;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEZIG = 38;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGECRYSTAL = 39;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEC_PLUS_PLUS_17 = 40;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEC_PLUS_PLUS_20 = 41;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEC17 = 42;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEFORTRAN18 = 43;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEADA2005 = 44;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEADA2012 = 45;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEHIP = 46;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEASSEMBLY = 47;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEC_SHARP = 48;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEMOJO = 49;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEGLSL = 50;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEGLSL_ES = 51;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEHLSL = 52;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEOPENCL_CPP = 53;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGECPP_FOR_OPENCL = 54;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGESYCL = 55;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGERUBY = 56;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEMOVE = 57;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEHYLO = 58;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEMETAL = 59;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEMIPS_ASSEMBLER = 60;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEGOOGLE_RENDERSCRIPT = 61;
+const LLVMDWARFSourceLanguage DWARFSOURCELANGUAGEBORLAND_DELPHI = 62;
 
 typedef LLVMDWARFEmissionKind = inline CUInt;
-const LLVMDWARFEmissionKind DWARF_EMISSION_NONE = 0;
-const LLVMDWARFEmissionKind DWARF_EMISSION_FULL = 1;
-const LLVMDWARFEmissionKind DWARF_EMISSION_LINE_TABLES_ONLY = 2;
-const CUInt MD_STRING_METADATA_KIND = 0;
-const CUInt CONSTANT_AS_METADATA_METADATA_KIND = 1;
-const CUInt LOCAL_AS_METADATA_METADATA_KIND = 2;
-const CUInt DISTINCT_MD_OPERAND_PLACEHOLDER_METADATA_KIND = 3;
-const CUInt MD_TUPLE_METADATA_KIND = 4;
-const CUInt DI_LOCATION_METADATA_KIND = 5;
-const CUInt DI_EXPRESSION_METADATA_KIND = 6;
-const CUInt DI_GLOBAL_VARIABLE_EXPRESSION_METADATA_KIND = 7;
-const CUInt GENERIC_DI_NODE_METADATA_KIND = 8;
-const CUInt DI_SUBRANGE_METADATA_KIND = 9;
-const CUInt DI_ENUMERATOR_METADATA_KIND = 10;
-const CUInt DI_BASIC_TYPE_METADATA_KIND = 11;
-const CUInt DI_DERIVED_TYPE_METADATA_KIND = 12;
-const CUInt DI_COMPOSITE_TYPE_METADATA_KIND = 13;
-const CUInt DI_SUBROUTINE_TYPE_METADATA_KIND = 14;
-const CUInt DI_FILE_METADATA_KIND = 15;
-const CUInt DI_COMPILE_UNIT_METADATA_KIND = 16;
-const CUInt DI_SUBPROGRAM_METADATA_KIND = 17;
-const CUInt DI_LEXICAL_BLOCK_METADATA_KIND = 18;
-const CUInt DI_LEXICAL_BLOCK_FILE_METADATA_KIND = 19;
-const CUInt DI_NAMESPACE_METADATA_KIND = 20;
-const CUInt DI_MODULE_METADATA_KIND = 21;
-const CUInt DI_TEMPLATE_TYPE_PARAMETER_METADATA_KIND = 22;
-const CUInt DI_TEMPLATE_VALUE_PARAMETER_METADATA_KIND = 23;
-const CUInt DI_GLOBAL_VARIABLE_METADATA_KIND = 24;
-const CUInt DI_LOCAL_VARIABLE_METADATA_KIND = 25;
-const CUInt DI_LABEL_METADATA_KIND = 26;
-const CUInt DI_OBJ_C_PROPERTY_METADATA_KIND = 27;
-const CUInt DI_IMPORTED_ENTITY_METADATA_KIND = 28;
-const CUInt DI_MACRO_METADATA_KIND = 29;
-const CUInt DI_MACRO_FILE_METADATA_KIND = 30;
-const CUInt DI_COMMON_BLOCK_METADATA_KIND = 31;
-const CUInt DI_STRING_TYPE_METADATA_KIND = 32;
-const CUInt DI_GENERIC_SUBRANGE_METADATA_KIND = 33;
-const CUInt DI_ARG_LIST_METADATA_KIND = 34;
-const CUInt DI_ASSIGN_ID_METADATA_KIND = 35;
+const LLVMDWARFEmissionKind DWARFEMISSIONNONE = 0;
+const LLVMDWARFEmissionKind DWARFEMISSIONFULL = 1;
+const LLVMDWARFEmissionKind DWARFEMISSIONLINETABLESONLY = 2;
+const CUInt MDSTRINGMETADATAKIND = 0;
+const CUInt CONSTANTASMETADATAMETADATAKIND = 1;
+const CUInt LOCALASMETADATAMETADATAKIND = 2;
+const CUInt DISTINCTMDOPERANDPLACEHOLDERMETADATAKIND = 3;
+const CUInt MDTUPLEMETADATAKIND = 4;
+const CUInt DILOCATIONMETADATAKIND = 5;
+const CUInt DIEXPRESSIONMETADATAKIND = 6;
+const CUInt DIGLOBALVARIABLEEXPRESSIONMETADATAKIND = 7;
+const CUInt GENERICDINODEMETADATAKIND = 8;
+const CUInt DISUBRANGEMETADATAKIND = 9;
+const CUInt DIENUMERATORMETADATAKIND = 10;
+const CUInt DIBASICTYPEMETADATAKIND = 11;
+const CUInt DIDERIVEDTYPEMETADATAKIND = 12;
+const CUInt DICOMPOSITETYPEMETADATAKIND = 13;
+const CUInt DISUBROUTINETYPEMETADATAKIND = 14;
+const CUInt DIFILEMETADATAKIND = 15;
+const CUInt DICOMPILEUNITMETADATAKIND = 16;
+const CUInt DISUBPROGRAMMETADATAKIND = 17;
+const CUInt DILEXICALBLOCKMETADATAKIND = 18;
+const CUInt DILEXICALBLOCKFILEMETADATAKIND = 19;
+const CUInt DINAMESPACEMETADATAKIND = 20;
+const CUInt DIMODULEMETADATAKIND = 21;
+const CUInt DITEMPLATETYPEPARAMETERMETADATAKIND = 22;
+const CUInt DITEMPLATEVALUEPARAMETERMETADATAKIND = 23;
+const CUInt DIGLOBALVARIABLEMETADATAKIND = 24;
+const CUInt DILOCALVARIABLEMETADATAKIND = 25;
+const CUInt DILABELMETADATAKIND = 26;
+const CUInt DIOBJCPROPERTYMETADATAKIND = 27;
+const CUInt DIIMPORTEDENTITYMETADATAKIND = 28;
+const CUInt DIMACROMETADATAKIND = 29;
+const CUInt DIMACROFILEMETADATAKIND = 30;
+const CUInt DICOMMONBLOCKMETADATAKIND = 31;
+const CUInt DISTRINGTYPEMETADATAKIND = 32;
+const CUInt DIGENERICSUBRANGEMETADATAKIND = 33;
+const CUInt DIARGLISTMETADATAKIND = 34;
+const CUInt DIASSIGNIDMETADATAKIND = 35;
 
 alias LLVMMetadataKind = CUInt;
 
 alias LLVMDWARFTypeEncoding = CUInt;
 
 typedef LLVMDWARFMacinfoRecordType = inline CUInt;
-const LLVMDWARFMacinfoRecordType DWARF_MACINFO_RECORD_TYPE_DEFINE = 0x01;
-const LLVMDWARFMacinfoRecordType DWARF_MACINFO_RECORD_TYPE_MACRO = 0x02;
-const LLVMDWARFMacinfoRecordType DWARF_MACINFO_RECORD_TYPE_START_FILE = 0x03;
-const LLVMDWARFMacinfoRecordType DWARF_MACINFO_RECORD_TYPE_END_FILE = 0x04;
-const LLVMDWARFMacinfoRecordType DWARF_MACINFO_RECORD_TYPE_VENDOR_EXT = 0xff;
+const LLVMDWARFMacinfoRecordType DWARFMACINFORECORDTYPEDEFINE = 0x01;
+const LLVMDWARFMacinfoRecordType DWARFMACINFORECORDTYPEMACRO = 0x02;
+const LLVMDWARFMacinfoRecordType DWARFMACINFORECORDTYPESTARTFILE = 0x03;
+const LLVMDWARFMacinfoRecordType DWARFMACINFORECORDTYPEENDFILE = 0x04;
+const LLVMDWARFMacinfoRecordType DWARFMACINFORECORDTYPEVENDOREXT = 0xff;
 
 fn CUInt debug_metadata_version()
 @extern("LLVMDebugMetadataVersion");
@@ -5327,9 +5328,7 @@ fn usz disasm_instruction(
   usz out_string_size)
 @extern("LLVMDisasmInstruction");
 
-typedef LLVMOpaqueError = void;
-
-alias LLVMErrorRef = LLVMOpaqueError*;
+alias LLVMErrorRef = void*;
 
 alias LLVMErrorTypeId = void*;
 
@@ -5361,16 +5360,357 @@ fn LLVMErrorRef create_string_error(
 @extern("LLVMCreateStringError");
 
 typedef LLVMByteOrdering = inline CUInt;
-const LLVMByteOrdering BIG_ENDIAN = 0;
-const LLVMByteOrdering LITTLE_ENDIAN = 1;
+const LLVMByteOrdering BIGENDIAN = 0;
+const LLVMByteOrdering LITTLEENDIAN = 1;
 
-typedef LLVMOpaqueTargetData = void;
+alias LLVMTargetDataRef = void*;
 
-alias LLVMTargetDataRef = LLVMOpaqueTargetData*;
+alias LLVMTargetLibraryInfoRef = void*;
 
-typedef LLVMOpaqueTargetLibraryInfotData = void;
+fn void initialize_aarch64_target_info()
+@extern("LLVMInitializeAArch64TargetInfo");
 
-alias LLVMTargetLibraryInfoRef = LLVMOpaqueTargetLibraryInfotData*;
+fn void initialize_amdgpu_target_info()
+@extern("LLVMInitializeAMDGPUTargetInfo");
+
+fn void initialize_arm_target_info()
+@extern("LLVMInitializeARMTargetInfo");
+
+fn void initialize_avr_target_info()
+@extern("LLVMInitializeAVRTargetInfo");
+
+fn void initialize_bpf_target_info()
+@extern("LLVMInitializeBPFTargetInfo");
+
+fn void initialize_hexagon_target_info()
+@extern("LLVMInitializeHexagonTargetInfo");
+
+fn void initialize_lanai_target_info()
+@extern("LLVMInitializeLanaiTargetInfo");
+
+fn void initialize_loong_arch_target_info()
+@extern("LLVMInitializeLoongArchTargetInfo");
+
+fn void initialize_mips_target_info()
+@extern("LLVMInitializeMipsTargetInfo");
+
+fn void initialize_msp430_target_info()
+@extern("LLVMInitializeMSP430TargetInfo");
+
+fn void initialize_nvptx_target_info()
+@extern("LLVMInitializeNVPTXTargetInfo");
+
+fn void initialize_power_pc_target_info()
+@extern("LLVMInitializePowerPCTargetInfo");
+
+fn void initialize_riscv_target_info()
+@extern("LLVMInitializeRISCVTargetInfo");
+
+fn void initialize_sparc_target_info()
+@extern("LLVMInitializeSparcTargetInfo");
+
+fn void initialize_spirv_target_info()
+@extern("LLVMInitializeSPIRVTargetInfo");
+
+fn void initialize_system_z_target_info()
+@extern("LLVMInitializeSystemZTargetInfo");
+
+fn void initialize_ve_target_info()
+@extern("LLVMInitializeVETargetInfo");
+
+fn void initialize_web_assembly_target_info()
+@extern("LLVMInitializeWebAssemblyTargetInfo");
+
+fn void initialize_x86_target_info()
+@extern("LLVMInitializeX86TargetInfo");
+
+fn void initialize_xcore_target_info()
+@extern("LLVMInitializeXCoreTargetInfo");
+
+fn void initialize_aarch64_target()
+@extern("LLVMInitializeAArch64Target");
+
+fn void initialize_amdgpu_target()
+@extern("LLVMInitializeAMDGPUTarget");
+
+fn void initialize_arm_target()
+@extern("LLVMInitializeARMTarget");
+
+fn void initialize_avr_target()
+@extern("LLVMInitializeAVRTarget");
+
+fn void initialize_bpf_target()
+@extern("LLVMInitializeBPFTarget");
+
+fn void initialize_hexagon_target()
+@extern("LLVMInitializeHexagonTarget");
+
+fn void initialize_lanai_target()
+@extern("LLVMInitializeLanaiTarget");
+
+fn void initialize_loong_arch_target()
+@extern("LLVMInitializeLoongArchTarget");
+
+fn void initialize_mips_target()
+@extern("LLVMInitializeMipsTarget");
+
+fn void initialize_msp430_target()
+@extern("LLVMInitializeMSP430Target");
+
+fn void initialize_nvptx_target()
+@extern("LLVMInitializeNVPTXTarget");
+
+fn void initialize_power_pc_target()
+@extern("LLVMInitializePowerPCTarget");
+
+fn void initialize_riscv_target()
+@extern("LLVMInitializeRISCVTarget");
+
+fn void initialize_sparc_target()
+@extern("LLVMInitializeSparcTarget");
+
+fn void initialize_spirv_target()
+@extern("LLVMInitializeSPIRVTarget");
+
+fn void initialize_system_z_target()
+@extern("LLVMInitializeSystemZTarget");
+
+fn void initialize_ve_target()
+@extern("LLVMInitializeVETarget");
+
+fn void initialize_web_assembly_target()
+@extern("LLVMInitializeWebAssemblyTarget");
+
+fn void initialize_x86_target()
+@extern("LLVMInitializeX86Target");
+
+fn void initialize_xcore_target()
+@extern("LLVMInitializeXCoreTarget");
+
+fn void initialize_aarch64_target_mc()
+@extern("LLVMInitializeAArch64TargetMC");
+
+fn void initialize_amdgpu_target_mc()
+@extern("LLVMInitializeAMDGPUTargetMC");
+
+fn void initialize_arm_target_mc()
+@extern("LLVMInitializeARMTargetMC");
+
+fn void initialize_avr_target_mc()
+@extern("LLVMInitializeAVRTargetMC");
+
+fn void initialize_bpf_target_mc()
+@extern("LLVMInitializeBPFTargetMC");
+
+fn void initialize_hexagon_target_mc()
+@extern("LLVMInitializeHexagonTargetMC");
+
+fn void initialize_lanai_target_mc()
+@extern("LLVMInitializeLanaiTargetMC");
+
+fn void initialize_loong_arch_target_mc()
+@extern("LLVMInitializeLoongArchTargetMC");
+
+fn void initialize_mips_target_mc()
+@extern("LLVMInitializeMipsTargetMC");
+
+fn void initialize_msp430_target_mc()
+@extern("LLVMInitializeMSP430TargetMC");
+
+fn void initialize_nvptx_target_mc()
+@extern("LLVMInitializeNVPTXTargetMC");
+
+fn void initialize_power_pc_target_mc()
+@extern("LLVMInitializePowerPCTargetMC");
+
+fn void initialize_riscv_target_mc()
+@extern("LLVMInitializeRISCVTargetMC");
+
+fn void initialize_sparc_target_mc()
+@extern("LLVMInitializeSparcTargetMC");
+
+fn void initialize_spirv_target_mc()
+@extern("LLVMInitializeSPIRVTargetMC");
+
+fn void initialize_system_z_target_mc()
+@extern("LLVMInitializeSystemZTargetMC");
+
+fn void initialize_ve_target_mc()
+@extern("LLVMInitializeVETargetMC");
+
+fn void initialize_web_assembly_target_mc()
+@extern("LLVMInitializeWebAssemblyTargetMC");
+
+fn void initialize_x86_target_mc()
+@extern("LLVMInitializeX86TargetMC");
+
+fn void initialize_xcore_target_mc()
+@extern("LLVMInitializeXCoreTargetMC");
+
+fn void initialize_aarch64_asm_printer()
+@extern("LLVMInitializeAArch64AsmPrinter");
+
+fn void initialize_amdgpu_asm_printer()
+@extern("LLVMInitializeAMDGPUAsmPrinter");
+
+fn void initialize_arm_asm_printer()
+@extern("LLVMInitializeARMAsmPrinter");
+
+fn void initialize_avr_asm_printer()
+@extern("LLVMInitializeAVRAsmPrinter");
+
+fn void initialize_bpf_asm_printer()
+@extern("LLVMInitializeBPFAsmPrinter");
+
+fn void initialize_hexagon_asm_printer()
+@extern("LLVMInitializeHexagonAsmPrinter");
+
+fn void initialize_lanai_asm_printer()
+@extern("LLVMInitializeLanaiAsmPrinter");
+
+fn void initialize_loong_arch_asm_printer()
+@extern("LLVMInitializeLoongArchAsmPrinter");
+
+fn void initialize_mips_asm_printer()
+@extern("LLVMInitializeMipsAsmPrinter");
+
+fn void initialize_msp430_asm_printer()
+@extern("LLVMInitializeMSP430AsmPrinter");
+
+fn void initialize_nvptx_asm_printer()
+@extern("LLVMInitializeNVPTXAsmPrinter");
+
+fn void initialize_power_pc_asm_printer()
+@extern("LLVMInitializePowerPCAsmPrinter");
+
+fn void initialize_riscv_asm_printer()
+@extern("LLVMInitializeRISCVAsmPrinter");
+
+fn void initialize_sparc_asm_printer()
+@extern("LLVMInitializeSparcAsmPrinter");
+
+fn void initialize_spirv_asm_printer()
+@extern("LLVMInitializeSPIRVAsmPrinter");
+
+fn void initialize_system_z_asm_printer()
+@extern("LLVMInitializeSystemZAsmPrinter");
+
+fn void initialize_ve_asm_printer()
+@extern("LLVMInitializeVEAsmPrinter");
+
+fn void initialize_web_assembly_asm_printer()
+@extern("LLVMInitializeWebAssemblyAsmPrinter");
+
+fn void initialize_x86_asm_printer()
+@extern("LLVMInitializeX86AsmPrinter");
+
+fn void initialize_xcore_asm_printer()
+@extern("LLVMInitializeXCoreAsmPrinter");
+
+fn void initialize_aarch64_asm_parser()
+@extern("LLVMInitializeAArch64AsmParser");
+
+fn void initialize_amdgpu_asm_parser()
+@extern("LLVMInitializeAMDGPUAsmParser");
+
+fn void initialize_arm_asm_parser()
+@extern("LLVMInitializeARMAsmParser");
+
+fn void initialize_avr_asm_parser()
+@extern("LLVMInitializeAVRAsmParser");
+
+fn void initialize_bpf_asm_parser()
+@extern("LLVMInitializeBPFAsmParser");
+
+fn void initialize_hexagon_asm_parser()
+@extern("LLVMInitializeHexagonAsmParser");
+
+fn void initialize_lanai_asm_parser()
+@extern("LLVMInitializeLanaiAsmParser");
+
+fn void initialize_loong_arch_asm_parser()
+@extern("LLVMInitializeLoongArchAsmParser");
+
+fn void initialize_mips_asm_parser()
+@extern("LLVMInitializeMipsAsmParser");
+
+fn void initialize_msp430_asm_parser()
+@extern("LLVMInitializeMSP430AsmParser");
+
+fn void initialize_power_pc_asm_parser()
+@extern("LLVMInitializePowerPCAsmParser");
+
+fn void initialize_riscv_asm_parser()
+@extern("LLVMInitializeRISCVAsmParser");
+
+fn void initialize_sparc_asm_parser()
+@extern("LLVMInitializeSparcAsmParser");
+
+fn void initialize_system_z_asm_parser()
+@extern("LLVMInitializeSystemZAsmParser");
+
+fn void initialize_ve_asm_parser()
+@extern("LLVMInitializeVEAsmParser");
+
+fn void initialize_web_assembly_asm_parser()
+@extern("LLVMInitializeWebAssemblyAsmParser");
+
+fn void initialize_x86_asm_parser()
+@extern("LLVMInitializeX86AsmParser");
+
+fn void initialize_aarch64_disassembler()
+@extern("LLVMInitializeAArch64Disassembler");
+
+fn void initialize_amdgpu_disassembler()
+@extern("LLVMInitializeAMDGPUDisassembler");
+
+fn void initialize_arm_disassembler()
+@extern("LLVMInitializeARMDisassembler");
+
+fn void initialize_avr_disassembler()
+@extern("LLVMInitializeAVRDisassembler");
+
+fn void initialize_bpf_disassembler()
+@extern("LLVMInitializeBPFDisassembler");
+
+fn void initialize_hexagon_disassembler()
+@extern("LLVMInitializeHexagonDisassembler");
+
+fn void initialize_lanai_disassembler()
+@extern("LLVMInitializeLanaiDisassembler");
+
+fn void initialize_loong_arch_disassembler()
+@extern("LLVMInitializeLoongArchDisassembler");
+
+fn void initialize_mips_disassembler()
+@extern("LLVMInitializeMipsDisassembler");
+
+fn void initialize_msp430_disassembler()
+@extern("LLVMInitializeMSP430Disassembler");
+
+fn void initialize_power_pc_disassembler()
+@extern("LLVMInitializePowerPCDisassembler");
+
+fn void initialize_riscv_disassembler()
+@extern("LLVMInitializeRISCVDisassembler");
+
+fn void initialize_sparc_disassembler()
+@extern("LLVMInitializeSparcDisassembler");
+
+fn void initialize_system_z_disassembler()
+@extern("LLVMInitializeSystemZDisassembler");
+
+fn void initialize_ve_disassembler()
+@extern("LLVMInitializeVEDisassembler");
+
+fn void initialize_web_assembly_disassembler()
+@extern("LLVMInitializeWebAssemblyDisassembler");
+
+fn void initialize_x86_disassembler()
+@extern("LLVMInitializeX86Disassembler");
+
+fn void initialize_xcore_disassembler()
+@extern("LLVMInitializeXCoreDisassembler");
 
 fn void initialize_all_target_infos()
 @extern("LLVMInitializeAllTargetInfos");
@@ -5508,50 +5848,44 @@ fn CULongLong offset_of_element(
   CUInt element)
 @extern("LLVMOffsetOfElement");
 
-typedef LLVMOpaqueTargetMachineOptions = void;
+alias LLVMTargetMachineOptionsRef = void*;
 
-alias LLVMTargetMachineOptionsRef = LLVMOpaqueTargetMachineOptions*;
+alias LLVMTargetMachineRef = void*;
 
-typedef LLVMOpaqueTargetMachine = void;
-
-alias LLVMTargetMachineRef = LLVMOpaqueTargetMachine*;
-
-typedef LLVMTarget = void;
-
-alias LLVMTargetRef = LLVMTarget*;
+alias LLVMTargetRef = void*;
 
 typedef LLVMCodeGenOptLevel = inline CUInt;
-const LLVMCodeGenOptLevel CODE_GEN_LEVEL_NONE = 0;
-const LLVMCodeGenOptLevel CODE_GEN_LEVEL_LESS = 1;
-const LLVMCodeGenOptLevel CODE_GEN_LEVEL_DEFAULT = 2;
-const LLVMCodeGenOptLevel CODE_GEN_LEVEL_AGGRESSIVE = 3;
+const LLVMCodeGenOptLevel CODEGENLEVELNONE = 0;
+const LLVMCodeGenOptLevel CODEGENLEVELLESS = 1;
+const LLVMCodeGenOptLevel CODEGENLEVELDEFAULT = 2;
+const LLVMCodeGenOptLevel CODEGENLEVELAGGRESSIVE = 3;
 
 typedef LLVMRelocMode = inline CUInt;
-const LLVMRelocMode RELOC_DEFAULT = 0;
-const LLVMRelocMode RELOC_STATIC = 1;
-const LLVMRelocMode RELOC_PIC = 2;
-const LLVMRelocMode RELOC_DYNAMIC_NO_PIC = 3;
-const LLVMRelocMode RELOC_ROPI = 4;
-const LLVMRelocMode RELOC_RWPI = 5;
-const LLVMRelocMode RELOC_ROP_I__RWPI = 6;
+const LLVMRelocMode RELOCDEFAULT = 0;
+const LLVMRelocMode RELOCSTATIC = 1;
+const LLVMRelocMode RELOCPIC = 2;
+const LLVMRelocMode RELOCDYNAMICNOPIC = 3;
+const LLVMRelocMode RELOCROPI = 4;
+const LLVMRelocMode RELOCRWPI = 5;
+const LLVMRelocMode RELOCROPI_RWPI = 6;
 
 typedef LLVMCodeModel = inline CUInt;
-const LLVMCodeModel CODE_MODEL_DEFAULT = 0;
-const LLVMCodeModel CODE_MODEL_JIT_DEFAULT = 1;
-const LLVMCodeModel CODE_MODEL_TINY = 2;
-const LLVMCodeModel CODE_MODEL_SMALL = 3;
-const LLVMCodeModel CODE_MODEL_KERNEL = 4;
-const LLVMCodeModel CODE_MODEL_MEDIUM = 5;
-const LLVMCodeModel CODE_MODEL_LARGE = 6;
+const LLVMCodeModel CODEMODELDEFAULT = 0;
+const LLVMCodeModel CODEMODELJITDEFAULT = 1;
+const LLVMCodeModel CODEMODELTINY = 2;
+const LLVMCodeModel CODEMODELSMALL = 3;
+const LLVMCodeModel CODEMODELKERNEL = 4;
+const LLVMCodeModel CODEMODELMEDIUM = 5;
+const LLVMCodeModel CODEMODELLARGE = 6;
 
 typedef LLVMCodeGenFileType = inline CUInt;
-const LLVMCodeGenFileType ASSEMBLY_FILE = 0;
-const LLVMCodeGenFileType OBJECT_FILE = 1;
+const LLVMCodeGenFileType ASSEMBLYFILE = 0;
+const LLVMCodeGenFileType OBJECTFILE = 1;
 
 typedef LLVMGlobalISelAbortMode = inline CUInt;
-const LLVMGlobalISelAbortMode GLOBAL_I_SEL_ABORT_ENABLE = 0;
-const LLVMGlobalISelAbortMode GLOBAL_I_SEL_ABORT_DISABLE = 1;
-const LLVMGlobalISelAbortMode GLOBAL_I_SEL_ABORT_DISABLE_WITH_DIAG = 2;
+const LLVMGlobalISelAbortMode GLOBALISELABORTENABLE = 0;
+const LLVMGlobalISelAbortMode GLOBALISELABORTDISABLE = 1;
+const LLVMGlobalISelAbortMode GLOBALISELABORTDISABLEWITHDIAG = 2;
 
 fn LLVMTargetRef get_first_target()
 @extern("LLVMGetFirstTarget");
@@ -5732,17 +6066,11 @@ fn void link_in_mcjit()
 fn void link_in_interpreter()
 @extern("LLVMLinkInInterpreter");
 
-typedef LLVMOpaqueGenericValue = void;
+alias LLVMGenericValueRef = void*;
 
-alias LLVMGenericValueRef = LLVMOpaqueGenericValue*;
+alias LLVMExecutionEngineRef = void*;
 
-typedef LLVMOpaqueExecutionEngine = void;
-
-alias LLVMExecutionEngineRef = LLVMOpaqueExecutionEngine*;
-
-typedef LLVMOpaqueMCJITMemoryManager = void;
-
-alias LLVMMCJITMemoryManagerRef = LLVMOpaqueMCJITMemoryManager*;
+alias LLVMMCJITMemoryManagerRef = void*;
 
 struct LLVMMCJITCompilerOptions {
   CUInt opt_level;
@@ -5968,11 +6296,11 @@ alias LLVMOrcJITTargetAddress = ulong;
 alias LLVMOrcExecutorAddress = ulong;
 
 typedef LLVMJITSymbolGenericFlags = inline CUInt;
-const LLVMJITSymbolGenericFlags JIT_SYMBOL_GENERIC_FLAGS_NONE = 0;
-const LLVMJITSymbolGenericFlags JIT_SYMBOL_GENERIC_FLAGS_EXPORTED = 1U<<0;
-const LLVMJITSymbolGenericFlags JIT_SYMBOL_GENERIC_FLAGS_WEAK = 1U<<1;
-const LLVMJITSymbolGenericFlags JIT_SYMBOL_GENERIC_FLAGS_CALLABLE = 1U<<2;
-const LLVMJITSymbolGenericFlags JIT_SYMBOL_GENERIC_FLAGS_MATERIALIZATION_SIDE_EFFECTS_ONLY = 1U<<3;
+const LLVMJITSymbolGenericFlags JITSYMBOLGENERICFLAGSNONE = 0;
+const LLVMJITSymbolGenericFlags JITSYMBOLGENERICFLAGSEXPORTED = 1U<<0;
+const LLVMJITSymbolGenericFlags JITSYMBOLGENERICFLAGSWEAK = 1U<<1;
+const LLVMJITSymbolGenericFlags JITSYMBOLGENERICFLAGSCALLABLE = 1U<<2;
+const LLVMJITSymbolGenericFlags JITSYMBOLGENERICFLAGSMATERIALIZATIONSIDEEFFECTSONLY = 1U<<3;
 
 alias LLVMJITSymbolTargetFlags = char;
 
@@ -5986,21 +6314,15 @@ struct LLVMJITEvaluatedSymbol {
   LLVMJITSymbolFlags flags;
 }
 
-typedef LLVMOrcOpaqueExecutionSession = void;
-
-alias LLVMOrcExecutionSessionRef = LLVMOrcOpaqueExecutionSession*;
+alias LLVMOrcExecutionSessionRef = void*;
 
 alias LLVMOrcErrorReporterFunction = fn void(
   void* ctx, 
   LLVMErrorRef err);
 
-typedef LLVMOrcOpaqueSymbolStringPool = void;
+alias LLVMOrcSymbolStringPoolRef = void*;
 
-alias LLVMOrcSymbolStringPoolRef = LLVMOrcOpaqueSymbolStringPool*;
-
-typedef LLVMOrcOpaqueSymbolStringPoolEntry = void;
-
-alias LLVMOrcSymbolStringPoolEntryRef = LLVMOrcOpaqueSymbolStringPoolEntry*;
+alias LLVMOrcSymbolStringPoolEntryRef = void*;
 
 struct LLVMOrcCSymbolFlagsMapPair {
   LLVMOrcSymbolStringPoolEntryRef name;
@@ -6028,9 +6350,7 @@ struct LLVMOrcCSymbolAliasMapPair {
 
 alias LLVMOrcCSymbolAliasMapPairs = LLVMOrcCSymbolAliasMapPair*;
 
-typedef LLVMOrcOpaqueJITDylib = void;
-
-alias LLVMOrcJITDylibRef = LLVMOrcOpaqueJITDylib*;
+alias LLVMOrcJITDylibRef = void*;
 
 struct LLVMOrcCSymbolsList {
   LLVMOrcSymbolStringPoolEntryRef* symbols;
@@ -6051,12 +6371,12 @@ struct LLVMOrcCSymbolDependenceGroup {
 }
 
 typedef LLVMOrcLookupKind = inline CUInt;
-const LLVMOrcLookupKind ORC_LOOKUP_KIND_STATIC = 0;
-const LLVMOrcLookupKind ORC_LOOKUP_KIND_DL_SYM = 1;
+const LLVMOrcLookupKind ORCLOOKUPKINDSTATIC = 0;
+const LLVMOrcLookupKind ORCLOOKUPKINDDLSYM = 1;
 
 typedef LLVMOrcJITDylibLookupFlags = inline CUInt;
-const LLVMOrcJITDylibLookupFlags ORC_JIT_DYLIB_LOOKUP_FLAGS_MATCH_EXPORTED_SYMBOLS_ONLY = 0;
-const LLVMOrcJITDylibLookupFlags ORC_JIT_DYLIB_LOOKUP_FLAGS_MATCH_ALL_SYMBOLS = 1;
+const LLVMOrcJITDylibLookupFlags ORCJITDYLIBLOOKUPFLAGSMATCHEXPORTEDSYMBOLSONLY = 0;
+const LLVMOrcJITDylibLookupFlags ORCJITDYLIBLOOKUPFLAGSMATCHALLSYMBOLS = 1;
 
 struct LLVMOrcCJITDylibSearchOrderElement {
   LLVMOrcJITDylibRef jd;
@@ -6066,8 +6386,8 @@ struct LLVMOrcCJITDylibSearchOrderElement {
 alias LLVMOrcCJITDylibSearchOrder = LLVMOrcCJITDylibSearchOrderElement*;
 
 typedef LLVMOrcSymbolLookupFlags = inline CUInt;
-const LLVMOrcSymbolLookupFlags ORC_SYMBOL_LOOKUP_FLAGS_REQUIRED_SYMBOL = 0;
-const LLVMOrcSymbolLookupFlags ORC_SYMBOL_LOOKUP_FLAGS_WEAKLY_REFERENCED_SYMBOL = 1;
+const LLVMOrcSymbolLookupFlags ORCSYMBOLLOOKUPFLAGSREQUIREDSYMBOL = 0;
+const LLVMOrcSymbolLookupFlags ORCSYMBOLLOOKUPFLAGSWEAKLYREFERENCEDSYMBOL = 1;
 
 struct LLVMOrcCLookupSetElement {
   LLVMOrcSymbolStringPoolEntryRef name;
@@ -6076,13 +6396,9 @@ struct LLVMOrcCLookupSetElement {
 
 alias LLVMOrcCLookupSet = LLVMOrcCLookupSetElement*;
 
-typedef LLVMOrcOpaqueMaterializationUnit = void;
+alias LLVMOrcMaterializationUnitRef = void*;
 
-alias LLVMOrcMaterializationUnitRef = LLVMOrcOpaqueMaterializationUnit*;
-
-typedef LLVMOrcOpaqueMaterializationResponsibility = void;
-
-alias LLVMOrcMaterializationResponsibilityRef = LLVMOrcOpaqueMaterializationResponsibility*;
+alias LLVMOrcMaterializationResponsibilityRef = void*;
 
 alias LLVMOrcMaterializationUnitMaterializeFunction = fn void(
   void* ctx, 
@@ -6096,17 +6412,11 @@ alias LLVMOrcMaterializationUnitDiscardFunction = fn void(
 alias LLVMOrcMaterializationUnitDestroyFunction = fn void(
   void* ctx);
 
-typedef LLVMOrcOpaqueResourceTracker = void;
+alias LLVMOrcResourceTrackerRef = void*;
 
-alias LLVMOrcResourceTrackerRef = LLVMOrcOpaqueResourceTracker*;
+alias LLVMOrcDefinitionGeneratorRef = void*;
 
-typedef LLVMOrcOpaqueDefinitionGenerator = void;
-
-alias LLVMOrcDefinitionGeneratorRef = LLVMOrcOpaqueDefinitionGenerator*;
-
-typedef LLVMOrcOpaqueLookupState = void;
-
-alias LLVMOrcLookupStateRef = LLVMOrcOpaqueLookupState*;
+alias LLVMOrcLookupStateRef = void*;
 
 alias LLVMOrcCAPIDefinitionGeneratorTryToGenerateFunction = fn LLVMErrorRef(
   LLVMOrcDefinitionGeneratorRef generator_obj, 
@@ -6125,58 +6435,38 @@ alias LLVMOrcSymbolPredicate = fn CInt(
   void* ctx, 
   LLVMOrcSymbolStringPoolEntryRef sym);
 
-typedef LLVMOrcOpaqueThreadSafeContext = void;
+alias LLVMOrcThreadSafeContextRef = void*;
 
-alias LLVMOrcThreadSafeContextRef = LLVMOrcOpaqueThreadSafeContext*;
-
-typedef LLVMOrcOpaqueThreadSafeModule = void;
-
-alias LLVMOrcThreadSafeModuleRef = LLVMOrcOpaqueThreadSafeModule*;
+alias LLVMOrcThreadSafeModuleRef = void*;
 
 alias LLVMOrcGenericIRModuleOperationFunction = fn LLVMErrorRef(
   void* ctx, 
   LLVMModuleRef m);
 
-typedef LLVMOrcOpaqueJITTargetMachineBuilder = void;
+alias LLVMOrcJITTargetMachineBuilderRef = void*;
 
-alias LLVMOrcJITTargetMachineBuilderRef = LLVMOrcOpaqueJITTargetMachineBuilder*;
+alias LLVMOrcObjectLayerRef = void*;
 
-typedef LLVMOrcOpaqueObjectLayer = void;
+alias LLVMOrcObjectLinkingLayerRef = void*;
 
-alias LLVMOrcObjectLayerRef = LLVMOrcOpaqueObjectLayer*;
-
-typedef LLVMOrcOpaqueObjectLinkingLayer = void;
-
-alias LLVMOrcObjectLinkingLayerRef = LLVMOrcOpaqueObjectLinkingLayer*;
-
-typedef LLVMOrcOpaqueIRTransformLayer = void;
-
-alias LLVMOrcIRTransformLayerRef = LLVMOrcOpaqueIRTransformLayer*;
+alias LLVMOrcIRTransformLayerRef = void*;
 
 alias LLVMOrcIRTransformLayerTransformFunction = fn LLVMErrorRef(
   void* ctx, 
   LLVMOrcThreadSafeModuleRef* mod_in_out, 
   LLVMOrcMaterializationResponsibilityRef mr);
 
-typedef LLVMOrcOpaqueObjectTransformLayer = void;
-
-alias LLVMOrcObjectTransformLayerRef = LLVMOrcOpaqueObjectTransformLayer*;
+alias LLVMOrcObjectTransformLayerRef = void*;
 
 alias LLVMOrcObjectTransformLayerTransformFunction = fn LLVMErrorRef(
   void* ctx, 
   LLVMMemoryBufferRef* obj_in_out);
 
-typedef LLVMOrcOpaqueIndirectStubsManager = void;
+alias LLVMOrcIndirectStubsManagerRef = void*;
 
-alias LLVMOrcIndirectStubsManagerRef = LLVMOrcOpaqueIndirectStubsManager*;
+alias LLVMOrcLazyCallThroughManagerRef = void*;
 
-typedef LLVMOrcOpaqueLazyCallThroughManager = void;
-
-alias LLVMOrcLazyCallThroughManagerRef = LLVMOrcOpaqueLazyCallThroughManager*;
-
-typedef LLVMOrcOpaqueDumpObjects = void;
-
-alias LLVMOrcDumpObjectsRef = LLVMOrcOpaqueDumpObjects*;
+alias LLVMOrcDumpObjectsRef = void*;
 
 fn void orc_execution_session_set_error_reporter(
   LLVMOrcExecutionSessionRef es, 
@@ -6535,13 +6825,9 @@ alias LLVMOrcLLJITBuilderObjectLinkingLayerCreatorFunction = fn LLVMOrcObjectLay
   LLVMOrcExecutionSessionRef es, 
   CChar* triple);
 
-typedef LLVMOrcOpaqueLLJITBuilder = void;
+alias LLVMOrcLLJITBuilderRef = void*;
 
-alias LLVMOrcLLJITBuilderRef = LLVMOrcOpaqueLLJITBuilder*;
-
-typedef LLVMOrcOpaqueLLJIT = void;
-
-alias LLVMOrcLLJITRef = LLVMOrcOpaqueLLJIT*;
+alias LLVMOrcLLJITRef = void*;
 
 fn LLVMOrcLLJITBuilderRef orc_create_lljit_builder()
 @extern("LLVMOrcCreateLLJITBuilder");
@@ -6642,43 +6928,37 @@ fn LLVMErrorRef orc_lljit_enable_debug_support(
 @extern("LLVMOrcLLJITEnableDebugSupport");
 
 typedef LLVMLinkerMode = inline CUInt;
-const LLVMLinkerMode LINKER_DESTROY_SOURCE = 0;
-const LLVMLinkerMode LINKER_PRESERVE_SOURCE__REMOVED = 1;
+const LLVMLinkerMode LINKERDESTROYSOURCE = 0;
+const LLVMLinkerMode LINKERPRESERVESOURCE_REMOVED = 1;
 
 fn LLVMBool link_modules_2(
   LLVMModuleRef dest, 
   LLVMModuleRef src)
 @extern("LLVMLinkModules2");
 
-typedef LLVMOpaqueSectionIterator = void;
+alias LLVMSectionIteratorRef = void*;
 
-alias LLVMSectionIteratorRef = LLVMOpaqueSectionIterator*;
+alias LLVMSymbolIteratorRef = void*;
 
-typedef LLVMOpaqueSymbolIterator = void;
-
-alias LLVMSymbolIteratorRef = LLVMOpaqueSymbolIterator*;
-
-typedef LLVMOpaqueRelocationIterator = void;
-
-alias LLVMRelocationIteratorRef = LLVMOpaqueRelocationIterator*;
+alias LLVMRelocationIteratorRef = void*;
 
 typedef LLVMBinaryType = inline CUInt;
-const LLVMBinaryType BINARY_TYPE_ARCHIVE = 0;
-const LLVMBinaryType BINARY_TYPE_MACH_O_UNIVERSAL_BINARY = 1;
-const LLVMBinaryType BINARY_TYPE_COFF_IMPORT_FILE = 2;
-const LLVMBinaryType BINARY_TYPE_IR = 3;
-const LLVMBinaryType BINARY_TYPE_WIN_RES = 4;
-const LLVMBinaryType BINARY_TYPE_COFF = 5;
-const LLVMBinaryType BINARY_TYPE_EL_F_32_L = 6;
-const LLVMBinaryType BINARY_TYPE_EL_F_32_B = 7;
-const LLVMBinaryType BINARY_TYPE_EL_F_64_L = 8;
-const LLVMBinaryType BINARY_TYPE_EL_F_64_B = 9;
-const LLVMBinaryType BINARY_TYPE_MACH_O_32_L = 10;
-const LLVMBinaryType BINARY_TYPE_MACH_O_32_B = 11;
-const LLVMBinaryType BINARY_TYPE_MACH_O_64_L = 12;
-const LLVMBinaryType BINARY_TYPE_MACH_O_64_B = 13;
-const LLVMBinaryType BINARY_TYPE_WASM = 14;
-const LLVMBinaryType BINARY_TYPE_OFFLOAD = 15;
+const LLVMBinaryType BINARYTYPEARCHIVE = 0;
+const LLVMBinaryType BINARYTYPEMACHOUNIVERSALBINARY = 1;
+const LLVMBinaryType BINARYTYPECOFFIMPORTFILE = 2;
+const LLVMBinaryType BINARYTYPEIR = 3;
+const LLVMBinaryType BINARYTYPEWINRES = 4;
+const LLVMBinaryType BINARYTYPECOFF = 5;
+const LLVMBinaryType BINARYTYPEELF32L = 6;
+const LLVMBinaryType BINARYTYPEELF32B = 7;
+const LLVMBinaryType BINARYTYPEELF64L = 8;
+const LLVMBinaryType BINARYTYPEELF64B = 9;
+const LLVMBinaryType BINARYTYPEMACHO32L = 10;
+const LLVMBinaryType BINARYTYPEMACHO32B = 11;
+const LLVMBinaryType BINARYTYPEMACHO64L = 12;
+const LLVMBinaryType BINARYTYPEMACHO64B = 13;
+const LLVMBinaryType BINARYTYPEWASM = 14;
+const LLVMBinaryType BINARYTYPEOFFLOAD = 15;
 
 fn LLVMBinaryRef create_binary(
   LLVMMemoryBufferRef mem_buf, 
@@ -6814,9 +7094,7 @@ fn CChar* get_relocation_value_string(
   LLVMRelocationIteratorRef ri)
 @extern("LLVMGetRelocationValueString");
 
-typedef LLVMOpaqueObjectFile = void;
-
-alias LLVMObjectFileRef = LLVMOpaqueObjectFile*;
+alias LLVMObjectFileRef = void*;
 
 fn LLVMObjectFileRef create_object_file(
   LLVMMemoryBufferRef mem_buf)
@@ -6871,17 +7149,15 @@ fn void orc_rt_dyld_object_linking_layer_register_jit_event_listener(
 @extern("LLVMOrcRTDyldObjectLinkingLayerRegisterJITEventListener");
 
 typedef LLVMRemarkType = inline CUInt;
-const LLVMRemarkType REMARK_TYPE_UNKNOWN = 0;
-const LLVMRemarkType REMARK_TYPE_PASSED = 1;
-const LLVMRemarkType REMARK_TYPE_MISSED = 2;
-const LLVMRemarkType REMARK_TYPE_ANALYSIS = 3;
-const LLVMRemarkType REMARK_TYPE_ANALYSIS_FP_COMMUTE = 4;
-const LLVMRemarkType REMARK_TYPE_ANALYSIS_ALIASING = 5;
-const LLVMRemarkType REMARK_TYPE_FAILURE = 6;
+const LLVMRemarkType REMARKTYPEUNKNOWN = 0;
+const LLVMRemarkType REMARKTYPEPASSED = 1;
+const LLVMRemarkType REMARKTYPEMISSED = 2;
+const LLVMRemarkType REMARKTYPEANALYSIS = 3;
+const LLVMRemarkType REMARKTYPEANALYSISFPCOMMUTE = 4;
+const LLVMRemarkType REMARKTYPEANALYSISALIASING = 5;
+const LLVMRemarkType REMARKTYPEFAILURE = 6;
 
-typedef LLVMRemarkOpaqueString = void;
-
-alias LLVMRemarkStringRef = LLVMRemarkOpaqueString*;
+alias LLVMRemarkStringRef = void*;
 
 fn CChar* remark_string_get_data(
   LLVMRemarkStringRef string)
@@ -6891,9 +7167,7 @@ fn uint remark_string_get_len(
   LLVMRemarkStringRef string)
 @extern("LLVMRemarkStringGetLen");
 
-typedef LLVMRemarkOpaqueDebugLoc = void;
-
-alias LLVMRemarkDebugLocRef = LLVMRemarkOpaqueDebugLoc*;
+alias LLVMRemarkDebugLocRef = void*;
 
 fn LLVMRemarkStringRef remark_debug_loc_get_source_file_path(
   LLVMRemarkDebugLocRef dl)
@@ -6907,9 +7181,7 @@ fn uint remark_debug_loc_get_source_column(
   LLVMRemarkDebugLocRef dl)
 @extern("LLVMRemarkDebugLocGetSourceColumn");
 
-typedef LLVMRemarkOpaqueArg = void;
-
-alias LLVMRemarkArgRef = LLVMRemarkOpaqueArg*;
+alias LLVMRemarkArgRef = void*;
 
 fn LLVMRemarkStringRef remark_arg_get_key(
   LLVMRemarkArgRef arg)
@@ -6923,9 +7195,7 @@ fn LLVMRemarkDebugLocRef remark_arg_get_debug_loc(
   LLVMRemarkArgRef arg)
 @extern("LLVMRemarkArgGetDebugLoc");
 
-typedef LLVMRemarkOpaqueEntry = void;
-
-alias LLVMRemarkEntryRef = LLVMRemarkOpaqueEntry*;
+alias LLVMRemarkEntryRef = void*;
 
 fn void remark_entry_dispose(
   LLVMRemarkEntryRef remark)
@@ -6968,9 +7238,7 @@ fn LLVMRemarkArgRef remark_entry_get_next_arg(
   LLVMRemarkEntryRef remark)
 @extern("LLVMRemarkEntryGetNextArg");
 
-typedef LLVMRemarkOpaqueParser = void;
-
-alias LLVMRemarkParserRef = LLVMRemarkOpaqueParser*;
+alias LLVMRemarkParserRef = void*;
 
 fn LLVMRemarkParserRef remark_parser_create_yaml(
   void* buf, 
@@ -7036,49 +7304,49 @@ struct LlvmBlake3Hasher {
   char[1760] cv_stack;
 }
 
-fn CChar* blake_3_version()
+fn CChar* blake3_version()
 @extern("llvm_blake3_version");
 
-fn void blake_3_hasher_init(
+fn void blake3_hasher_init(
   LlvmBlake3Hasher* self)
 @extern("llvm_blake3_hasher_init");
 
-fn void blake_3_hasher_init_keyed(
+fn void blake3_hasher_init_keyed(
   LlvmBlake3Hasher* self, 
   char[32]* key)
 @extern("llvm_blake3_hasher_init_keyed");
 
-fn void blake_3_hasher_init_derive_key(
+fn void blake3_hasher_init_derive_key(
   LlvmBlake3Hasher* self, 
   CChar* context)
 @extern("llvm_blake3_hasher_init_derive_key");
 
-fn void blake_3_hasher_init_derive_key_raw(
+fn void blake3_hasher_init_derive_key_raw(
   LlvmBlake3Hasher* self, 
   void* context, 
   usz context_len)
 @extern("llvm_blake3_hasher_init_derive_key_raw");
 
-fn void blake_3_hasher_update(
+fn void blake3_hasher_update(
   LlvmBlake3Hasher* self, 
   void* input, 
   usz input_len)
 @extern("llvm_blake3_hasher_update");
 
-fn void blake_3_hasher_finalize(
+fn void blake3_hasher_finalize(
   LlvmBlake3Hasher* self, 
   char* out, 
   usz out_len)
 @extern("llvm_blake3_hasher_finalize");
 
-fn void blake_3_hasher_finalize_seek(
+fn void blake3_hasher_finalize_seek(
   LlvmBlake3Hasher* self, 
   ulong seek, 
   char* out, 
   usz out_len)
 @extern("llvm_blake3_hasher_finalize_seek");
 
-fn void blake_3_hasher_reset(
+fn void blake3_hasher_reset(
   LlvmBlake3Hasher* self)
 @extern("llvm_blake3_hasher_reset");
 
@@ -7115,17 +7383,11 @@ const LtoCodegenModel LTO_CODEGEN_PIC_MODEL_DYNAMIC = 1;
 const LtoCodegenModel LTO_CODEGEN_PIC_MODEL_DYNAMIC_NO_PIC = 2;
 const LtoCodegenModel LTO_CODEGEN_PIC_MODEL_DEFAULT = 3;
 
-typedef LLVMOpaqueLTOModule = void;
+alias LtoModuleT = void*;
 
-alias LtoModuleT = LLVMOpaqueLTOModule*;
+alias LtoCodeGenT = void*;
 
-typedef LLVMOpaqueLTOCodeGenerator = void;
-
-alias LtoCodeGenT = LLVMOpaqueLTOCodeGenerator*;
-
-typedef LLVMOpaqueThinLTOCodeGenerator = void;
-
-alias ThinltoCodeGenT = LLVMOpaqueThinLTOCodeGenerator*;
+alias ThinltoCodeGenT = void*;
 
 fn CChar* lto_get_version()
 @extern("lto_get_version");
@@ -7365,9 +7627,7 @@ fn void lto_codegen_set_should_embed_uselists(
   LtoBoolT should_embed_uselists)
 @extern("lto_codegen_set_should_embed_uselists");
 
-typedef LLVMOpaqueLTOInput = void;
-
-alias LtoInputT = LLVMOpaqueLTOInput*;
+alias LtoInputT = void*;
 
 fn LtoInputT lto_input_create(
   void* buffer, 

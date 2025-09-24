@@ -1,0 +1,25 @@
+link<c>;
+
+pkg test;
+
+ext int  printf(str fmt, var args) @variatric;
+ext void InitWindow(int width, int height, str title) as init_window;
+
+def void main()
+{
+    printf("");
+    init_window(800, 500, "Test");
+}
+
+# @.str = global [1 x i8] zeroinitializer
+# @.str.1 = global [5 x i8] c"Test\00"
+#
+# declare i64 @printf(ptr, ...)
+# declare void @InitWindow(i64, i64, ptr)
+#
+# define i64 @test.main() {
+# entry:
+#   %0 = call i64 (ptr, ...) @printf(ptr @.str)
+#   call void @InitWindow(i64 800, i64 500, ptr @.str.1)
+#   ret i64 0
+# }

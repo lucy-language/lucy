@@ -1,7 +1,9 @@
 module lucy::sema;
 
-import lucy::scope, lucy::node, lucy::types, lucy::util, lucy::errors, lucy::lexer, lucy::parser;
+
+import lucy::scope, lucy::node, lucy::types, lucy::util, lucy::errors, lucy::lexer, lucy::parser, lucy::attributes;
 import std::os, std::collections::map, std::io;
+import llvm;
 
 struct Sema
 {
@@ -121,7 +123,7 @@ fn void Sema.register_ext(&self, ASTNode* node_in)
     }
 
     String type_name = node.type.node.ident_node.name;
-    self.scope.functions.set(name, { type_name, node_in, null });
+    self.scope.functions.set(name, { type_name, node_in, null, null });
 }
 
 fn void Sema.register_def(&self, ASTNode* node_in)
@@ -136,7 +138,7 @@ fn void Sema.register_def(&self, ASTNode* node_in)
         os::exit(1);
     }
 
-    self.scope.functions.set(name, { util::get_type_node(node_in, self), node_in, null });
+    self.scope.functions.set(name, { self.get_type_node(node_in), node_in, null, null });
 }
 
 fn void Sema.register_const(&self, ASTNode* node_in)
@@ -152,13 +154,14 @@ fn void Sema.register_const(&self, ASTNode* node_in)
     }
 
     String type_name = node.type.node.ident_node.name;
-    self.scope.constants.set(name, { type_name, node_in, null });
+    
+    self.scope.constants.set(name, { type_name, node_in, null, null });
 }
 
 fn void Sema.register_struct(&self, ASTNode* node_in)
 {
     StructNode node = node_in.node.struct_node;
-    String name = node.name.node.ident_node.name;
+    String     name = node.name.node.ident_node.name;
     
     if (self.types.lookup(name))
     {
@@ -167,7 +170,8 @@ fn void Sema.register_struct(&self, ASTNode* node_in)
     }
 
     self.types.insert_type(name, null, null);
-    self.scope.structs.set(name, node);
+    
+    self.scope.structs.set(name, { node_in, null });
 }
 
 fn void Sema.register_use(&self, ASTNode* node_in)
@@ -190,7 +194,17 @@ fn void Sema.register_macro(&self, ASTNode* node_in)
         os::exit(1);
     }
 
-    self.scope.functions.set(name, { node.type.node.ident_node.name, node_in, null });
+    foreach (attribute : node.attributes)
+    {
+        AttributeNode attribute_node = attribute.node.attribute_node;
+        if (attribute_node.name == "@variatric" && !util::is_variatric(node.parameters))
+        {
+            errors::print_node(self.path, *attribute, "Can only use attribute @variatric in combination with a vararg.");
+            os::exit(1);
+        }
+    }
+
+    self.scope.functions.set(name, { node.type.node.ident_node.name, node_in, null, null });
 }
 
 fn void Sema.analyse_node(&self, ASTNode* node, ASTNode* def = null)
@@ -211,7 +225,6 @@ fn void Sema.analyse_node(&self, ASTNode* node, ASTNode* def = null)
         case UNARY:      self.analyse_unary(node);
         case WHILE:      self.analyse_while(node, def);
         case IDENT:      self.analyse_ident(node);
-        // case MACRO:      self.analyse_macro(node);
         case STRUCT:     self.analyse_struct(node);
         case ACCESS:     self.analyse_access(node);
         case SWITCH:     self.analyse_switch(node, def);
@@ -265,6 +278,16 @@ fn void Sema.analyse_ext(&self, ASTNode* node_in)
         }
 
         previous_parameters.set(name, parameter);
+    }
+
+    foreach (attribute : node.attributes)
+    {
+        AttributeNode attribute_node = attribute.node.attribute_node;
+        if (attribute_node.name == "@variatric" && !util::is_variatric(node.parameters))
+        {
+            errors::print_node(self.path, *attribute, "Can only use attribute @variatric in combination with a vararg.");
+            os::exit(1);
+        }
     }
 }
 
@@ -340,9 +363,9 @@ fn void Sema.analyse_const(&self, ASTNode* node_in)
     }
 
     String type = node.type.node.ident_node.name;
-    if (type != util::get_type_node(node.value, self))
+    if (type != self.get_type_node(node.value))
     {
-        errors::print_node(self.path, *node.value, string::format(mem, "Expected type `%s`, got `%s`.", type, util::get_type_node(node.value, self)));
+        errors::print_node(self.path, *node.value, string::format(mem, "Expected type `%s`, got `%s`.", type, self.get_type_node(node.value)));
         os::exit(1);
     }
 
@@ -430,7 +453,7 @@ fn void Sema.analyse_parameter(&self, ASTNode* node_in)
         os::exit(1);
     }
 
-    self.scope.parameters.set(name, { type_name, node_in, null });
+    self.scope.parameters.set(name, { type_name, node_in, null, null });
 }
 
 fn void Sema.analyse_var(&self, ASTNode* node_in)
@@ -458,7 +481,7 @@ fn void Sema.analyse_var(&self, ASTNode* node_in)
         if (node.value.node_type == INIT)
         {
             self.analyse_node(node.value);
-            String[] possible_types = util::get_possible_types(node.value.node.init_node, self);
+            String[] possible_types = self.get_possible_types(node.value.node.init_node);
 
             if (!util::in(possible_types, type_name))
             {
@@ -469,14 +492,14 @@ fn void Sema.analyse_var(&self, ASTNode* node_in)
         {
             self.analyse_node(node.value);
             
-            if (type_name != util::get_type_node(node.value, self))
+            if (type_name != self.get_type_node(node.value))
             {
-                errors::print_node(self.path, *node.value, string::format(mem, "Expected type `%s`, got `%s`.", type_name, util::get_type_node(node.value, self)));
+                errors::print_node(self.path, *node.value, string::format(mem, "Expected type `%s`, got `%s`.", type_name, self.get_type_node(node.value)));
                 os::exit(1);
             }
         }
 
-        self.scope.variables.set(name, { type_name, node_in, null });
+        self.scope.variables.set(name, { type_name, node_in, null, null });
     } else
     {
         TupleNode type_node = node.type.node.tuple_node;
@@ -519,9 +542,9 @@ fn void Sema.analyse_var(&self, ASTNode* node_in)
         {
             self.analyse_node(node.value);
             
-            if (util::get_type_node(node.type, self) != util::get_type_node(node.value, self))
+            if (self.get_type_node(node.type) != self.get_type_node(node.value))
             {
-                errors::print_node(self.path, *node.value, string::format(mem, "Expected type `%s`, got `%s`.", util::get_type_node(node.type, self), util::get_type_node(node.value, self)));
+                errors::print_node(self.path, *node.value, string::format(mem, "Expected type `%s`, got `%s`.", self.get_type_node(node.type), self.get_type_node(node.value)));
                 os::exit(1);
             }
         }
@@ -530,7 +553,7 @@ fn void Sema.analyse_var(&self, ASTNode* node_in)
         {
             String name_value = name.node.ident_node.name;
             String type       = type_node.values[i].node.ident_node.name;
-            self.scope.variables.set(name_value, { type, node_in, null });
+            self.scope.variables.set(name_value, { type, node_in, null, null });
         }
     }
 
@@ -569,41 +592,147 @@ fn void Sema.analyse_call(&self, ASTNode* node_in)
     }
 
     Def def = self.scope.get_def(name);
-    if (def.node.node_type == DEF)
+    if (def.node.node_type == DEF ||
+        def.node.node_type == EXT)
     {
-        DefNode def_node = def.node.node.def_node;
-        if (node.arguments.len > def_node.parameters.len)
+        ASTNode*[] parameters;
+        ASTNode*   name_node;
+        ASTNode*[] attributes;
+        if (def.node.node_type == DEF)
         {
-            errors::print_node(self.path, *def_node.name, "Definition was here.");
-            errors::print_node(self.path, *node.arguments[node.arguments.len - 1], "This argument would exceed the argument size.");
-            os::exit(1);
-        }
-        if (node.arguments.len < def_node.parameters.len)
+            parameters = def.node.node.def_node.parameters;
+            name_node  = def.node.node.def_node.name;
+            attributes = def.node.node.def_node.attributes;
+        } else
         {
-            errors::print_node(self.path, *def_node.name, "Definition was here.");
-        
-            if (node.arguments.len != 0)
-            {
-                errors::print_node(self.path, *node.arguments[node.arguments.len - 1], "Expected more arguments after this one.");
-            } else
-            {
-                errors::print_node(self.path, *node.name, "Expected arguments.");
-            }
-        
-            os::exit(1);
+            parameters = def.node.node.ext_node.parameters;
+            name_node  = def.node.node.ext_node.name;
+            attributes = def.node.node.ext_node.attributes;
         }
 
-        foreach (i, arg : node.arguments)
+        foreach (arg : node.arguments)
         {
-            ASTNode* param      = def_node.parameters[i];
-            String   arg_type   = util::get_type_node(arg, self);
-            String   param_type = util::get_type_node(param, self);
+            self.analyse_node(arg);
+        }
 
-            if (arg_type != param_type)
+        foreach (attribute : attributes)
+        {
+            AttributeNode attribute_node = attribute.node.attribute_node;
+            if (attribute_node.name == "@variatric" && !util::is_variatric(parameters))
             {
-                errors::print_node(self.path, *param, "Definition was here.");
-                errors::print_node(self.path, *arg, string::format(mem, "Expected type `%s`, got `%s`.", param_type, arg_type));
+                errors::print_node(self.path, *attribute, "Can only use attribute @variatric in combination with a vararg.");
                 os::exit(1);
+            }
+
+            attributes::inspect_call(attribute_node.name, node, self.path);
+        }
+
+        bool is_vararg;
+        int  min_param_len = parameters.len;
+        foreach (int i, parameter : parameters)
+        {
+            ParameterNode param = parameter.node.parameter_node;
+            if (param.is_vararg)
+            {
+                if (i != parameters.len - 1)
+                {
+                    errors::print_node(self.path, *parameter, "Variatric parameter must be last.");
+                    os::exit(1);
+                }
+
+                is_vararg = true;
+                min_param_len = i;
+            }
+        }
+        
+        if (is_vararg)
+        {
+            if (node.arguments.len < min_param_len)
+            {
+                errors::print_node(self.path, *node.name, "Definition was here.");
+                if (node.arguments.len != 0)
+                {
+                    errors::print_node(self.path, *node.arguments[node.arguments.len - 1], "Expected more arguments after this one.");
+                } else
+                {
+                    errors::print_node(self.path, *node.name, "Expected arguments.");
+                }
+        
+                os::exit(1);
+            }
+
+            String param_type;
+            ASTNode* param;
+            foreach (i, arg : node.arguments)
+            {
+                String arg_type = self.get_type_node(arg);
+
+                if (i < parameters.len)
+                {
+                    param = parameters[i];
+                    param_type = self.get_type_node(param);
+                }
+
+                if (!self.types.lookup(param_type))
+                {
+                    io::printn(param_type);
+                    errors::print_node(self.path, *param, string::format(mem, "Could not find type `%s`", param_type));
+                    os::exit(1);
+                }
+
+                if (param_type == "void") continue;
+
+                if (arg_type != param_type)
+                {
+                    errors::print_node(self.path, *param, "Definition was here.");
+                    errors::print_node(self.path, *arg, string::format(mem, "Expected type `%s`, got `%s`", param_type, arg_type));
+                    os::exit(1);
+                }
+            }
+        } else
+        {
+            if (node.arguments.len < min_param_len)
+            {
+                errors::print_node(self.path, *node.name, "Definition was here.");
+                if (node.arguments.len != 0)
+                {
+                    errors::print_node(self.path, *node.arguments[node.arguments.len - 1], "Expected more arguments after this one.");
+                } else
+                {
+                    errors::print_node(self.path, *node.name, "Expected arguments.");
+                }
+        
+                os::exit(1);
+            }
+
+            if (node.arguments.len > min_param_len)
+            {
+                errors::print_node(self.path, *def.node, "Definition was here.");
+                errors::print_node(self.path, *node.arguments[node.arguments.len - 1], "This argument would exceed the argument size.");
+                os::exit(1);
+            }
+
+            foreach (i, param : parameters)
+            {
+                ASTNode* arg        = node.arguments[i];
+                String   arg_type   = self.get_type_node(arg);
+                String   param_type = self.get_type_node(param);
+
+                if (!self.types.lookup(param_type))
+                {
+                    io::printn(param_type);
+                    errors::print_node(self.path, *param, string::format(mem, "Could not find type `%s`", param_type));
+                    os::exit(1);
+                }
+
+                if (param_type == "void") continue;
+
+                if (arg_type != param_type)
+                {
+                    errors::print_node(self.path, *param, "Definition was here.");
+                    errors::print_node(self.path, *arg, string::format(mem, "Expected type `%s`, got `%s`", param_type, arg_type));
+                    os::exit(1);
+                }
             }
         }
     } else
@@ -620,7 +749,7 @@ fn void Sema.analyse_call(&self, ASTNode* node_in)
 fn void Sema.analyse_unary(&self, ASTNode* node_in)
 {
     UnaryNode node       = node_in.node.unary_node;
-    String    value_type = util::get_type_node(node.expr, self);
+    String    value_type = self.get_type_node(node.expr);
 
     if (!self.types.lookup(value_type))
     {
@@ -740,8 +869,8 @@ fn void Sema.resolve_access(&self, Type* prev_type, String prev_name, ASTNode* p
                     foreach (i, arg : call_node.arguments)
                     {
                         ASTNode* param      = def_node.parameters[i];
-                        String   arg_type   = util::get_type_node(arg, self);
-                        String   param_type = util::get_type_node(param, self);
+                        String   arg_type   = self.get_type_node(arg);
+                        String   param_type = self.get_type_node(param);
 
                         if (param_type == "void") continue;
 
@@ -775,7 +904,7 @@ fn void Sema.resolve_access(&self, Type* prev_type, String prev_name, ASTNode* p
                 if (prev_type.name == "void") return;
                 if (!prev_type.get_field(ident_name))
                 {
-                    errors::print_node(self.path, *next_node, string::format(mem, "Could not find property `%s` on type `%s`.", ident_name, prev_name));
+                    errors::print_node(self.path, *next_node, string::format(mem, "Could not find property `%s` on type `%s`.", ident_name, prev_type.name));
                     os::exit(1);
                 }
             case ACCESS:
@@ -796,8 +925,7 @@ fn void Sema.resolve_access(&self, Type* prev_type, String prev_name, ASTNode* p
                 IdentNode ident_node   = inc_node.identifier.node.ident_node;
                 String    ident_name   = ident_node.name;
                 String    operator     = inc_node.operator;
-
-                String type = util::get_type_node(inc_node.identifier, self);
+                String    type         = prev_type.get_field(ident_name).type.name.str_view();
 
                 switch (operator)
                 {
@@ -818,9 +946,6 @@ fn void Sema.resolve_access(&self, Type* prev_type, String prev_name, ASTNode* p
             default:
                 util::panicf("Unsupported node type in access chain: `%s`", next_node.node_type, file: $$FILE, line: $$LINE, function: $$FUNC);
         }
-
-        // handle get from var; handle nested builtin fields e.g. $length.$typeid
-        // util::panicf("Unfinished method: `%s`", next_node.node_type, file: $$FILE, line: $$LINE, function: $$FUNC);
     }
 }
 
@@ -830,9 +955,9 @@ fn void Sema.analyse_while(&self, ASTNode* node_in, ASTNode* def)
 
     self.analyse_node(node.condition);
 
-    if (util::get_type_node(node.condition, self) != "bool")
+    if (self.get_type_node(node.condition) != "bool")
     {
-        errors::print_node(self.path, *node.condition, string::format(mem, "Condition cannot be of type `%s`.", util::get_type_node(node.condition, self)));
+        errors::print_node(self.path, *node.condition, string::format(mem, "Condition cannot be of type `%s`.", self.get_type_node(node.condition)));
         os::exit(1);
     }
 
@@ -854,8 +979,8 @@ fn void Sema.analyse_bin(&self, ASTNode* node_in)
     self.analyse_node(node.left);
     self.analyse_node(node.right);
 
-    String left_type  = util::get_type_node(node.left, self);
-    String right_type = util::get_type_node(node.right, self);
+    String left_type  = self.get_type_node(node.left);
+    String right_type = self.get_type_node(node.right);
 
     String[] number_types = { "int", "float", "double" };
 
@@ -930,7 +1055,7 @@ fn void Sema.analyse_inc(&self, ASTNode* node_in)
         os::exit(1);
     }
 
-    String type = util::get_type_node(node.identifier, self);
+    String type = self.get_type_node(node.identifier);
 
     switch (operator)
     {
@@ -1002,7 +1127,7 @@ fn void Sema.analyse_switch(&self, ASTNode* node_in, ASTNode* def)
     ASTNode* left = node.expression;
     self.analyse_node(left);
 
-    String left_type = util::get_type_node(left, self);
+    String left_type = self.get_type_node(left);
 
     foreach (_case : node.cases)
     {
@@ -1010,7 +1135,7 @@ fn void Sema.analyse_switch(&self, ASTNode* node_in, ASTNode* def)
         ASTNode* right     = case_node.condition;
         self.analyse_node(right);
 
-        String right_type = util::get_type_node(right, self);
+        String right_type = self.get_type_node(right);
 
         if (left_type != right_type)
         {
@@ -1030,8 +1155,8 @@ fn void Sema.analyse_return(&self, ASTNode* node_in, ASTNode* def)
     ReturnNode node   = node_in.node.return_node;
     ASTNode*[] values = node.values;
 
-    String def_type    = util::get_type_node(def, self);
-    String return_type = util::get_type_node(node_in, self);
+    String def_type    = self.get_type_node(def);
+    String return_type = self.get_type_node(node_in);
 
     if (def_type != return_type)
     {
@@ -1052,7 +1177,7 @@ fn void Sema.analyse_macro(&self, ASTNode* node_in, ASTNode*[] arguments)
 
     bool is_vararg;
     int  min_param_len = node.parameters.len;
-    foreach (i, parameter: node.parameters)
+    foreach (int i, parameter: node.parameters)
     {
         ParameterNode param = parameter.node.parameter_node;
         if (param.is_vararg)
@@ -1064,7 +1189,7 @@ fn void Sema.analyse_macro(&self, ASTNode* node_in, ASTNode*[] arguments)
             }
 
             is_vararg = true;
-            min_param_len = (int)i;
+            min_param_len = i;
         }
     }
 
@@ -1104,17 +1229,16 @@ fn void Sema.analyse_macro(&self, ASTNode* node_in, ASTNode*[] arguments)
         ASTNode* param;
         foreach (i, arg : arguments)
         {
-            String arg_type = util::get_type_node(arg, self);
+            String arg_type = self.get_type_node(arg);
 
             if (i < node.parameters.len)
             {
                 param = node.parameters[i];
-                param_type = util::get_type_node(param, self);
+                param_type = self.get_type_node(param);
             }
 
             if (!self.types.lookup(param_type))
             {
-                io::printn(param_type);
                 errors::print_node(self.path, *param, string::format(mem, "Could not find type `%s`", param_type));
                 os::exit(1);
             }
@@ -1154,8 +1278,8 @@ fn void Sema.analyse_macro(&self, ASTNode* node_in, ASTNode*[] arguments)
         foreach (i, param : node.parameters)
         {
             ASTNode* arg        = arguments[i];
-            String   arg_type   = util::get_type_node(arg, self);
-            String   param_type = util::get_type_node(param, self);
+            String   arg_type   = self.get_type_node(arg);
+            String   param_type = self.get_type_node(param);
 
             if (!self.types.lookup(param_type))
             {
@@ -1179,7 +1303,7 @@ fn void Sema.analyse_macro(&self, ASTNode* node_in, ASTNode*[] arguments)
     foreach (i, parameter : node.parameters)
     {
         // TODO: varargs as array
-        parameter.node.parameter_node.type.node.ident_node.name = util::get_type_node(arguments[i], self);
+        parameter.node.parameter_node.type.node.ident_node.name = self.get_type_node(arguments[i]);
         parameter.node.parameter_node.type.node_type = IDENT;
         self.analyse_node(parameter);
     }
@@ -1192,7 +1316,6 @@ fn void Sema.analyse_macro(&self, ASTNode* node_in, ASTNode*[] arguments)
     self.scope = self.scope.parent;
 }
 
-// TODO: analyse expression, check types
 fn void Sema.analyse_reassign(&self, ASTNode* node_in)
 {
     ReassignNode node = node_in.node.reassign_node;
@@ -1207,11 +1330,352 @@ fn void Sema.analyse_reassign(&self, ASTNode* node_in)
     self.analyse_node(node.value);
 
     String var_type = self.scope.get_var(name).type;
-    String val_type = util::get_type_node(node.value, self);
+    String val_type = self.get_type_node(node.value);
 
     if (var_type != val_type)
     {
         errors::print_node(self.path, *node.value, string::format(mem, "Expected type `%s`, got `%s`", var_type, val_type));
         os::exit(1);
+    }
+}
+
+// --- TYPES ---
+
+fn String Sema.get_type_node(&self, ASTNode* node)
+{
+    switch (node.node_type)
+    {
+        case INT:       return "int";
+        case DEF:       return self.get_type_node_def(node);
+        case STR:       return "str";
+        case BIN:       return self.get_type_node_bin(node);
+        case CALL:      return self.get_type_node_call(node);
+        case BOOL:      return "bool";
+        case CHAR:      return "char";
+        case INIT:      return self.get_type_node_init(node);
+        case TUPLE:     return self.get_type_node_tuple(node);
+        case FLOAT:     return "float";
+        case UNARY:     return self.get_type_node(node.node.unary_node.expr);
+        case IDENT:     return self.get_type_node_ident(node);
+        case MACRO:     return self.get_type_node_macro(node);
+        case DOUBLE:    return "double";
+        case RETURN:    return self.get_type_node_return(node);
+        case ACCESS:    return self.get_type_node_access(node);
+        case PARAMETER: return self.get_type_node_parameter(node);
+        
+        default: util::panicf("Missing case for type `%s`", node.node_type, file: $$FILE, line: $$LINE, function: $$FUNC);
+    }
+}
+
+fn String Sema.get_type_node_tuple(&self, ASTNode* node)
+{
+    String[] types;
+    foreach (type : node.node.tuple_node.values)
+    {
+        util::array_insert(&types, type.node.ident_node.name);
+    }
+
+    DString out;
+
+    out.append_char('(');
+    out.append_chars(util::join_to_string(types, ", "));
+    out.append_char(')');
+
+    return out.copy_str(mem);
+}
+
+fn String Sema.get_type_node_call(&self, ASTNode* node)
+{
+    CallNode call_node = node.node.call_node;
+    String   name      = call_node.name.node.ident_node.name;
+    return self.scope.get_def(name).type;
+}
+
+fn String Sema.get_type_node_def(&self, ASTNode* node)
+{
+    DefNode def_node = node.node.def_node;
+    if (def_node.type.node_type == IDENT)
+    {
+        return def_node.type.node.ident_node.name;
+    } else
+    {
+        return self.get_type_node_tuple(def_node.type);
+    }
+}
+
+fn String Sema.get_type_node_parameter(&self, ASTNode* node)
+{
+    ParameterNode parameter_node = node.node.parameter_node;
+
+    if (parameter_node.type.node_type == NULL) return "void";
+
+    return parameter_node.type.node.ident_node.name;
+}
+
+fn String Sema.get_type_node_ident(&self, ASTNode* node)
+{
+    String name = node.node.ident_node.name;
+    return self.scope.get(name).get_type();
+}
+
+fn String Sema.get_type_node_bin(&self, ASTNode* node)
+{
+    BinNode bin_node = node.node.bin_node;
+    String  operator = bin_node.operator;
+
+    switch (operator)
+    {
+        case "!=":
+        case "==":
+        case ">=":
+        case "<=":
+        case ">=":
+        case ">":
+        case "<":
+            return "bool";
+        case "+":
+        case "-":
+        case "*":
+        case "/":
+            return self.get_type_node(bin_node.left);
+    }
+    
+    util::panicf("Missing case for operator `%s`", operator, file: $$FILE, line: $$LINE, function: $$FUNC);
+}
+
+fn String Sema.get_type_node_return(&self, ASTNode* node)
+{
+    ReturnNode return_node = node.node.return_node;
+    ASTNode*[] values      = return_node.values;
+
+    if (values.len == 0) return "void";
+
+    if (values.len > 1)
+    {
+        String[] types;
+        foreach (value : values)
+        {
+            util::array_insert(&types, self.get_type_node(value));
+        }
+
+        DString out;
+
+        out.append_char('(');
+        out.append_chars(util::join_to_string(types, ", "));
+        out.append_char(')');
+
+        return out.copy_str(mem);
+    } else
+    {
+        return self.get_type_node(values[0]);
+    }
+}
+
+fn String Sema.get_type_node_init(&self, ASTNode* node)
+{
+    InitNode init_node      = node.node.init_node;
+    String[] possible_types = self.get_possible_types(init_node);
+
+    if (possible_types.len > 1)
+    {
+        errors::print_node(self.path, *node, string::format(mem, "Multiple matching types found: `%s`", util::join_to_string(possible_types, ", ")));
+        os::exit(1);
+    }
+
+    if (possible_types.len == 0)
+    {
+        errors::print_node(self.path, *node, "Could not find type with those properties.");
+        os::exit(1);
+    }
+
+    return possible_types[0];
+}
+
+fn String[] Sema.get_possible_types(&self, InitNode init_node)
+{
+    String[] possible_types;
+
+    bool named;
+    foreach (i, value : init_node.values)
+    {
+        InitValueNode value_node = value.node.init_value_node;
+        if (i == 0) named = !util::is_null(value_node.name);
+        
+        if (named && util::is_null(value_node.name) || !named && !util::is_null(value_node.name))
+        {
+            errors::print_node(self.path, *value, "Cannot mix named and unnamed initialization.");
+            os::exit(1);
+        }
+    }
+
+    if (named)
+    {
+        foreach (type : self.scope.get_all_structs())
+        {
+            bool all_names_match = true;
+
+            HashMap{ String, ASTNode* } previous_names;
+            foreach (value : init_node.values)
+            {
+                InitValueNode init_value = value.node.init_value_node;
+                String        name       = init_value.name.node.ident_node.name;
+
+                if (previous_names.has_key(name))
+                {
+                    errors::print_node(self.path, *previous_names.get(name)!!, errors::ERROR_PREVIOUS);
+                    errors::print_node(self.path, *value, "A field with this name has already been initialized.");
+                    os::exit(1);
+                }
+
+                previous_names.set(name, value);
+
+                bool name_found;
+                foreach FIELDS: (field : type.fields)
+                {
+                    String field_name = field.node.field_node.name.node.ident_node.name;
+
+                    if (name == field_name)
+                    {
+                        name_found = true;
+                        break FIELDS;
+                    }
+                }
+
+                if (!name_found)
+                {
+                    all_names_match = false;
+                }
+            }
+
+            if (all_names_match)
+            {
+                foreach (value : init_node.values)
+                {
+                    String type_name  = self.get_type_node(value.node.init_value_node.value);
+                    String field_type = util::get_field_by_name(value.node.init_value_node.name.node.ident_node.name, type).node.field_node.type.node.ident_node.name;
+
+                    if (type_name != field_type)
+                    {
+                        errors::print_node(self.path, *value, string::format(mem, "Expected type `%s`, got `%s`", field_type, type_name));
+                        os::exit(1);
+                    }
+                }
+
+                util::array_insert(&possible_types, type.name.node.ident_node.name);
+            }
+        }
+    } else
+    {
+        foreach (type : self.scope.get_all_structs())
+        {
+            if (type.fields.len != init_node.values.len) continue;
+            
+            bool types_match = true;
+            foreach FIELDS: (i, field : type.fields)
+            {
+                String field_type = field.node.field_node.type.node.ident_node.name;
+                String value_type = self.get_type_node(init_node.values[i].node.init_value_node.value);
+
+                if (field_type != value_type)
+                {
+                    types_match = false;
+                    break FIELDS;
+                }
+            }
+
+            if (types_match)
+            {
+                util::array_insert(&possible_types, type.name.node.ident_node.name);
+            }
+        }
+    }
+
+    return possible_types;
+}
+
+fn String Sema.get_type_node_access(&self, ASTNode* node)
+{
+    AccessNode access_node = node.node.access_node;
+    IdentNode  ident       = access_node.expr.node.ident_node;
+
+    String  type_name;
+    Type*   type      = null;
+
+    if (self.types.lookup(ident.name))
+    {
+        type = self.types.lookup(ident.name);
+    } else if (self.scope.has(ident.name))
+    {
+        type_name = self.scope.get(ident.name).get_type();
+        type      = self.types.lookup(type_name);
+    }
+
+    return self.resolve_type_node_access(type, ident.name, access_node.expr, access_node.next);
+}
+
+fn String Sema.resolve_type_node_access(&self, Type* prev_type, String prev_name, ASTNode* prev_node, ASTNode* next_node)
+{
+    if (!prev_type)
+    {
+        String[] pkg_names;
+        self.get_all_pkg_names(&pkg_names);
+        String[] possible_pkgs = util::get_possible_pkgs(pkg_names, prev_name);
+
+        String pkg_name  = possible_pkgs[0];
+        Sema*  pkg       = self.get_pkg(pkg_name);
+        switch (next_node.node_type)
+        {
+            case IDENT:
+                IdentNode ident_node = next_node.node.ident_node;
+                String    ident_name = ident_node.name;
+
+                return pkg.scope.get_const(ident_name).type;
+            case CALL:
+                CallNode call_node = next_node.node.call_node;
+                String   call_name = call_node.name.node.ident_node.name;
+                Def      def       = pkg.scope.get_def(call_name);
+
+                return def.type;
+            default:
+                util::panicf("Unsupported node type in access chain: `%s`", next_node.node_type, file: $$FILE, line: $$LINE, function: $$FUNC);
+        }
+    } else
+    {
+        switch (next_node.node_type)
+        {
+            case IDENT:
+                IdentNode ident_node = next_node.node.ident_node;
+                String    ident_name = ident_node.name;
+
+                return prev_type.get_field(ident_name).type.name.str_view();
+            case ACCESS:
+                AccessNode access_node = next_node.node.access_node;
+                IdentNode  ident_node  = access_node.expr.node.ident_node;
+                String     field_name  = ident_node.name;
+                Field*     field       = prev_type.get_field(field_name);
+
+                return self.resolve_type_node_access(field.type, field_name, access_node.expr, access_node.next);
+            case INC:
+                IncNode   inc_node   = next_node.node.inc_node;
+                IdentNode ident_node = inc_node.identifier.node.ident_node;
+                String    field_name = ident_node.name;
+                Field*    field      = prev_type.get_field(field_name);
+
+                return field.type.name.str_view();
+            default:
+                util::panicf("Unsupported node type in access chain: `%s`", next_node.node_type, file: $$FILE, line: $$LINE, function: $$FUNC);
+        }
+    }
+}
+
+fn String Sema.get_type_node_macro(&self, ASTNode* node)
+{
+    MacroNode macro_node = node.node.macro_node;
+    if (macro_node.type.node_type == IDENT)
+    {
+        return macro_node.type.node.ident_node.name;
+    } else
+    {
+        return self.get_type_node_tuple(macro_node.type);
     }
 }

@@ -1,0 +1,21 @@
+pkg test;
+
+def void main()
+{
+    call();
+}
+
+def void call()
+{
+}
+
+# define i64 @test.main() {
+# entry:
+#   call void @test.call()
+#   ret i64 0
+# }
+#
+# define void @test.call() {
+# entry:
+#   ret void
+# }

@@ -6,18 +6,19 @@ import lucy::node, lucy::util, lucy::types;
 
 struct Scope
 {
-    Scope*                        parent;
-    HashMap{ String, Var        } variables;
-    HashMap{ String, Const      } constants;
-    HashMap{ String, Param      } parameters;
-    HashMap{ String, Def        } functions;
-    HashMap{ String, StructNode } structs;
+    Scope*                    parent;
+    HashMap{ String, Var    } variables;
+    HashMap{ String, Const  } constants;
+    HashMap{ String, Param  } parameters;
+    HashMap{ String, Def    } functions;
+    HashMap{ String, Struct } structs;
 }
 
-struct Var   { String type; ASTNode* node; LLVMValueRef value; }
-struct Const { String type; ASTNode* node; LLVMValueRef value; }
-struct Param { String type; ASTNode* node; LLVMValueRef value; }
-struct Def   { String type; ASTNode* node; LLVMValueRef value; }
+struct Var    { String type; ASTNode* node; LLVMValueRef llvm_value; LLVMTypeRef llvm_type; }
+struct Const  { String type; ASTNode* node; LLVMValueRef llvm_value; LLVMTypeRef llvm_type; }
+struct Param  { String type; ASTNode* node; LLVMValueRef llvm_value; LLVMTypeRef llvm_type; }
+struct Def    { String type; ASTNode* node; LLVMValueRef llvm_value; LLVMTypeRef llvm_type; }
+struct Struct { ASTNode* node; LLVMTypeRef llvm_type; }
 
 fn Scope* new()
 {
@@ -128,19 +129,27 @@ fn bool Scope.has_def(&self, String name)
     return false;
 }
 
+fn Struct Scope.get_struct(&self, String name)
+{
+    if (self.structs.has_key(name)) return self.structs.get(name)!!;
+    if (self.parent != null)        return self.parent.get_struct(name);
+    
+    util::panic("Unreachable", $$FILE, $$LINE, $$FUNC);
+}
+
 fn StructNode[] Scope.get_all_structs(&self)
 {
     StructNode[] out;
 
     foreach (s : self.structs.values(mem))
     {
-        util::array_insert(&out, s);
+        util::array_insert(&out, s.node.node.struct_node);
     }
     if (self.parent)
     {
         foreach (s : self.parent.structs.values(mem))
         {
-            util::array_insert(&out, s);
+            util::array_insert(&out, s.node.node.struct_node);
         }
     }
 

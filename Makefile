@@ -1,4 +1,4 @@
-all: check_deps clean build install test
+all: check_deps clean build install run test
 
 check_deps:
 	
@@ -10,17 +10,24 @@ install: build
 	@cp ./stdlib/ ~/.local/lib/lucy/ -r
 	@ln -sf ~/.local/lib/lucy/lucy ~/.local/bin/lucy
 
-build: check_deps
+build: clean
 	@echo "Building..."
-	@c3c build -l LLVM --safe=no --trust=full $(shell which git >/dev/null 2>&1 && echo "-D GIT_FOUND")
+	@c3c build -l LLVM --trust=full $(shell which git >/dev/null 2>&1 && echo "-D GIT_FOUND")
 
 clean:
 	@echo "Cleaning..."
 	@rm -rf ./build
 	@rm -rf ~/.local/lib/lucy
+	@rm -f ./main
+	@rm -f ./main.ll
 
-test:
+run: install
+	@echo "Running..."
+	@lucy -c main.lc -e
+	@./main
+
+test: install
 	@echo "Testing..."
-	@lucy -c main.lc -e -vv
+	@python test/runner.py test/
 
 .PHONY: test build all clean install

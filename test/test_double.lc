@@ -1,0 +1,13 @@
+pkg test;
+
+def void main()
+{
+    var double d = 1.0;
+}
+
+# define i64 @test.main() {
+# entry:
+#   %d = alloca double, align 8
+#   store double 1.000000e+00, ptr %d, align 8
+#   ret i64 0
+# }

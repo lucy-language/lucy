@@ -82,8 +82,10 @@ fn void TypeTable.init(&self, int type_id = 0)
     }
     self.type_id = type_id;
 
+    LLVMTypeRef int_type = (void*).sizeof == 8 ? llvm::int_64_type() : llvm::int_32_type();
+
     self.insert_type("void",   null, llvm::void_type());
-    self.insert_type("int",    null, llvm::int_32_type());
+    self.insert_type("int",    null, int_type);
     self.insert_type("float",  null, llvm::float_type());
     self.insert_type("str",    null, llvm::pointer_type(llvm::int_8_type(), 0));
     self.insert_type("bool",   null, llvm::int_1_type());

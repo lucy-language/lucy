@@ -1,0 +1,35 @@
+link<c>;
+
+pkg test;
+
+ext int printf(str fmt, var args) @variadic;
+
+def void main()
+{
+    m2(69);
+}
+
+macro void m1()
+{
+}
+
+macro void m2(x)
+{
+    printf("%d\n", x);
+}
+
+# @.str = global [4 x i8] c"%d\0A\00"
+#
+# declare i64 @printf(ptr, ...)
+#
+# define i64 @test.main() {
+# entry:
+#   call void @test.m2(i64 69)
+#   ret i64 0
+# }
+#
+# define void @test.m2(i64 %x) {
+# entry:
+#   %0 = call i64 (ptr, ...) @printf(ptr @.str, i64 %x)
+#   ret void
+# }

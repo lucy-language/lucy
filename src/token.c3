@@ -77,6 +77,7 @@ enum TokenType : const String
     KW_IF     = "if",
 
     IDENTIFIER = "identifier",
+    ATTRIBUTE  = "attribute",
 
     EOF = "EOF"
 }

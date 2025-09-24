@@ -6,8 +6,24 @@ import json;
 import llvm;
 import libc;
 
+enum Backend : const inline String
+{
+    LLVM = "LLVM",
+    MLIR = "MLIR",
+    LUCY = "LUCY",
+    QBE  = "QBE"
+}
+
 fn int main(String[] args)
 {
+    Backend backend = LLVM;
+
+    const BUF_SIZE = 1024;
+    char[BUF_SIZE] prog_name;
+    libc::readlink("/proc/self/exe", &prog_name, BUF_SIZE);
+
+    args[0] = ((ZString)&prog_name).str_view();
+
     Option[]? options = args::parse(
         args:    args,
         arg_sep: " ",
@@ -28,9 +44,14 @@ fn int main(String[] args)
                 .description = "stops after the analysing stage"
             },
             {
+                .short_name  = "g",
+                .long_name   = "generator",
+                .description = "stops after the generating stage"
+            },
+            {
                 .short_name        = "t",
                 .long_name         = "tree",
-                .description       = "outputs the ast mor the main module",
+                .description       = "outputs the ast for the main module",
                 .valid_values      = { "file", "stdout" },
                 .is_value_required = true
             },
@@ -41,8 +62,8 @@ fn int main(String[] args)
             },
             {
                 .short_name  = "e",
-                .long_name   = "emit-llvm",
-                .description = "prints the module to a llvm IR file"
+                .long_name   = "emit-ir",
+                .description = "prints the module to a llvm/mlir IR file"
             },
             {
                 .short_name        = "c",
@@ -65,6 +86,13 @@ fn int main(String[] args)
                 .short_name  = "v",
                 .long_name   = "verbose",
                 .description = "Output additional compiler info"
+            },
+            {
+                .short_name        = "b",
+                .long_name         = "backend",
+                .description       = "The backend to use for generation",
+                .valid_values      = { "LLVM", "MLIR", "LUCY" },
+                .is_value_required = true
             }
         }
     );
@@ -73,6 +101,16 @@ fn int main(String[] args)
     {
         io::eprintn(err);
         return 1;
+    }
+
+    if (args::has_arg_long(options, "backend")!!)
+    {
+        backend = (Backend)args::arg_value(options, "backend")!!;
+        if (backend == LUCY && args::has_arg_long(options, "emit-ir")!!)
+        {
+            io::printfn("%sCan only use option `emit-ir` with these backends: LLVM, MLIR", Ansi.RED);
+            return 1;
+        }
     }
 
     if (args::has_arg_long(options, "version")!!)
@@ -95,8 +133,17 @@ fn int main(String[] args)
             return 1;
         }
 
-        String path    = compile_option.to_absolute_path(mem).str_view()!!;
-        String content = (String)file::load(mem, path)!!;
+        String  path = compile_option.to_absolute_path(mem).str_view()!!;
+        String? content = (String)file::load(mem, path);
+
+        if (catch err = content)
+        {
+            switch (err)
+            {
+                case io::FILE_NOT_FOUND: io::eprintfn("%sUnable to locate file '%s'%s", Ansi.RED, compile_option, Ansi.RESET);
+            }
+            os::exit(1);
+        }
 
         lucy::lexer::Lexer lexer = lexer::new(content);
 
@@ -104,7 +151,7 @@ fn int main(String[] args)
         {
             foreach(token : lexer.tokenize())
             {
-                io::printn(token.type);
+                io::printfn("Token(%s, `%s`)", token.type, token.value);
             }
             return 0;
         }
@@ -142,23 +189,16 @@ fn int main(String[] args)
 
         if (args::has_arg_long(options, "analyser")!!) return 0;
 
-        /*
-        // Need to reinstantiate because json fucks it up somehow
-        // TODO: fix
-        parser = parser::new(lexer, path);
-        Compiler compiler = compiler::new(path, parser.parse(), type_table);
-        compiler.compile(links);
+        GeneratorResult gen_res = generator::generate(type_table, linked_module_paths, ast, backend, args::has_arg_long(options, "emit-ir")!!, path);
 
-        linker::link(compiler.mod, compiler.module_name, compiler.linker_options, !args::has_arg_long(options, "no-stdlib")!!);
-        
-        if (args::has_arg_long(options, "emit-llvm")!!)
-        {
-            llvm::print_module_to_file(compiler.mod, string::format(mem, "%s.ll", compiler.module_name), null);
-        }
-        */
+        if (args::has_arg_long(options, "generator")!!) return 0;
+
+        // TODO: pass GeneratorResult to linker
+        linker::link(gen_res.llvm.mod, gen_res.llvm.pkg_name, gen_res.llvm.links);
+        llvm::dispose_module(gen_res.llvm.mod);
     } else
     {
-        String[] invalid_options = { "lexer", "parser", "analyser", "tree", "emit-llvm", "link", "no-stdlib" };
+        String[] invalid_options = { "lexer", "parser", "analyser", "tree", "emit-ir", "link", "no-stdlib" };
         foreach (option : invalid_options)
         {
             if (args::has_arg_long(options, option)!!)
