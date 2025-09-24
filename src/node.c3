@@ -1,6 +1,5 @@
 module lucy::node;
 
-import std;
 import lucy::token;
 import json::serialize;
 

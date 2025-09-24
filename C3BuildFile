@@ -1,13 +1,13 @@
 compiler(MIN 0.7.4)
 
-require(LIB LLVM VERSION MIN 20)
-require(LIB MLIR VERSION MIN 20)
+link(LLVM)
+link(MLIR)
 
 option("-l LLVM")
 option("-l MLIR")
 
-require(EXE git):
-    option("-D GIT_FOUND")
-end
+-- find(EXE git):
+--     option("-D GIT_FOUND")
+-- end
 
 option("--trust=full")
